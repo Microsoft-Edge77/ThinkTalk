@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ThinkTalk Mobile v3.0</title>
+<title>ThinkTalk Mobile v2.7</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -130,8 +130,8 @@ html, body {
 #edit-btn { background: #00a2e8; }
 #delete-btn { background: #e81123; }
 
-/* Popup Metro (alert) */
-#popup-alert {
+/* Popup Metro */
+#popup {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.6);
@@ -140,7 +140,7 @@ html, body {
     justify-content: center;
     z-index: 2000;
 }
-.popup-box {
+#popup-box {
     background: #111;
     border: 2px solid var(--accent);
     padding: 20px;
@@ -148,60 +148,22 @@ html, body {
     max-width: 300px;
     text-align: center;
 }
-.popup-title {
+#popup-title {
     font-size: 20px;
     margin-bottom: 10px;
     color: var(--accent);
 }
-.popup-msg {
+#popup-msg {
     font-size: 16px;
     margin-bottom: 20px;
 }
-.popup-btn {
+#popup-ok {
     background: var(--accent);
     border: none;
     padding: 10px 20px;
     color: #fff;
     font-weight: bold;
     width: 100%;
-}
-
-/* Popup Metro (prompt) */
-#popup-prompt {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 2001;
-}
-#popup-input {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-}
-
-.popup-btn-row {
-    display: flex;
-    gap: 10px;
-}
-.popup-btn-cancel {
-    background: #444;
-    border: none;
-    padding: 10px;
-    color: #fff;
-    flex: 1;
-}
-.popup-btn-ok {
-    background: var(--accent);
-    border: none;
-    padding: 10px;
-    color: #fff;
-    flex: 1;
 }
 
 /* Auth */
@@ -223,25 +185,12 @@ html, body {
 </head>
 <body>
 
-<!-- POPUP ALERT -->
-<div id="popup-alert">
-    <div class="popup-box">
-        <div class="popup-title">THINKTALK</div>
-        <div id="alert-msg" class="popup-msg"></div>
-        <button id="alert-ok" class="popup-btn">OK</button>
-    </div>
-</div>
-
-<!-- POPUP PROMPT -->
-<div id="popup-prompt">
-    <div class="popup-box">
-        <div class="popup-title">THINKTALK</div>
-        <div id="prompt-msg" class="popup-msg"></div>
-        <input id="popup-input" type="text">
-        <div class="popup-btn-row">
-            <button id="prompt-cancel" class="popup-btn-cancel">Annuler</button>
-            <button id="prompt-ok" class="popup-btn-ok">OK</button>
-        </div>
+<!-- POPUP METRO -->
+<div id="popup">
+    <div id="popup-box">
+        <div id="popup-title">THINKTALK</div>
+        <div id="popup-msg"></div>
+        <button id="popup-ok">OK</button>
     </div>
 </div>
 
@@ -282,7 +231,7 @@ html, body {
         <div class="page-title">PERSONNES</div>
         <h1 class="section-header">contacts</h1>
 
-        <button id="add-contact-top" onclick="addContact()">+ ajouter un contact</button>
+        <button id="add-contact-top" onclick="addContactPrompt()">+ ajouter un contact</button>
 
         <div id="contacts-list" class="scroll-area"></div>
     </section>
@@ -326,35 +275,13 @@ let user = localStorage.getItem('tt_user');
 let currentCtx = { id: 'general', type: 'room' };
 let selectedMessage = null;
 
-/* POPUP ALERT */
-function showAlert(msg) {
-    document.getElementById("alert-msg").textContent = msg;
-    document.getElementById("popup-alert").style.display = "flex";
+/* POPUP */
+function showPopup(msg) {
+    document.getElementById("popup-msg").textContent = msg;
+    document.getElementById("popup").style.display = "flex";
 }
-document.getElementById("alert-ok").onclick = () => {
-    document.getElementById("popup-alert").style.display = "none";
-};
-
-/* POPUP PROMPT */
-let promptCallback = null;
-
-function showPrompt(msg, callback) {
-    promptCallback = callback;
-    document.getElementById("prompt-msg").textContent = msg;
-    document.getElementById("popup-input").value = "";
-    document.getElementById("popup-prompt").style.display = "flex";
-    setTimeout(() => document.getElementById("popup-input").focus(), 50);
-}
-
-document.getElementById("prompt-ok").onclick = () => {
-    const val = document.getElementById("popup-input").value.trim();
-    document.getElementById("popup-prompt").style.display = "none";
-    if (promptCallback) promptCallback(val);
-};
-
-document.getElementById("prompt-cancel").onclick = () => {
-    document.getElementById("popup-prompt").style.display = "none";
-    if (promptCallback) promptCallback(null);
+document.getElementById("popup-ok").onclick = () => {
+    document.getElementById("popup").style.display = "none";
 };
 
 /* Navigation */
@@ -368,17 +295,17 @@ function goTo(index) {
 async function handleAuth(type) {
     const p = document.getElementById('pseudo').value.trim();
     const c = document.getElementById('code').value.trim();
-    if (!p || c.length < 4) return showAlert("Pseudo et code requis");
+    if (!p || c.length < 4) return showPopup("Pseudo et code requis");
 
     const userRef = db.ref('users/' + p);
     const snap = await userRef.get();
 
     if (type === 'register') {
-        if (snap.exists()) return showAlert("Ce pseudo est déjà utilisé");
+        if (snap.exists()) return showPopup("Ce pseudo est déjà utilisé");
         await userRef.set({ code: c });
-        showAlert("Compte créé, connectez-vous");
+        showPopup("Compte créé, connectez-vous");
     } else {
-        if (!snap.exists() || snap.val().code !== c) return showAlert("Identifiants incorrects");
+        if (!snap.exists() || snap.val().code !== c) return showPopup("Identifiants incorrects");
         user = p;
         localStorage.setItem('tt_user', p);
         document.getElementById('auth').classList.add('hidden');
@@ -459,4 +386,99 @@ function showMessageMenu(div) {
 }
 
 document.addEventListener('click', (e) => {
-    const menu = document.getElementById('msg-menu
+    const menu = document.getElementById('msg-menu');
+    if (menu.style.display === 'none') return;
+    if (!menu.contains(e.target) && !e.target.classList.contains('msg-bubble')) {
+        menu.style.display = 'none';
+        selectedMessage = null;
+    }
+});
+
+document.getElementById('delete-btn').onclick = () => {
+    if (!selectedMessage) return;
+
+    const id = selectedMessage.dataset.id;
+
+    let path = currentCtx.type === 'room'
+        ? `messages/public/${currentCtx.id}/${id}`
+        : `messages/dm/${getConvId(user, currentCtx.id)}/${id}`;
+
+    db.ref(path).remove();
+    selectedMessage.remove();
+
+    document.getElementById('msg-menu').style.display = 'none';
+    selectedMessage = null;
+};
+
+document.getElementById('edit-btn').onclick = () => {
+    if (!selectedMessage) return;
+
+    const id = selectedMessage.dataset.id;
+    const textEl = selectedMessage.querySelector('.msg-text');
+    const oldText = textEl.textContent;
+
+    const newText = prompt("Modifier le message :", oldText);
+    if (!newText || newText === oldText) return;
+
+    let path = currentCtx.type === 'room'
+        ? `messages/public/${currentCtx.id}/${id}`
+        : `messages/dm/${getConvId(user, currentCtx.id)}/${id}`;
+
+    db.ref(path).update({ text: newText });
+    textEl.textContent = newText;
+
+    document.getElementById('msg-menu').style.display = 'none';
+    selectedMessage = null;
+};
+
+/* Contacts */
+async function loadContacts() {
+    const list = document.getElementById('contacts-list');
+    const snap = await db.ref('contacts/' + user).get();
+    list.innerHTML = "";
+
+    if (snap.exists()) {
+        Object.keys(snap.val()).forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.textContent = name;
+            div.onclick = () => openRoom(name, 'dm');
+            list.appendChild(div);
+        });
+    }
+}
+
+async function addContactPrompt() {
+    const target = prompt("Pseudo :");
+    if (!target || target === user) return showPopup("Pseudo invalide");
+
+    const check = await db.ref('users/' + target).get();
+    if (!check.exists()) return showPopup("Ce pseudo n'existe pas");
+
+    await db.ref(`contacts/${user}/${target}`).set(true);
+    await db.ref(`contacts/${target}/${user}`).set(true);
+    loadContacts();
+    showPopup("Contact ajouté");
+}
+
+/* Utils */
+function getConvId(a, b) { 
+    return [a, b].sort().join("__"); 
+}
+
+function logout() { 
+    localStorage.clear(); 
+    location.reload(); 
+}
+
+/* Auto-login */
+window.onload = () => {
+    if (user) { 
+        document.getElementById('auth').classList.add('hidden');
+        loadContacts();
+        openRoom('general', 'room');
+    }
+};
+</script>
+</body>
+</
