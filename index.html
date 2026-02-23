@@ -5,15 +5,9 @@
 <title>ThinkTalk Mobile</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-<!-- Firebase compat (même projet que ThinkTalk PC) -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{
-  height:100%;
-}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
 body{
   font-family:system-ui,Arial;
   background:radial-gradient(circle at top,#051933 0,#000 55%,#000 100%);
@@ -23,7 +17,7 @@ body{
   align-items:stretch;
 }
 
-/* CONTAINER PRINCIPAL MOBILE */
+/* CONTAINER PRINCIPAL */
 #app{
   position:relative;
   width:100%;
@@ -39,153 +33,67 @@ body{
 /* HEADER */
 #topBar{
   height:52px;
-  padding:0 10px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  border-bottom:1px solid rgba(0,153,255,.5);
-  background:linear-gradient(135deg,rgba(0,0,0,.9),rgba(0,51,102,.9));
-}
-#menuBtn{
-  width:34px;
-  height:34px;
-  border-radius:50%;
-  border:1px solid rgba(0,153,255,.8);
-  background:radial-gradient(circle at top left,rgba(0,51,102,.9),rgba(0,0,0,.95));
+  padding:0 14px;
   display:flex;
   align-items:center;
   justify-content:center;
-  color:#7fc4ff;
-  font-size:18px;
-  cursor:pointer;
-  box-shadow:0 0 10px rgba(0,153,255,.6);
-}
-#topTitle{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
+  border-bottom:1px solid rgba(0,153,255,.5);
+  background:linear-gradient(135deg,rgba(0,0,0,.9),rgba(0,51,102,.9));
 }
 #appName{
-  font-size:17px;
+  font-size:18px;
   color:#7fc4ff;
   text-shadow:0 0 10px rgba(0,153,255,.8);
 }
-#currentContext{
-  font-size:12px;
-  color:#bcd9ff;
-  opacity:.85;
-}
-#userInfo{
-  font-size:11px;
-  color:#9fb7ff;
-  max-width:90px;
-  text-align:right;
-}
 
-/* SIDEBAR MOBILE (SLIDE LEFT) */
-#sidebarOverlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-  display:none;
-  z-index:20;
-}
-#sidebar{
-  position:absolute;
-  top:0;
-  left:0;
-  width:260px;
-  height:100%;
-  background:rgba(3,10,25,.96);
-  border-right:1px solid rgba(0,153,255,.6);
-  box-shadow:0 0 20px rgba(0,153,255,.7);
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  transform:translateX(-100%);
-  transition:transform .22s ease-out;
-}
-#sidebar.open{
-  transform:translateX(0);
-}
-#sidebar h3{
-  font-size:12px;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  color:#6fb6ff;
-  margin-bottom:4px;
-}
-.list{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  max-height:32%;
-  overflow-y:auto;
-  padding-right:4px;
-}
-.item{
-  padding:7px 9px;
-  border-radius:8px;
-  border:1px solid rgba(0,153,255,.5);
-  background:linear-gradient(135deg,rgba(0,102,204,.15),rgba(0,0,0,.8));
-  font-size:13px;
-  color:#d0e7ff;
-  cursor:pointer;
-  display:flex;
-  justify-content:space-between;
-  transition:.15s;
-}
-.item:hover{
-  background:linear-gradient(135deg,rgba(0,153,255,.3),rgba(0,0,0,.95));
-  transform:translateY(-1px);
-  box-shadow:0 0 10px rgba(0,153,255,.5);
-}
-.item.active{
-  background:linear-gradient(135deg,rgba(0,153,255,.45),rgba(0,0,0,.95));
-  box-shadow:0 0 12px rgba(0,153,255,.8);
-}
-#addContactBtn,#logoutBtn{
-  padding:8px 9px;
-  border-radius:999px;
-  border:1px solid rgba(0,153,255,.7);
-  background:radial-gradient(circle at top left,rgba(0,153,255,.4),rgba(0,0,0,.95));
-  color:#e5f2ff;
-  font-size:13px;
-  cursor:pointer;
-  transition:.15s;
-}
-#logoutBtn{
-  margin-top:auto;
-  border-color:rgba(255,80,80,.9);
-  background:radial-gradient(circle at top left,rgba(255,80,80,.9),rgba(0,0,0,.95));
-}
-
-/* CONTENU PRINCIPAL */
+/* ZONE PRINCIPALE */
 #main{
   position:absolute;
   top:52px;
   left:0;
   right:0;
-  bottom:56px; /* place pour la barre du bas */
-  display:flex;
-  flex-direction:column;
+  bottom:56px;
+  overflow-y:auto;
+  padding:10px;
 }
 
-/* ZONE MESSAGES */
-#messages{
-  flex:1;
-  padding:8px 10px 6px;
-  overflow-y:auto;
-  border-bottom:1px solid rgba(0,153,255,.4);
+/* LISTE HOME (salons + contacts) */
+.homeItem{
+  padding:10px 12px;
+  margin-bottom:8px;
+  border-radius:10px;
+  border:1px solid rgba(0,153,255,.5);
+  background:linear-gradient(135deg,rgba(0,102,204,.15),rgba(0,0,0,.8));
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:15px;
+  color:#e5f2ff;
+  cursor:pointer;
+  transition:.15s;
 }
+.homeItem:hover{
+  background:linear-gradient(135deg,rgba(0,153,255,.3),rgba(0,0,0,.95));
+  transform:translateY(-1px);
+  box-shadow:0 0 10px rgba(0,153,255,.5);
+}
+.badge{
+  min-width:22px;
+  padding:3px 6px;
+  border-radius:999px;
+  background:#ff3b3b;
+  color:white;
+  font-size:12px;
+  text-align:center;
+}
+
+/* MESSAGES */
 .msg{
   margin-bottom:6px;
   padding:6px 8px;
   border-radius:9px;
   background:linear-gradient(135deg,rgba(0,0,0,.9),rgba(0,153,255,.18));
   border-left:3px solid rgba(0,153,255,.8);
-  position:relative;
   animation:msgIn .18s ease-out;
 }
 @keyframes msgIn{
@@ -214,12 +122,12 @@ body{
   white-space:pre-wrap;
 }
 
-/* BARRE D’ENTRÉE (MOBILE, CLAVIER) */
+/* BARRE D’ENTRÉE */
 #inputBar{
   position:fixed;
   left:50%;
   transform:translateX(-50%);
-  bottom:56px; /* juste au-dessus de la barre du bas */
+  bottom:56px;
   width:100%;
   max-width:480px;
   padding:6px 8px;
@@ -248,7 +156,7 @@ body{
   cursor:pointer;
 }
 
-/* BARRE DU BAS (NAVIGATION) */
+/* BARRE DU BAS */
 #bottomBar{
   position:fixed;
   left:50%;
@@ -283,52 +191,50 @@ body{
   text-shadow:0 0 8px rgba(0,153,255,.9);
 }
 
-/* OVERLAY AUTH */
-#authOverlay{
+/* MENU SUPERPOSÉ (salons / contacts) */
+#overlayMenu{
   position:fixed;
   inset:0;
-  display:flex;
-  align-items:center;
+  background:rgba(0,0,0,.55);
+  display:none;
+  align-items:flex-end;
   justify-content:center;
-  background:rgba(0,0,0,.9);
-  z-index:30;
+  z-index:40;
 }
-#authBox{
-  width:90%;
-  max-width:340px;
-  padding:18px 16px;
-  border-radius:18px;
-  background:radial-gradient(circle at top left,rgba(0,153,255,.35),rgba(0,0,0,.95));
-  border:1px solid rgba(0,204,255,.9);
-  box-shadow:0 0 30px rgba(0,204,255,.8);
+#menuBox{
+  width:100%;
+  max-width:480px;
+  max-height:70%;
+  overflow-y:auto;
+  border-radius:18px 18px 0 0;
+  background:radial-gradient(circle at top,rgba(0,204,255,.35),rgba(0,0,0,.98));
+  border-top:1px solid rgba(0,255,255,.9);
+  padding:14px;
 }
-#authBox h2{
-  font-size:18px;
+.menuTitle{
+  font-size:16px;
+  margin-bottom:10px;
+  color:#e5f2ff;
+  text-align:center;
+}
+.menuItem{
+  padding:10px 12px;
   margin-bottom:8px;
-}
-#authBox input{
-  width:100%;
-  padding:9px 11px;
-  margin:6px 0;
-  border-radius:999px;
-  border:1px solid rgba(0,153,255,.7);
-  background:rgba(0,0,0,.9);
+  border-radius:10px;
+  border:1px solid rgba(0,153,255,.5);
+  background:linear-gradient(135deg,rgba(0,102,204,.15),rgba(0,0,0,.8));
+  font-size:15px;
   color:#e5f2ff;
-  font-size:14px;
-}
-#authBox button{
-  width:100%;
-  padding:9px 11px;
-  margin-top:6px;
-  border-radius:999px;
-  border:1px solid rgba(0,204,255,.9);
-  background:radial-gradient(circle at top left,rgba(0,204,255,.9),rgba(0,0,0,.95));
-  color:#e5f2ff;
-  font-size:14px;
   cursor:pointer;
+  transition:.15s;
+}
+.menuItem:hover{
+  background:linear-gradient(135deg,rgba(0,153,255,.3),rgba(0,0,0,.95));
+  transform:translateY(-1px);
+  box-shadow:0 0 10px rgba(0,153,255,.5);
 }
 
-/* MODAL (appui long, etc.) */
+/* MODAL (appui long) */
 #modalOverlay{
   position:fixed;
   inset:0;
@@ -336,7 +242,7 @@ body{
   align-items:flex-end;
   justify-content:center;
   background:rgba(0,0,0,.55);
-  z-index:40;
+  z-index:50;
 }
 #modal{
   width:100%;
@@ -385,93 +291,64 @@ body{
   font-size:12px;
   opacity:0;
   transition:.2s;
-  z-index:50;
+  z-index:60;
 }
-#toast.show{
-  opacity:1;
-}
-
-/* PETITES ADAPTATIONS */
-@media (max-width:360px){
-  #appName{font-size:16px}
-  #userInfo{font-size:10px}
-}
+#toast.show{opacity:1}
 </style>
 </head>
+
 <body>
 <div id="app">
 
-<!-- OVERLAY SIDEBAR -->
-<div id="sidebarOverlay">
-  <div id="sidebar">
-    <h3>Salons publics</h3>
-    <div id="publicList" class="list"></div>
-
-    <h3>Contacts</h3>
-    <div id="contactsList" class="list"></div>
-
-    <button id="addContactBtn">Ajouter un contact</button>
-    <button id="logoutBtn">Se déconnecter</button>
-  </div>
-</div>
-
-<!-- HEADER -->
-<div id="topBar">
-  <div id="menuBtn">☰</div>
-  <div id="topTitle">
+  <!-- HEADER -->
+  <div id="topBar">
     <span id="appName">ThinkTalk Mobile</span>
-    <span id="currentContext">Aucun salon sélectionné</span>
   </div>
-  <div id="userInfo">Non connecté</div>
-</div>
 
-<!-- MAIN -->
-<div id="main">
-  <div id="messages"></div>
-</div>
+  <!-- MAIN CONTENT -->
+  <div id="main"></div>
 
-<!-- BARRE D’ENTRÉE -->
-<div id="inputBar">
-  <input id="messageInput" placeholder="Écris un message..." disabled>
-  <button id="sendBtn" disabled>Envoyer</button>
-</div>
-
-<!-- BARRE DU BAS -->
-<div id="bottomBar">
-  <div class="navBtn active" data-view="home">
-    <span class="navIcon">🏠</span>
-    <span>Home</span>
+  <!-- INPUT BAR -->
+  <div id="inputBar">
+    <input id="messageInput" placeholder="Écris un message..." disabled>
+    <button id="sendBtn" disabled>Envoyer</button>
   </div>
-  <div class="navBtn" data-view="rooms">
-    <span class="navIcon">#</span>
-    <span>Salons</span>
-  </div>
-  <div class="navBtn" data-view="contacts">
-    <span class="navIcon">👤</span>
-    <span>Contacts</span>
-  </div>
-</div>
 
-<!-- AUTH -->
-<div id="authOverlay">
-  <div id="authBox">
-    <h2>Connexion / Inscription</h2>
-    <input id="authPseudo" placeholder="Pseudo">
-    <input id="authCode" placeholder="Code secret (4 à 8 chiffres)" type="password">
-    <button id="registerBtn">Créer un compte</button>
-    <button id="loginBtn">Se connecter</button>
+  <!-- BOTTOM BAR -->
+  <div id="bottomBar">
+    <div class="navBtn active" data-view="home">
+      <span class="navIcon">🏠</span>
+      <span>Home</span>
+    </div>
+    <div class="navBtn" data-view="rooms">
+      <span class="navIcon">#</span>
+      <span>Salons</span>
+    </div>
+    <div class="navBtn" data-view="contacts">
+      <span class="navIcon">👤</span>
+      <span>Contacts</span>
+    </div>
   </div>
-</div>
 
-<!-- MODAL (appui long) -->
-<div id="modalOverlay">
-  <div id="modal">
-    <div class="modalTitle">Actions sur le message</div>
-    <div class="modalActions" id="modalActions"></div>
+  <!-- MENU SUPERPOSÉ -->
+  <div id="overlayMenu">
+    <div id="menuBox">
+      <div class="menuTitle">Menu</div>
+      <div id="menuContent"></div>
+    </div>
   </div>
-</div>
 
-<div id="toast"></div>
+  <!-- MODAL (appui long) -->
+  <div id="modalOverlay">
+    <div id="modal">
+      <div class="modalTitle">Actions sur le message</div>
+      <div class="modalActions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+</div>
 <script>
 // =========================
 // CONFIG FIREBASE
@@ -492,40 +369,31 @@ const db = firebase.database();
 // =========================
 // DOM
 // =========================
-const sidebarOverlay = document.getElementById("sidebarOverlay");
-const sidebar = document.getElementById("sidebar");
-const menuBtn = document.getElementById("menuBtn");
+const main = document.getElementById("main");
+const appName = document.getElementById("appName");
 
-const publicList = document.getElementById("publicList");
-const contactsList = document.getElementById("contactsList");
-
-const addContactBtn = document.getElementById("addContactBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-
-const messagesDiv = document.getElementById("messages");
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 
-const bottomBar = document.getElementById("bottomBar");
 const navBtns = document.querySelectorAll(".navBtn");
 
-const currentContextEl = document.getElementById("currentContext");
-const userInfo = document.getElementById("userInfo");
-
-const authOverlay = document.getElementById("authOverlay");
-const authPseudoInput = document.getElementById("authPseudo");
-const authCodeInput = document.getElementById("authCode");
-const registerBtn = document.getElementById("registerBtn");
-const loginBtn = document.getElementById("loginBtn");
+const overlayMenu = document.getElementById("overlayMenu");
+const menuBox = document.getElementById("menuBox");
+const menuContent = document.getElementById("menuContent");
 
 const modalOverlay = document.getElementById("modalOverlay");
 const modalActions = document.getElementById("modalActions");
 
 const toast = document.getElementById("toast");
 
+// =========================
+// VARIABLES
+// =========================
 let currentUser = null;
-let currentContext = null;
+let currentContext = null; // {type:"room"/"dm", id:"...", label:"..."}
 let longPressTimer = null;
+
+let unread = {}; // { "general": 3, "Alice": 1, ... }
 
 // =========================
 // UTILS
@@ -546,193 +414,107 @@ function conversationId(a,b){
 }
 
 // =========================
-// SIDEBAR MOBILE
+// AUTH (simple auto-login)
 // =========================
-menuBtn.onclick = () => {
-  sidebarOverlay.style.display = "block";
-  setTimeout(()=>sidebar.classList.add("open"),10);
-};
-
-sidebarOverlay.onclick = (e) => {
-  if(e.target === sidebarOverlay){
-    sidebar.classList.remove("open");
-    setTimeout(()=>sidebarOverlay.style.display="none",200);
-  }
-};
-
-// =========================
-// AUTH
-// =========================
-async function finishLogin(pseudo){
-  currentUser = pseudo;
-  userInfo.textContent = pseudo;
-  authOverlay.style.display = "none";
-
-  messageInput.disabled = false;
-  sendBtn.disabled = false;
-
-  await ensureDefaultPublicRooms();
-  await loadSidebar();
-  selectRoom("general");
-}
-
-async function ensureDefaultPublicRooms(){
-  const defaults = ["general","gaming","music"];
-  for(const name of defaults){
-    const ref = db.ref("publicRooms/"+name);
-    const snap = await ref.get();
-    if(!snap.exists()) await ref.set(true);
-  }
-}
-
-async function register(){
-  const pseudo = authPseudoInput.value.trim();
-  const code = authCodeInput.value.trim();
-  if(!pseudo || !code) return showToast("Pseudo et code obligatoires");
-  if(code.length<4 || code.length>8) return showToast("Code = 4 à 8 chiffres");
-
-  const ref = db.ref("users/"+pseudo);
-  const snap = await ref.get();
-  if(snap.exists()) return showToast("Pseudo déjà utilisé");
-
-  await ref.set({code});
-  localStorage.setItem("ttm_pseudo",pseudo);
-  localStorage.setItem("ttm_code",code);
-  finishLogin(pseudo);
-}
-
-async function login(){
-  const pseudo = authPseudoInput.value.trim();
-  const code = authCodeInput.value.trim();
-  if(!pseudo || !code) return showToast("Pseudo et code obligatoires");
-
-  const ref = db.ref("users/"+pseudo);
-  const snap = await ref.get();
-  if(!snap.exists()) return showToast("Pseudo inconnu");
-
-  if(snap.val().code !== code) return showToast("Code incorrect");
-
-  localStorage.setItem("ttm_pseudo",pseudo);
-  localStorage.setItem("ttm_code",code);
-  finishLogin(pseudo);
-}
-
 async function autoLogin(){
   const p = localStorage.getItem("ttm_pseudo");
   const c = localStorage.getItem("ttm_code");
-  if(!p || !c) return;
-
-  const snap = await db.ref("users/"+p).get();
-  if(!snap.exists()) return;
-  if(snap.val().code !== c) return;
-
-  finishLogin(p);
-}
-
-function logout(){
-  localStorage.removeItem("ttm_pseudo");
-  localStorage.removeItem("ttm_code");
-  location.reload();
+  if(!p || !c){
+    currentUser = "Invité"+Math.floor(Math.random()*9999);
+    localStorage.setItem("ttm_pseudo",currentUser);
+    localStorage.setItem("ttm_code","0000");
+  } else {
+    currentUser = p;
+  }
+  appName.textContent = "ThinkTalk Mobile — " + currentUser;
+  loadHome();
 }
 
 // =========================
-// SIDEBAR LISTS
+// HOME = liste salons + contacts + bulles
 // =========================
-async function loadSidebar(){
-  publicList.innerHTML="";
+async function loadHome(){
+  main.innerHTML = "";
+
+  const container = document.createElement("div");
+
+  // Salons publics
   const roomsSnap = await db.ref("publicRooms").get();
   if(roomsSnap.exists()){
-    Object.keys(roomsSnap.val()).forEach(name=>{
-      const div=document.createElement("div");
-      div.className="item";
-      div.dataset.type="room";
-      div.dataset.id=name;
-      div.textContent="#"+name;
-      div.onclick=()=>selectRoom(name);
-      publicList.appendChild(div);
+    Object.keys(roomsSnap.val()).forEach(room=>{
+      const div = document.createElement("div");
+      div.className = "homeItem";
+      div.textContent = "#"+room;
+
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.textContent = unread[room] || 0;
+      if(badge.textContent === "0") badge.style.display="none";
+
+      div.appendChild(badge);
+
+      div.onclick = ()=>openRoom(room);
+
+      container.appendChild(div);
     });
   }
 
-  contactsList.innerHTML="";
+  // Contacts
   const contactsSnap = await db.ref("contacts/"+currentUser).get();
   if(contactsSnap.exists()){
     Object.keys(contactsSnap.val()).forEach(contact=>{
-      const div=document.createElement("div");
-      div.className="item";
-      div.dataset.type="dm";
-      div.dataset.id=contact;
-      div.textContent=contact;
-      div.onclick=()=>selectDM(contact);
-      contactsList.appendChild(div);
+      const div = document.createElement("div");
+      div.className = "homeItem";
+      div.textContent = contact;
+
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.textContent = unread[contact] || 0;
+      if(badge.textContent === "0") badge.style.display="none";
+
+      div.appendChild(badge);
+
+      div.onclick = ()=>openDM(contact);
+
+      container.appendChild(div);
     });
   }
 
-  updateSidebarActive();
-}
-
-function updateSidebarActive(){
-  document.querySelectorAll(".item").forEach(i=>i.classList.remove("active"));
-  if(!currentContext) return;
-
-  if(currentContext.type==="room"){
-    const el=[...publicList.children].find(e=>e.dataset.id===currentContext.id);
-    if(el) el.classList.add("active");
-  } else {
-    const el=[...contactsList.children].find(e=>e.dataset.id===currentContext.other);
-    if(el) el.classList.add("active");
-  }
+  main.appendChild(container);
 }
 
 // =========================
-// NAVIGATION BAS
+// OUVERTURE SALON / CONTACT
 // =========================
-navBtns.forEach(btn=>{
-  btn.onclick = () => {
-    navBtns.forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-
-    const view = btn.dataset.view;
-
-    if(view==="rooms"){
-      sidebarOverlay.style.display="block";
-      setTimeout(()=>sidebar.classList.add("open"),10);
-    }
-    if(view==="contacts"){
-      sidebarOverlay.style.display="block";
-      setTimeout(()=>sidebar.classList.add("open"),10);
-    }
-  };
-});
-
-// =========================
-// CONTEXT
-// =========================
-function selectRoom(name){
-  currentContext={type:"room",id:name,label:"#"+name};
-  currentContextEl.textContent="#"+name;
-  updateSidebarActive();
-  attachMessagesListener();
+function openRoom(room){
+  currentContext = {type:"room", id:room, label:"#"+room};
+  unread[room] = 0;
+  appName.textContent = currentContext.label;
+  loadMessages();
 }
 
-function selectDM(other){
+function openDM(other){
   const conv = conversationId(currentUser,other);
-  currentContext={type:"dm",id:conv,label:other,other};
-  currentContextEl.textContent=other;
-  updateSidebarActive();
-  attachMessagesListener();
+  currentContext = {type:"dm", id:conv, label:other, other};
+  unread[other] = 0;
+  appName.textContent = currentContext.label;
+  loadMessages();
 }
 
 // =========================
-// MESSAGES
+// CHARGEMENT DES MESSAGES
 // =========================
-function attachMessagesListener(){
-  messagesDiv.innerHTML="";
+function loadMessages(){
+  main.innerHTML = "";
+  const messagesDiv = document.createElement("div");
+  messagesDiv.id = "messages";
+  main.appendChild(messagesDiv);
 
-  let path="";
+  let path = "";
   if(currentContext.type==="room"){
-    path="messages/public/"+currentContext.id;
+    path = "messages/public/"+currentContext.id;
   } else {
-    path="messages/dm/"+currentContext.id;
+    path = "messages/dm/"+currentContext.id;
   }
 
   const ref = db.ref(path);
@@ -756,6 +538,9 @@ function attachMessagesListener(){
 }
 
 function renderMessage(key,msg){
+  const messagesDiv = document.getElementById("messages");
+  if(!messagesDiv) return;
+
   const div=document.createElement("div");
   div.className="msg";
   div.id="msg-"+key;
@@ -785,7 +570,11 @@ function renderMessage(key,msg){
   messagesDiv.scrollTop=messagesDiv.scrollHeight;
 }
 
+// =========================
+// ENVOI MESSAGE
+// =========================
 function getCurrentPath(){
+  if(!currentContext) return null;
   if(currentContext.type==="room"){
     return "messages/public/"+currentContext.id;
   }
@@ -793,10 +582,10 @@ function getCurrentPath(){
 }
 
 function sendMessage(){
-  const text=messageInput.value.trim();
-  if(!text) return;
+  const text = messageInput.value.trim();
+  if(!text || !currentContext) return;
 
-  const path=getCurrentPath();
+  const path = getCurrentPath();
   db.ref(path).push({
     pseudo:currentUser,
     text,
@@ -854,23 +643,75 @@ async function deleteMessage(key){
 }
 
 // =========================
-// CONTACTS
+// MENUS SUPERPOSÉS (salons / contacts)
 // =========================
-function addContact(){
-  const pseudo = prompt("Pseudo du contact :");
-  if(!pseudo) return;
-  if(pseudo===currentUser) return showToast("Impossible de te contacter toi-même");
+async function openRoomsMenu(){
+  overlayMenu.style.display="flex";
+  menuContent.innerHTML="";
 
-  db.ref("users/"+pseudo).get().then(snap=>{
-    if(!snap.exists()) return showToast("Ce pseudo n'existe pas");
-
-    db.ref("contacts/"+currentUser+"/"+pseudo).set(true);
-    db.ref("contacts/"+pseudo+"/"+currentUser).set(true);
-
-    loadSidebar();
-    selectDM(pseudo);
-  });
+  const snap = await db.ref("publicRooms").get();
+  if(snap.exists()){
+    Object.keys(snap.val()).forEach(room=>{
+      const div=document.createElement("div");
+      div.className="menuItem";
+      div.textContent="#"+room;
+      div.onclick=()=>{
+        overlayMenu.style.display="none";
+        openRoom(room);
+      };
+      menuContent.appendChild(div);
+    });
+  }
 }
+
+async function openContactsMenu(){
+  overlayMenu.style.display="flex";
+  menuContent.innerHTML="";
+
+  const snap = await db.ref("contacts/"+currentUser).get();
+  if(snap.exists()){
+    Object.keys(snap.val()).forEach(contact=>{
+      const div=document.createElement("div");
+      div.className="menuItem";
+      div.textContent=contact;
+      div.onclick=()=>{
+        overlayMenu.style.display="none";
+        openDM(contact);
+      };
+      menuContent.appendChild(div);
+    });
+  }
+}
+
+overlayMenu.onclick = (e)=>{
+  if(e.target===overlayMenu){
+    overlayMenu.style.display="none";
+  }
+};
+
+// =========================
+// NAVIGATION BAS
+// =========================
+navBtns.forEach(btn=>{
+  btn.onclick = () => {
+    navBtns.forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const view = btn.dataset.view;
+
+    if(view==="home"){
+      currentContext = null;
+      appName.textContent = "ThinkTalk Mobile — " + currentUser;
+      loadHome();
+    }
+    if(view==="rooms"){
+      openRoomsMenu();
+    }
+    if(view==="contacts"){
+      openContactsMenu();
+    }
+  };
+});
 
 // =========================
 // CLAVIER MOBILE (WhatsApp style)
@@ -879,22 +720,16 @@ if(window.visualViewport){
   visualViewport.addEventListener("resize",()=>{
     const offset = window.innerHeight - visualViewport.height;
     document.getElementById("inputBar").style.bottom = (56 + offset) + "px";
-    messagesDiv.style.paddingBottom = (offset + 20) + "px";
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    main.style.paddingBottom = (offset + 20) + "px";
+    main.scrollTop = main.scrollHeight;
   });
 }
 
 // =========================
 // EVENTS
 // =========================
-sendBtn.onclick=sendMessage;
-messageInput.onkeydown=e=>{if(e.key==="Enter") sendMessage()};
-
-addContactBtn.onclick=addContact;
-logoutBtn.onclick=logout;
-
-registerBtn.onclick=register;
-loginBtn.onclick=login;
+sendBtn.onclick = sendMessage;
+messageInput.onkeydown = e=>{if(e.key==="Enter") sendMessage()};
 
 // =========================
 // INIT
