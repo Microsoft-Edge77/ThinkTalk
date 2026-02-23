@@ -2,334 +2,338 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ThinkTalk — Mobile</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ThinkTalk v5 - Mobile & Secure</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-<!-- 🔥 Firebase (OBLIGATOIRE dans le head) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <style>
-/* --- DESIGN MOBILE --- */
-*{margin:0;padding:0;box-sizing:border-box}
+/* --- BASE & THEME --- */
+*{box-sizing:border-box;margin:0;padding:0}
 body{
-  font-family:system-ui,Arial;
-  background:#000;
-  color:#d0e7ff;
-  display:flex;
-  justify-content:center;
-  height:100vh;
-  overflow:hidden;
+  background:radial-gradient(circle at top,#051933 0,#000 55%,#000 100%);
+  color:#d0e7ff;font-family:system-ui, -apple-system, sans-serif;
+  height:100vh;display:flex;overflow:hidden;
 }
+
 #app{
-  width:100%;
-  max-width:480px;
-  height:100%;
-  background:radial-gradient(circle at top left,rgba(0,153,255,.1),#000);
-  border-left:1px solid #0084ff55;
-  border-right:1px solid #0084ff55;
-  display:flex;
-  flex-direction:column;
-  position:relative;
+  flex:1;display:flex;width:100%;height:100vh;
+  position:relative;overflow:hidden;
 }
 
-/* HEADER */
-header{
-  height:52px;
-  border-bottom:1px solid #0084ff55;
-  display:flex;
-  align-items:center;
-  padding:0 15px;
-  background:rgba(0,0,0,0.8);
-  backdrop-filter:blur(10px);
+/* --- SIDEBAR (RESPONSIVE) --- */
+#sidebar{
+  width:280px;background:rgba(3,10,25,0.95);
+  border-right:1px solid rgba(0,153,255,.4);
+  padding:15px;display:flex;flex-direction:column;gap:12px;
+  backdrop-filter:blur(20px);
+  position:absolute;left:-280px;top:0;bottom:0;z-index:100;
+  transition: transform 0.3s ease;
 }
-#viewTitle{font-size:18px;color:#7fc4ff}
+#sidebar.open { transform: translateX(280px); }
 
-/* MAIN CHAT */
-#main{
-  flex:1;
-  overflow-y:auto;
-  padding:15px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  scrollbar-width:none;
+/* --- MAIN CONTENT --- */
+#main{flex:1;display:flex;flex-direction:column;padding:12px;position:relative;width:100%;}
+
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.header-left{display:flex;align-items:center;gap:10px}
+
+#menuToggle{
+  background:rgba(0,153,255,0.2);border:1px solid #0099ff;
+  color:white;padding:6px 10px;border-radius:6px;cursor:pointer;
 }
 
-/* MESSAGES */
+#appTitle{font-size:18px;font-weight:bold;color:#7fc4ff;text-shadow:0 0 10px rgba(0,153,255,.8)}
+#userInfo{font-size:11px;opacity:0.8;text-align:right}
+
+#currentContext{font-size:13px;color:#bcd9ff;margin-bottom:8px;padding-left:5px;border-left:2px solid #0099ff}
+
+/* --- MESSAGES AREA --- */
+#messages{
+  flex:1;border-radius:12px;border:1px solid rgba(0,153,255,.3);
+  background:rgba(0,0,0,0.4);
+  padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+}
 .msg{
-  padding:8px 12px;
-  border-radius:12px;
-  background:rgba(0,132,255,0.1);
-  border-left:3px solid #0084ff;
-  max-width:85%;
-  animation:fadeIn .2s;
+  background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(0,153,255,.1));
+  border-left:3px solid rgba(0,153,255,.6);
+  padding:8px;border-radius:8px;position:relative;max-width:90%;
 }
-.msg.me{
-  align-self:flex-end;
-  border-left:none;
-  border-right:3px solid #00c8ff;
-  background:rgba(0,204,255,0.05);
-}
-.pseudo{
-  font-size:12px;
-  font-weight:bold;
-  color:#7fc4ff;
-  margin-bottom:4px;
-}
-.text{
-  font-size:14px;
-  white-space:pre-wrap;
-}
+.msg-header{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
+.pseudo{font-weight:bold;color:#7fc4ff}
+.time{opacity:0.6;margin-left:6px}
+.text{font-size:14px;line-height:1.4;word-break:break-word}
 
-/* INPUT BAR */
-#inputBar{
-  padding:10px;
-  background:rgba(0,0,0,0.9);
-  border-top:1px solid #0084ff55;
-  display:flex;
-  gap:8px;
-}
+/* --- INPUT AREA --- */
+#inputRow{margin-top:10px;display:flex;gap:8px;padding-bottom:env(safe-area-inset-bottom)}
 #messageInput{
-  flex:1;
-  background:#111;
-  border:1px solid #0084ff88;
-  border-radius:20px;
-  padding:8px 15px;
-  color:#fff;
+  flex:1;padding:12px 15px;border-radius:25px;border:1px solid rgba(0,153,255,.5);
+  background:rgba(0,0,0,.7);color:#fff;font-size:15px;outline:none;
 }
-button{
-  background:#0084ff;
-  color:#fff;
-  border:none;
-  border-radius:20px;
-  padding:0 15px;
-  cursor:pointer;
-  font-weight:bold;
+#sendBtn{
+  width:50px;height:45px;border-radius:22px;border:none;
+  background:#0099ff;color:white;font-size:18px;cursor:pointer;
 }
 
-/* BOTTOM NAV */
-#bottomBar{
-  height:60px;
-  border-top:1px solid #0084ff55;
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  background:#000;
+/* --- ELEMENTS SIDEBAR --- */
+.list-title{font-size:11px;text-transform:uppercase;color:#6fb6ff;margin:10px 0 5px}
+.list{display:flex;flex-direction:column;gap:5px;overflow-y:auto}
+.item{
+  padding:10px;border-radius:8px;background:rgba(255,255,255,0.05);
+  font-size:14px;cursor:pointer;transition:0.2s;
 }
-.navBtn{
-  text-align:center;
-  font-size:11px;
-  color:#666;
-  cursor:pointer;
-}
-.navBtn.active{
-  color:#0084ff;
-  text-shadow:0 0 10px #0084ff;
-}
+.item:hover, .item.active{background:rgba(0,153,255,0.3);box-shadow:0 0 10px rgba(0,153,255,0.2)}
 
-/* AUTH OVERLAY */
-#authOverlay{
-  position:fixed;
-  inset:0;
-  background:#000;
-  z-index:100;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
+/* --- MODALS & OVERLAYS --- */
+#authOverlay, #modalOverlay{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.9);z-index:1000;padding:20px;
 }
-.authBox{
-  width:100%;
-  max-width:300px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+.box{
+  width:100%;max-width:340px;padding:20px;border-radius:20px;
+  background:#051428;border:1px solid #0099ff;box-shadow:0 0 30px rgba(0,153,255,0.4);
 }
-.authBox input{
-  background:#111;
-  border:1px solid #0084ff88;
-  border-radius:20px;
-  padding:8px 15px;
-  color:#fff;
-}
-.authBox button{
-  padding:10px;
-  border-radius:20px;
-}
+.box input{width:100%;padding:12px;margin:10px 0;border-radius:8px;border:1px solid #333;background:#000;color:#fff}
+.box button{width:100%;padding:12px;margin-top:10px;border-radius:8px;background:#0099ff;color:#fff;border:none;font-weight:bold}
 
-/* ANIM */
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(5px)}
-  to{opacity:1;transform:translateY(0)}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,153,255,0.9);padding:8px 15px;border-radius:20px;font-size:13px;opacity:0;transition:0.3s;pointer-events:none}
+#toast.show{opacity:1}
+
+/* --- DESKTOP ADAPTATION --- */
+@media (min-width: 768px) {
+  #sidebar { position: static; left: 0; transform: none; }
+  #menuToggle { display: none; }
+  #app { margin: 20px auto; max-width: 1200px; height: 90vh; border-radius: 20px; border: 1px solid rgba(0,153,255,0.3); }
 }
 </style>
 </head>
-
 <body>
 
-<!-- 🔐 AUTH -->
+<div id="app">
+  <div id="sidebar">
+    <div class="list-title">Salons Publics</div>
+    <div id="publicList" class="list"></div>
+    <div class="list-title">Messages Privés</div>
+    <div id="contactsList" class="list"></div>
+    <button onclick="addContact()" style="background:none;border:1px dashed #0099ff;color:#0099ff;padding:8px;border-radius:8px;margin-top:10px;cursor:pointer">+ Ajouter contact</button>
+    <button onclick="logout()" style="margin-top:auto;background:#ff4d4d;border:none;padding:10px;border-radius:8px;color:white;cursor:pointer">Déconnexion</button>
+  </div>
+
+  <div id="main">
+    <header>
+      <div class="header-left">
+        <button id="menuToggle">☰</button>
+        <span id="appTitle">ThinkTalk</span>
+      </div>
+      <span id="userInfo">Chargement...</span>
+    </header>
+    <div id="currentContext">Sélectionnez un salon</div>
+    <div id="messages"></div>
+    <div id="inputRow">
+      <input id="messageInput" placeholder="Votre message..." disabled>
+      <button id="sendBtn" disabled>➤</button>
+    </div>
+  </div>
+</div>
+
 <div id="authOverlay">
-  <div class="authBox">
-    <h2 style="text-align:center;color:#7fc4ff">THINKTALK</h2>
+  <div class="box">
+    <h2 style="margin-bottom:15px">Connexion</h2>
     <input id="authPseudo" placeholder="Pseudo">
     <input id="authCode" placeholder="Code secret (4-8 chiffres)" type="password">
-    <button onclick="handleAuth(true)">Créer un compte</button>
-    <button onclick="handleAuth(false)" style="background:none;border:1px solid #0084ff">Se connecter</button>
+    <button onclick="login()">Se connecter</button>
+    <button onclick="register()" style="background:transparent;border:1px solid #0099ff">Créer un compte</button>
   </div>
 </div>
 
-<!-- 📱 APP -->
-<div id="app">
-  <header><h1 id="viewTitle">ThinkTalk</h1></header>
-  <div id="main"></div>
-
-  <div id="inputBar">
-    <input id="messageInput" placeholder="Message...">
-    <button onclick="sendMessage()">Envoyer</button>
-  </div>
-
-  <div id="bottomBar">
-    <div class="navBtn active" onclick="showHome()">🏠<br>Home</div>
-    <div class="navBtn" onclick="showRooms()">💬<br>Salons</div>
-    <div class="navBtn" onclick="showContacts()">👤<br>Contacts</div>
-  </div>
+<div id="modalOverlay" style="display:none">
+  <div id="modal" class="box"></div>
 </div>
 
-<!-- 🔥 SCRIPT MOBILE ENTIER -->
+<div id="toast"></div>
+
 <script>
-// -------------------- CONFIG FIREBASE --------------------
+// CONFIG FIREBASE
 const firebaseConfig = {
-    apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
-    authDomain: "chat-github-6abb5.firebaseapp.com",
-    databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "chat-github-6abb5",
-    storageBucket: "chat-github-6abb5.firebasestorage.app",
-    messagingSenderId: "1038562300660",
-    appId: "1:1038562300660:web:b57b74a7539466e16384a1"
+  apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
+  authDomain: "chat-github-6abb5.firebaseapp.com",
+  databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "chat-github-6abb5",
+  storageBucket: "chat-github-6abb5.firebasestorage.app",
+  messagingSenderId: "1038562300660",
+  appId: "1:1038562300660:web:b57b74a7539466e16384a1"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let currentUser = null;
-let currentUID = null;
-let currentContext = { type: "room", id: "general" };
-let msgRef = null;
+let currentContext = null;
 
-// -------------------- AUTH ANONYME --------------------
-firebase.auth().onAuthStateChanged(user => {
-    if (user) {
-        currentUID = user.uid;
-    } else {
-        firebase.auth().signInAnonymously().catch(console.error);
-    }
-});
+// DOM ELEMENTS
+const sidebar = document.getElementById("sidebar");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const messagesDiv = document.getElementById("messages");
 
-// -------------------- AUTH PSEUDO + CODE --------------------
-async function handleAuth(isNew) {
-    const p = authPseudo.value.trim();
-    const c = authCode.value.trim();
-
-    if (p.length < 3 || c.length < 4) return alert("Pseudo (3+) ou Code (4+) trop court");
-
-    const snap = await db.ref("users/" + p).get();
-
-    if (isNew) {
-        if (snap.exists()) return alert("Pseudo déjà pris");
-        await db.ref("users/" + p).set({ uid: currentUID, code: c });
-    } else {
-        if (!snap.exists() || snap.val().code !== c) return alert("Identifiants incorrects");
-        if (snap.val().uid !== currentUID) await db.ref("users/" + p).update({ uid: currentUID });
-    }
-
-    currentUser = p;
-    localStorage.setItem("tt_user", p);
-    authOverlay.style.display = "none";
-
-    loadChat("room", "general", "#General");
+// UTILS
+function showToast(txt){
+  const t = document.getElementById("toast");
+  t.textContent = txt; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2500);
 }
 
-// Auto-login
-if (localStorage.getItem("tt_user")) {
-    currentUser = localStorage.getItem("tt_user");
-    authOverlay.style.display = "none";
-    loadChat("room", "general", "#General");
+// UI HANDLERS
+document.getElementById("menuToggle").onclick = (e) => {
+  e.stopPropagation();
+  sidebar.classList.toggle("open");
+};
+document.getElementById("main").onclick = () => sidebar.classList.remove("open");
+
+// AUTH LOGIC
+async function login(){
+  const p = document.getElementById("authPseudo").value.trim();
+  const c = document.getElementById("authCode").value.trim();
+  if(!p || !c) return showToast("Champs requis");
+  
+  const snap = await db.ref("users/"+p).get();
+  if(snap.exists() && snap.val().code === c){
+    saveAndLogin(p, c);
+  } else {
+    showToast("Identifiants incorrects");
+  }
 }
 
-// -------------------- CHARGEMENT DES MESSAGES --------------------
-function loadChat(type, id, title) {
-    if (msgRef) msgRef.off();
+async function register(){
+  const p = document.getElementById("authPseudo").value.trim();
+  const c = document.getElementById("authCode").value.trim();
+  if(!/^[0-9]{4,8}$/.test(c)) return showToast("Code: 4 à 8 chiffres");
+  
+  const ref = db.ref("users/"+p);
+  const snap = await ref.get();
+  if(snap.exists()) return showToast("Pseudo déjà pris");
+  
+  await ref.set({code: c});
+  saveAndLogin(p, c);
+}
 
-    currentContext = { type, id };
-    viewTitle.textContent = title;
+function saveAndLogin(p, c){
+  localStorage.setItem("tt_p", p); localStorage.setItem("tt_c", c);
+  currentUser = p;
+  document.getElementById("authOverlay").style.display = "none";
+  document.getElementById("userInfo").textContent = "Connecté : " + p;
+  messageInput.disabled = false; sendBtn.disabled = false;
+  initApp();
+}
 
-    main.innerHTML = "";
+function logout(){
+  localStorage.clear(); location.reload();
+}
 
-    const path = type === "room"
-        ? "messages/public/" + id
-        : "messages/dm/" + id;
+// APP LOGIC
+async function initApp(){
+  // Salons par défaut
+  const rooms = ["general", "gaming", "dev"];
+  for(const r of rooms) await db.ref("publicRooms/"+r).set(true);
+  
+  loadSidebar();
+  selectRoom("general");
+}
 
-    msgRef = db.ref(path).limitToLast(50);
-
-    msgRef.on("child_added", snap => {
-        const msg = snap.val();
-
-        const div = document.createElement("div");
-        div.className = "msg " + (msg.uid === currentUID ? "me" : "");
-
-        const pseudoSpan = document.createElement("span");
-        pseudoSpan.className = "pseudo";
-        pseudoSpan.textContent = msg.pseudo;
-
-        const textDiv = document.createElement("div");
-        textDiv.className = "text";
-        textDiv.textContent = msg.text;
-
-        div.append(pseudoSpan, textDiv);
-        main.appendChild(div);
-        main.scrollTop = main.scrollHeight;
+async function loadSidebar(){
+  // Public
+  const pubSnap = await db.ref("publicRooms").get();
+  const pubList = document.getElementById("publicList");
+  pubList.innerHTML = "";
+  if(pubSnap.exists()){
+    Object.keys(pubSnap.val()).forEach(r => {
+      const d = document.createElement("div");
+      d.className = "item"; d.textContent = "# " + r;
+      d.onclick = () => selectRoom(r);
+      pubList.appendChild(d);
     });
-}
-
-// -------------------- ENVOI MESSAGE --------------------
-function sendMessage() {
-    if (!currentUser) return alert("Connecte-toi d'abord.");
-
-    const text = messageInput.value.trim();
-    if (!text) return;
-    if (text.length > 10000) return alert("Message trop long");
-
-    const path = currentContext.type === "room"
-        ? "messages/public/" + currentContext.id
-        : "messages/dm/" + currentContext.id;
-
-    db.ref(path).push({
-        pseudo: currentUser,
-        uid: currentUID,
-        text,
-        timestamp: Date.now()
+  }
+  // Contacts
+  const privSnap = await db.ref("contacts/"+currentUser).get();
+  const privList = document.getElementById("contactsList");
+  privList.innerHTML = "";
+  if(privSnap.exists()){
+    Object.keys(privSnap.val()).forEach(u => {
+      const d = document.createElement("div");
+      d.className = "item"; d.textContent = u;
+      d.onclick = () => selectDM(u);
+      privList.appendChild(d);
     });
-
-    messageInput.value = "";
+  }
 }
 
-// -------------------- NAVIGATION --------------------
-function showHome() {
-    loadChat("room", "general", "#General");
+function selectRoom(name){
+  currentContext = {type:"public", id: name};
+  document.getElementById("currentContext").textContent = "Salon : #" + name;
+  sidebar.classList.remove("open");
+  listenMessages("messages/public/" + name);
 }
-function showRooms() {
-    const r = prompt("Nom du salon :");
-    if (r) loadChat("room", r.toLowerCase(), "#" + r);
+
+function selectDM(other){
+  const id = [currentUser, other].sort().join("__");
+  currentContext = {type:"dm", id: id, other: other};
+  document.getElementById("currentContext").textContent = "Chat avec " + other;
+  sidebar.classList.remove("open");
+  listenMessages("messages/dm/" + id);
 }
-function showContacts() {
-    const target = prompt("Pseudo du contact :");
-    if (target) {
-        const id = [currentUser, target].sort().join("__");
-        loadChat("dm", id, "@" + target);
-    }
+
+function listenMessages(path){
+  messagesDiv.innerHTML = "";
+  const ref = db.ref(path);
+  ref.off();
+  ref.limitToLast(50).on("child_added", snap => {
+    const m = snap.val();
+    const d = document.createElement("div");
+    d.className = "msg";
+    if(m.pseudo === currentUser) d.style.alignSelf = "flex-end";
+    d.innerHTML = `
+      <div class="msg-header"><span class="pseudo">${m.pseudo}</span><span class="time">${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>
+      <div class="text">${m.text}</div>
+    `;
+    messagesDiv.appendChild(d);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+}
+
+function sendMessage(){
+  const txt = messageInput.value.trim();
+  if(!txt || !currentContext) return;
+  const path = currentContext.type === "public" ? "messages/public/"+currentContext.id : "messages/dm/"+currentContext.id;
+  db.ref(path).push({
+    pseudo: currentUser,
+    text: txt,
+    timestamp: Date.now()
+  });
+  messageInput.value = "";
+}
+
+async function addContact(){
+  const p = prompt("Pseudo du contact :");
+  if(!p || p === currentUser) return;
+  const snap = await db.ref("users/"+p).get();
+  if(!snap.exists()) return showToast("Utilisateur inconnu");
+  await db.ref("contacts/"+currentUser+"/"+p).set(true);
+  await db.ref("contacts/"+p+"/"+currentUser).set(true);
+  loadSidebar();
+}
+
+// EVENTS
+sendBtn.onclick = sendMessage;
+messageInput.onkeydown = e => e.key === "Enter" && sendMessage();
+
+// AUTO LOGIN
+const sp = localStorage.getItem("tt_p"), sc = localStorage.getItem("tt_c");
+if(sp && sc) {
+  db.ref("users/"+sp).get().then(s => {
+    if(s.exists() && s.val().code === sc) saveAndLogin(sp, sc);
+  });
 }
 </script>
-
 </body>
 </html>
