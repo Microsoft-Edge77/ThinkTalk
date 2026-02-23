@@ -2,159 +2,274 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ThinkTalk v5 - Mobile & Secure</title>
+<title>ThinkTalk Mobile - Metro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <style>
-/* --- BASE & THEME --- */
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  background:radial-gradient(circle at top,#051933 0,#000 55%,#000 100%);
-  color:#d0e7ff;font-family:system-ui, -apple-system, sans-serif;
-  height:100vh;display:flex;overflow:hidden;
+/* --- Design System Windows Phone (Metro) --- */
+:root {
+    --accent: #0078d7; /* Bleu Cobalt Windows */
+    --bg: #000000;
+    --fg: #ffffff;
+    --subtle: #888888;
 }
 
-#app{
-  flex:1;display:flex;width:100%;height:100vh;
-  position:relative;overflow:hidden;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Segoe UI", "Open Sans", Helvetica, sans-serif;
+    height: 100vh;
+    overflow: hidden;
 }
 
-/* --- SIDEBAR (RESPONSIVE) --- */
-#sidebar{
-  width:280px;background:rgba(3,10,25,0.95);
-  border-right:1px solid rgba(0,153,255,.4);
-  padding:15px;display:flex;flex-direction:column;gap:12px;
-  backdrop-filter:blur(20px);
-  position:absolute;left:-280px;top:0;bottom:0;z-index:100;
-  transition: transform 0.3s ease;
-}
-#sidebar.open { transform: translateX(280px); }
-
-/* --- MAIN CONTENT --- */
-#main{flex:1;display:flex;flex-direction:column;padding:12px;position:relative;width:100%;}
-
-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.header-left{display:flex;align-items:center;gap:10px}
-
-#menuToggle{
-  background:rgba(0,153,255,0.2);border:1px solid #0099ff;
-  color:white;padding:6px 10px;border-radius:6px;cursor:pointer;
+/* --- Structure Panorama (Coulissement) --- */
+#app {
+    display: flex;
+    width: 300vw;
+    height: 100vh;
+    transition: transform 0.5s cubic-bezier(0.1, 0.7, 0.1, 1);
 }
 
-#appTitle{font-size:18px;font-weight:bold;color:#7fc4ff;text-shadow:0 0 10px rgba(0,153,255,.8)}
-#userInfo{font-size:11px;opacity:0.8;text-align:right}
-
-#currentContext{font-size:13px;color:#bcd9ff;margin-bottom:8px;padding-left:5px;border-left:2px solid #0099ff}
-
-/* --- MESSAGES AREA --- */
-#messages{
-  flex:1;border-radius:12px;border:1px solid rgba(0,153,255,.3);
-  background:rgba(0,0,0,0.4);
-  padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
-}
-.msg{
-  background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(0,153,255,.1));
-  border-left:3px solid rgba(0,153,255,.6);
-  padding:8px;border-radius:8px;position:relative;max-width:90%;
-}
-.msg-header{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
-.pseudo{font-weight:bold;color:#7fc4ff}
-.time{opacity:0.6;margin-left:6px}
-.text{font-size:14px;line-height:1.4;word-break:break-word}
-
-/* --- INPUT AREA --- */
-#inputRow{margin-top:10px;display:flex;gap:8px;padding-bottom:env(safe-area-inset-bottom)}
-#messageInput{
-  flex:1;padding:12px 15px;border-radius:25px;border:1px solid rgba(0,153,255,.5);
-  background:rgba(0,0,0,.7);color:#fff;font-size:15px;outline:none;
-}
-#sendBtn{
-  width:50px;height:45px;border-radius:22px;border:none;
-  background:#0099ff;color:white;font-size:18px;cursor:pointer;
+section {
+    width: 100vw;
+    height: 100vh;
+    padding: 25px 20px 80px 20px; /* Espace pour la barre du bas */
+    display: flex;
+    flex-direction: column;
 }
 
-/* --- ELEMENTS SIDEBAR --- */
-.list-title{font-size:11px;text-transform:uppercase;color:#6fb6ff;margin:10px 0 5px}
-.list{display:flex;flex-direction:column;gap:5px;overflow-y:auto}
-.item{
-  padding:10px;border-radius:8px;background:rgba(255,255,255,0.05);
-  font-size:14px;cursor:pointer;transition:0.2s;
+.panorama-title {
+    font-size: 13px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
 }
-.item:hover, .item.active{background:rgba(0,153,255,0.3);box-shadow:0 0 10px rgba(0,153,255,0.2)}
 
-/* --- MODALS & OVERLAYS --- */
-#authOverlay, #modalOverlay{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,0.9);z-index:1000;padding:20px;
+.section-header {
+    font-size: 52px;
+    font-weight: 100;
+    margin-bottom: 25px;
+    color: var(--accent);
+    line-height: 1;
 }
-.box{
-  width:100%;max-width:340px;padding:20px;border-radius:20px;
-  background:#051428;border:1px solid #0099ff;box-shadow:0 0 30px rgba(0,153,255,0.4);
+
+/* --- Tuiles Accueil --- */
+.tile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
 }
-.box input{width:100%;padding:12px;margin:10px 0;border-radius:8px;border:1px solid #333;background:#000;color:#fff}
-.box button{width:100%;padding:12px;margin-top:10px;border-radius:8px;background:#0099ff;color:#fff;border:none;font-weight:bold}
 
-#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,153,255,0.9);padding:8px 15px;border-radius:20px;font-size:13px;opacity:0;transition:0.3s;pointer-events:none}
-#toast.show{opacity:1}
+.tile {
+    background: var(--accent);
+    aspect-ratio: 1/1;
+    padding: 12px;
+    display: flex;
+    align-items: flex-end;
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: lowercase;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
 
-/* --- DESKTOP ADAPTATION --- */
-@media (min-width: 768px) {
-  #sidebar { position: static; left: 0; transform: none; }
-  #menuToggle { display: none; }
-  #app { margin: 20px auto; max-width: 1200px; height: 90vh; border-radius: 20px; border: 1px solid rgba(0,153,255,0.3); }
+.tile:active { transform: scale(0.92); }
+.tile.double { grid-column: span 2; aspect-ratio: 2/1; }
+.tile.grey { background: #222; }
+
+/* --- Messages Style --- */
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.msg {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.msg .pseudo {
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.msg .text {
+    font-size: 19px;
+    font-weight: 300;
+    line-height: 1.3;
+}
+
+/* --- Barre de saisie flottante --- */
+#inputArea {
+    position: fixed;
+    bottom: 70px;
+    left: 0;
+    width: 100%;
+    padding: 0 15px;
+    display: flex;
+    gap: 10px;
+    background: var(--bg);
+}
+
+#messageInput {
+    flex: 1;
+    background: #fff;
+    border: none;
+    padding: 12px;
+    font-size: 16px;
+    color: #000;
+}
+
+#sendBtn {
+    background: var(--accent);
+    border: none;
+    color: white;
+    width: 50px;
+    font-size: 20px;
+}
+
+/* --- Application Bar --- */
+.app-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    align-items: center;
+    border-top: 1px solid #333;
+    z-index: 90;
+}
+
+.nav-btn {
+    width: 42px;
+    height: 42px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: none;
+    color: #fff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Auth & Overlays --- */
+#authOverlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 1000;
+    padding: 40px 25px;
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-input {
+    background: #fff;
+    border: none;
+    padding: 15px;
+    margin-bottom: 10px;
+    width: 100%;
+    font-size: 16px;
+}
+
+.btn-main {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 15px;
+    font-weight: bold;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.hidden { display: none !important; }
+
+/* --- Listes --- */
+.list-item {
+    padding: 15px 0;
+    border-bottom: 1px solid #222;
+    font-size: 20px;
+    font-weight: 100;
 }
 </style>
 </head>
 <body>
 
-<div id="app">
-  <div id="sidebar">
-    <div class="list-title">Salons Publics</div>
-    <div id="publicList" class="list"></div>
-    <div class="list-title">Messages Privés</div>
-    <div id="contactsList" class="list"></div>
-    <button onclick="addContact()" style="background:none;border:1px dashed #0099ff;color:#0099ff;padding:8px;border-radius:8px;margin-top:10px;cursor:pointer">+ Ajouter contact</button>
-    <button onclick="logout()" style="margin-top:auto;background:#ff4d4d;border:none;padding:10px;border-radius:8px;color:white;cursor:pointer">Déconnexion</button>
-  </div>
-
-  <div id="main">
-    <header>
-      <div class="header-left">
-        <button id="menuToggle">☰</button>
-        <span id="appTitle">ThinkTalk</span>
-      </div>
-      <span id="userInfo">Chargement...</span>
-    </header>
-    <div id="currentContext">Sélectionnez un salon</div>
-    <div id="messages"></div>
-    <div id="inputRow">
-      <input id="messageInput" placeholder="Votre message..." disabled>
-      <button id="sendBtn" disabled>➤</button>
-    </div>
-  </div>
-</div>
-
 <div id="authOverlay">
-  <div class="box">
-    <h2 style="margin-bottom:15px">Connexion</h2>
-    <input id="authPseudo" placeholder="Pseudo">
-    <input id="authCode" placeholder="Code secret (4-8 chiffres)" type="password">
-    <button onclick="login()">Se connecter</button>
-    <button onclick="register()" style="background:transparent;border:1px solid #0099ff">Créer un compte</button>
-  </div>
+    <div class="panorama-title">THINKTALK</div>
+    <h1 class="section-header" style="color:#fff">bienvenue</h1>
+    
+    <input id="authPseudo" class="auth-input" placeholder="pseudo">
+    <input id="authCode" class="auth-input" placeholder="code secret" type="password">
+    
+    <button class="btn-main" onclick="login()">SE CONNECTER</button>
+    <button class="btn-main" style="background:#333" onclick="register()">CRÉER UN COMPTE</button>
 </div>
 
-<div id="modalOverlay" style="display:none">
-  <div id="modal" class="box"></div>
+<div id="app">
+    <section id="sec-home">
+        <div class="panorama-title">THINKTALK</div>
+        <div class="section-header">accueil</div>
+        
+        <div class="tile-grid">
+            <div class="tile" onclick="selectRoom('general')">#general</div>
+            <div class="tile" onclick="selectRoom('gaming')">#gaming</div>
+            <div class="tile" onclick="selectRoom('music')">#music</div>
+            <div class="tile grey" onclick="scrollToSection(2)">contacts</div>
+            <div class="tile double grey" onclick="logout()">déconnexion</div>
+        </div>
+    </section>
+
+    <section id="sec-chat">
+        <div class="panorama-title">THINKTALK</div>
+        <div class="section-header" id="currentContextName">salon</div>
+        
+        <div id="messages">
+            <p style="color:var(--subtle); font-style:italic;">Sélectionnez un salon pour discuter</p>
+        </div>
+
+        <div id="inputArea" class="hidden">
+            <input id="messageInput" placeholder="répondre...">
+            <button id="sendBtn">➔</button>
+        </div>
+    </section>
+
+    <section id="sec-contacts">
+        <div class="panorama-title">THINKTALK</div>
+        <div class="section-header">contacts</div>
+        <div id="contactsList"></div>
+        <button class="btn-main" onclick="addContact()">+ AJOUTER</button>
+    </section>
 </div>
 
-<div id="toast"></div>
+<div class="app-bar">
+    <button class="nav-btn" onclick="scrollToSection(0)">🏠</button>
+    <button class="nav-btn" onclick="scrollToSection(1)">💬</button>
+    <button class="nav-btn" onclick="scrollToSection(2)">👤</button>
+</div>
 
 <script>
-// CONFIG FIREBASE
+// --- CONFIG FIREBASE (Tes clés originales) ---
 const firebaseConfig = {
   apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
   authDomain: "chat-github-6abb5.firebaseapp.com",
@@ -168,172 +283,132 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let currentUser = null;
+let currentUser = localStorage.getItem("thinktalk_pseudo");
 let currentContext = null;
 
-// DOM ELEMENTS
-const sidebar = document.getElementById("sidebar");
-const messageInput = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-const messagesDiv = document.getElementById("messages");
-
-// UTILS
-function showToast(txt){
-  const t = document.getElementById("toast");
-  t.textContent = txt; t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"), 2500);
+// --- NAVIGATION ---
+function scrollToSection(index) {
+    document.getElementById('app').style.transform = `translateX(-${index * 100}vw)`;
 }
 
-// UI HANDLERS
-document.getElementById("menuToggle").onclick = (e) => {
-  e.stopPropagation();
-  sidebar.classList.toggle("open");
+// --- AUTHENTIFICATION ---
+async function login() {
+    const pseudo = document.getElementById("authPseudo").value.trim();
+    const code = document.getElementById("authCode").value.trim();
+    if(!pseudo || !code) return alert("Champs vides !");
+
+    const snap = await db.ref("users/"+pseudo).get();
+    if(snap.exists() && snap.val().code === code) {
+        successAuth(pseudo);
+    } else {
+        alert("Identifiants incorrects");
+    }
+}
+
+async function register() {
+    const pseudo = document.getElementById("authPseudo").value.trim();
+    const code = document.getElementById("authCode").value.trim();
+    if(code.length < 4) return alert("Code trop court");
+
+    const userRef = db.ref("users/"+pseudo);
+    const snap = await userRef.get();
+    if(snap.exists()) return alert("Déjà pris !");
+
+    await userRef.set({code});
+    successAuth(pseudo);
+}
+
+function successAuth(pseudo) {
+    currentUser = pseudo;
+    localStorage.setItem("thinktalk_pseudo", pseudo);
+    document.getElementById("authOverlay").classList.add("hidden");
+    loadContacts();
+}
+
+function logout() {
+    localStorage.clear();
+    location.reload();
+}
+
+// --- LOGIQUE CHAT ---
+function selectRoom(name) {
+    currentContext = {type:"room", id:name};
+    document.getElementById("currentContextName").textContent = name;
+    document.getElementById("inputArea").classList.remove("hidden");
+    scrollToSection(1);
+    listenMessages();
+}
+
+function listenMessages() {
+    const path = currentContext.type === "room" ? `messages/public/${currentContext.id}` : `messages/dm/${currentContext.id}`;
+    const ref = db.ref(path);
+    const container = document.getElementById("messages");
+    
+    ref.off();
+    container.innerHTML = "";
+    
+    ref.limitToLast(25).on("child_added", snap => {
+        const m = snap.val();
+        const div = document.createElement("div");
+        div.className = "msg";
+        div.innerHTML = `<div class="pseudo">${m.pseudo}</div><div class="text">${m.text}</div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    });
+}
+
+document.getElementById("sendBtn").onclick = () => {
+    const input = document.getElementById("messageInput");
+    if(!input.value.trim() || !currentContext) return;
+
+    const path = currentContext.type === "room" ? `messages/public/${currentContext.id}` : `messages/dm/${currentContext.id}`;
+    db.ref(path).push({
+        pseudo: currentUser,
+        text: input.value.trim(),
+        timestamp: Date.now()
+    });
+    input.value = "";
 };
-document.getElementById("main").onclick = () => sidebar.classList.remove("open");
 
-// AUTH LOGIC
-async function login(){
-  const p = document.getElementById("authPseudo").value.trim();
-  const c = document.getElementById("authCode").value.trim();
-  if(!p || !c) return showToast("Champs requis");
-  
-  const snap = await db.ref("users/"+p).get();
-  if(snap.exists() && snap.val().code === c){
-    saveAndLogin(p, c);
-  } else {
-    showToast("Identifiants incorrects");
-  }
+// --- CONTACTS ---
+async function loadContacts() {
+    const list = document.getElementById("contactsList");
+    list.innerHTML = "";
+    const snap = await db.ref("contacts/"+currentUser).get();
+    if(snap.exists()) {
+        Object.keys(snap.val()).forEach(name => {
+            const div = document.createElement("div");
+            div.className = "list-item";
+            div.textContent = name;
+            div.onclick = () => {
+                currentContext = {type:"dm", id:[currentUser, name].sort().join("__")};
+                document.getElementById("currentContextName").textContent = name;
+                document.getElementById("inputArea").classList.remove("hidden");
+                scrollToSection(1);
+                listenMessages();
+            };
+            list.appendChild(div);
+        });
+    }
 }
 
-async function register(){
-  const p = document.getElementById("authPseudo").value.trim();
-  const c = document.getElementById("authCode").value.trim();
-  if(!/^[0-9]{4,8}$/.test(c)) return showToast("Code: 4 à 8 chiffres");
-  
-  const ref = db.ref("users/"+p);
-  const snap = await ref.get();
-  if(snap.exists()) return showToast("Pseudo déjà pris");
-  
-  await ref.set({code: c});
-  saveAndLogin(p, c);
+async function addContact() {
+    const name = prompt("Pseudo du contact :");
+    if(!name || name === currentUser) return;
+    const snap = await db.ref("users/"+name).get();
+    if(!snap.exists()) return alert("Inconnu");
+    
+    await db.ref(`contacts/${currentUser}/${name}`).set(true);
+    await db.ref(`contacts/${name}/${currentUser}`).set(true);
+    loadContacts();
 }
 
-function saveAndLogin(p, c){
-  localStorage.setItem("tt_p", p); localStorage.setItem("tt_c", c);
-  currentUser = p;
-  document.getElementById("authOverlay").style.display = "none";
-  document.getElementById("userInfo").textContent = "Connecté : " + p;
-  messageInput.disabled = false; sendBtn.disabled = false;
-  initApp();
-}
-
-function logout(){
-  localStorage.clear(); location.reload();
-}
-
-// APP LOGIC
-async function initApp(){
-  // Salons par défaut
-  const rooms = ["general", "gaming", "dev"];
-  for(const r of rooms) await db.ref("publicRooms/"+r).set(true);
-  
-  loadSidebar();
-  selectRoom("general");
-}
-
-async function loadSidebar(){
-  // Public
-  const pubSnap = await db.ref("publicRooms").get();
-  const pubList = document.getElementById("publicList");
-  pubList.innerHTML = "";
-  if(pubSnap.exists()){
-    Object.keys(pubSnap.val()).forEach(r => {
-      const d = document.createElement("div");
-      d.className = "item"; d.textContent = "# " + r;
-      d.onclick = () => selectRoom(r);
-      pubList.appendChild(d);
-    });
-  }
-  // Contacts
-  const privSnap = await db.ref("contacts/"+currentUser).get();
-  const privList = document.getElementById("contactsList");
-  privList.innerHTML = "";
-  if(privSnap.exists()){
-    Object.keys(privSnap.val()).forEach(u => {
-      const d = document.createElement("div");
-      d.className = "item"; d.textContent = u;
-      d.onclick = () => selectDM(u);
-      privList.appendChild(d);
-    });
-  }
-}
-
-function selectRoom(name){
-  currentContext = {type:"public", id: name};
-  document.getElementById("currentContext").textContent = "Salon : #" + name;
-  sidebar.classList.remove("open");
-  listenMessages("messages/public/" + name);
-}
-
-function selectDM(other){
-  const id = [currentUser, other].sort().join("__");
-  currentContext = {type:"dm", id: id, other: other};
-  document.getElementById("currentContext").textContent = "Chat avec " + other;
-  sidebar.classList.remove("open");
-  listenMessages("messages/dm/" + id);
-}
-
-function listenMessages(path){
-  messagesDiv.innerHTML = "";
-  const ref = db.ref(path);
-  ref.off();
-  ref.limitToLast(50).on("child_added", snap => {
-    const m = snap.val();
-    const d = document.createElement("div");
-    d.className = "msg";
-    if(m.pseudo === currentUser) d.style.alignSelf = "flex-end";
-    d.innerHTML = `
-      <div class="msg-header"><span class="pseudo">${m.pseudo}</span><span class="time">${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>
-      <div class="text">${m.text}</div>
-    `;
-    messagesDiv.appendChild(d);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  });
-}
-
-function sendMessage(){
-  const txt = messageInput.value.trim();
-  if(!txt || !currentContext) return;
-  const path = currentContext.type === "public" ? "messages/public/"+currentContext.id : "messages/dm/"+currentContext.id;
-  db.ref(path).push({
-    pseudo: currentUser,
-    text: txt,
-    timestamp: Date.now()
-  });
-  messageInput.value = "";
-}
-
-async function addContact(){
-  const p = prompt("Pseudo du contact :");
-  if(!p || p === currentUser) return;
-  const snap = await db.ref("users/"+p).get();
-  if(!snap.exists()) return showToast("Utilisateur inconnu");
-  await db.ref("contacts/"+currentUser+"/"+p).set(true);
-  await db.ref("contacts/"+p+"/"+currentUser).set(true);
-  loadSidebar();
-}
-
-// EVENTS
-sendBtn.onclick = sendMessage;
-messageInput.onkeydown = e => e.key === "Enter" && sendMessage();
-
-// AUTO LOGIN
-const sp = localStorage.getItem("tt_p"), sc = localStorage.getItem("tt_c");
-if(sp && sc) {
-  db.ref("users/"+sp).get().then(s => {
-    if(s.exists() && s.val().code === sc) saveAndLogin(sp, sc);
-  });
+// Auto-login
+if(currentUser) {
+    document.getElementById("authOverlay").classList.add("hidden");
+    loadContacts();
 }
 </script>
+
 </body>
 </html>
