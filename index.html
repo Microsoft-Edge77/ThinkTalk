@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ThinkTalk Mobile v2.4</title>
+<title>ThinkTalk Mobile v2.6</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -57,7 +57,7 @@ html, body {
     width: 100%;
     padding: 8px;
     background: #111;
-    display: none; /* masqué par défaut */
+    display: none;
     align-items: center;
     gap: 8px;
     z-index: 95;
@@ -107,9 +107,44 @@ html, body {
 .msg-pseudo { color: var(--accent); font-size: 12px; font-weight: bold; }
 .msg-text { font-size: 19px; font-weight: 300; word-wrap: break-word; }
 
+/* Menu message */
+#msg-menu {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #222;
+    padding: 10px;
+    border-radius: 10px;
+    display: none;
+    z-index: 999;
+}
+#msg-menu button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    color: #fff;
+    margin-top: 5px;
+    border-radius: 6px;
+}
+#edit-btn { background: #00a2e8; }
+#delete-btn { background: #e81123; }
+
 /* Auth */
 #auth { position: fixed; inset: 0; background: #000; z-index: 1000; padding: 40px 20px; }
 .hidden { display: none !important; }
+
+/* Bouton ajouter contact */
+#add-contact-top {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: none;
+    border: 2px solid #fff;
+    color: #fff;
+    font-weight: bold;
+    text-transform: uppercase;
+}
 </style>
 </head>
 <body>
@@ -150,16 +185,25 @@ html, body {
     <section class="view">
         <div class="page-title">PERSONNES</div>
         <h1 class="section-header">contacts</h1>
+
+        <!-- Bouton ajouter contact bien visible -->
+        <button id="add-contact-top" onclick="addContactPrompt()">+ ajouter un contact</button>
+
         <div id="contacts-list" class="scroll-area"></div>
-        <button onclick="addContactPrompt()" style="width:100%; padding:15px; background:none; border:2px solid #fff; color:#fff;">+ AJOUTER</button>
     </section>
 
 </div>
 
-<!-- BARRE DE CHAT (EN DEHORS DU PANORAMA) -->
+<!-- BARRE DE CHAT -->
 <div id="chat-bar">
     <input id="msgInput" type="text" placeholder="répondre...">
     <button onclick="send()">OK</button>
+</div>
+
+<!-- MENU MESSAGE -->
+<div id="msg-menu">
+    <button id="edit-btn">Modifier</button>
+    <button id="delete-btn">Supprimer</button>
 </div>
 
 <!-- NAVIGATION -->
@@ -185,13 +229,12 @@ const db = firebase.database();
 
 let user = localStorage.getItem('tt_user');
 let currentCtx = { id: 'general', type: 'room' };
+let selectedMessage = null;
 
 /* Navigation */
 function goTo(index) {
     document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
     document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
-
-    // Affichage de la barre de chat uniquement sur l’onglet chat
     document.getElementById('chat-bar').style.display = (index === 1) ? 'flex' : 'none';
 }
 
@@ -199,17 +242,17 @@ function goTo(index) {
 async function handleAuth(type) {
     const p = document.getElementById('pseudo').value.trim();
     const c = document.getElementById('code').value.trim();
-    if(!p || c.length < 4) return alert("Pseudo et code requis");
+    if (!p || c.length < 4) return alert("Pseudo et code requis");
 
     const userRef = db.ref('users/' + p);
     const snap = await userRef.get();
 
-    if(type === 'register') {
-        if(snap.exists()) return alert("Déjà utilisé");
+    if (type === 'register') {
+        if (snap.exists()) return alert("Déjà utilisé");
         await userRef.set({ code: c });
         alert("Compte créé, connectez-vous !");
     } else {
-        if(!snap.exists() || snap.val().code !== c) return alert("Erreur d'identifiants");
+        if (!snap.exists() || snap.val().code !== c) return alert("Erreur d'identifiants");
         user = p;
         localStorage.setItem('tt_user', p);
         document.getElementById('auth').classList.add('hidden');
@@ -227,8 +270,8 @@ function openRoom(id, type) {
 }
 
 function listenMessages() {
-    let path = currentCtx.type === 'room' 
-        ? `messages/public/${currentCtx.id}` 
+    let path = currentCtx.type === 'room'
+        ? `messages/public/${currentCtx.id}`
         : `messages/dm/${getConvId(user, currentCtx.id)}`;
 
     const ref = db.ref(path);
@@ -237,11 +280,34 @@ function listenMessages() {
     ref.off();
     container.innerHTML = "";
 
-    ref.limitToLast(20).on('child_added', snap => {
+    ref.limitToLast(50).on('child_added', snap => {
         const m = snap.val();
         const div = document.createElement('div');
         div.className = 'msg-bubble';
-        div.innerHTML = `<div class="msg-pseudo">${m.pseudo}</div><div class="msg-text">${m.text}</div>`;
+        div.dataset.id = snap.key;
+        div.dataset.author = m.pseudo;
+
+        div.innerHTML = `
+            <div class="msg-pseudo">${m.pseudo}</div>
+            <div class="msg-text">${m.text}</div>
+        `;
+
+        if (m.pseudo === user) {
+            let pressTimer;
+
+            div.addEventListener('touchstart', () => {
+                pressTimer = setTimeout(() => showMessageMenu(div), 500);
+            });
+            div.addEventListener('touchend', () => clearTimeout(pressTimer));
+            div.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+            div.addEventListener('mousedown', () => {
+                pressTimer = setTimeout(() => showMessageMenu(div), 600);
+            });
+            div.addEventListener('mouseup', () => clearTimeout(pressTimer));
+            div.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+        }
+
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     });
@@ -250,15 +316,67 @@ function listenMessages() {
 function send() {
     const input = document.getElementById('msgInput');
     const txt = input.value.trim();
-    if(!txt || !user) return;
+    if (!txt || !user) return;
 
-    let path = currentCtx.type === 'room' 
-        ? `messages/public/${currentCtx.id}` 
+    let path = currentCtx.type === 'room'
+        ? `messages/public/${currentCtx.id}`
         : `messages/dm/${getConvId(user, currentCtx.id)}`;
 
     db.ref(path).push({ pseudo: user, text: txt, timestamp: Date.now() });
     input.value = "";
 }
+
+/* Menu message */
+function showMessageMenu(div) {
+    selectedMessage = div;
+    document.getElementById('msg-menu').style.display = 'block';
+}
+
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('msg-menu');
+    if (menu.style.display === 'none') return;
+    if (!menu.contains(e.target) && !e.target.classList.contains('msg-bubble')) {
+        menu.style.display = 'none';
+        selectedMessage = null;
+    }
+});
+
+document.getElementById('delete-btn').onclick = () => {
+    if (!selectedMessage) return;
+
+    const id = selectedMessage.dataset.id;
+
+    let path = currentCtx.type === 'room'
+        ? `messages/public/${currentCtx.id}/${id}`
+        : `messages/dm/${getConvId(user, currentCtx.id)}/${id}`;
+
+    db.ref(path).remove();
+    selectedMessage.remove();
+
+    document.getElementById('msg-menu').style.display = 'none';
+    selectedMessage = null;
+};
+
+document.getElementById('edit-btn').onclick = () => {
+    if (!selectedMessage) return;
+
+    const id = selectedMessage.dataset.id;
+    const textEl = selectedMessage.querySelector('.msg-text');
+    const oldText = textEl.textContent;
+
+    const newText = prompt("Modifier le message :", oldText);
+    if (!newText || newText === oldText) return;
+
+    let path = currentCtx.type === 'room'
+        ? `messages/public/${currentCtx.id}/${id}`
+        : `messages/dm/${getConvId(user, currentCtx.id)}/${id}`;
+
+    db.ref(path).update({ text: newText });
+    textEl.textContent = newText;
+
+    document.getElementById('msg-menu').style.display = 'none';
+    selectedMessage = null;
+};
 
 /* Contacts */
 async function loadContacts() {
@@ -266,7 +384,7 @@ async function loadContacts() {
     const snap = await db.ref('contacts/' + user).get();
     list.innerHTML = "";
 
-    if(snap.exists()) {
+    if (snap.exists()) {
         Object.keys(snap.val()).forEach(name => {
             const div = document.createElement('div');
             div.className = 'list-item';
@@ -279,27 +397,34 @@ async function loadContacts() {
 
 async function addContactPrompt() {
     const target = prompt("Pseudo :");
-    if(!target || target === user) return;
+    if (!target || target === user) return;
 
     const check = await db.ref('users/' + target).get();
-    if(!check.exists()) return alert("Inconnu");
+    if (!check.exists()) return alert("Inconnu");
 
     await db.ref(`contacts/${user}/${target}`).set(true);
     await db.ref(`contacts/${target}/${user}`).set(true);
     loadContacts();
 }
 
-function getConvId(a, b) { return [a, b].sort().join("__"); }
-function logout() { localStorage.clear(); location.reload(); }
+/* Utils */
+function getConvId(a, b) { 
+    return [a, b].sort().join("__"); 
+}
+
+function logout() { 
+    localStorage.clear(); 
+    location.reload(); 
+}
 
 /* Auto-login */
 window.onload = () => {
-    if(user) { 
+    if (user) { 
         document.getElementById('auth').classList.add('hidden');
         loadContacts();
         openRoom('general', 'room');
     }
-}
+};
 </script>
 </body>
 </html>
