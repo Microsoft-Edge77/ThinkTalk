@@ -1,24 +1,60 @@
-<style>
-/* ... (garder le reste du CSS) ... */
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>ThinkTalk Mobile v2.3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<style>
+:root { --accent: #00a2e8; --bg: #000; --nav-h: 65px; --input-h: 60px; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body, html { 
+    margin: 0; padding: 0; 
+    background: var(--bg); color: #fff; 
+    font-family: 'Segoe UI', sans-serif; 
+    overflow: hidden; height: 100dvh; 
+}
+
+#panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); }
+
+.view { 
+    width: 100vw; height: 100%; 
+    display: flex; flex-direction: column; 
+    padding: 20px 20px 0 20px;
+    position: relative;
+}
+
+.page-title { font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; opacity: 0.7; }
+.section-header { font-size: 50px; font-weight: 100; margin-bottom: 20px; color: var(--accent); }
+
+.scroll-area { 
+    flex: 1; 
+    overflow-y: auto; 
+    padding-bottom: 140px; /* Espace pour pas que les messages soient cachés par l'input */
+}
+
+/* LA BARRE DE CHAT CORRIGÉE */
 .chat-input-container {
     position: fixed;
     bottom: var(--nav-h);
-    left: 0; 
-    width: 100%;
+    left: 0; width: 100%;
     height: var(--input-h);
     background: #111;
     display: flex;
-    align-items: center; /* Aligne verticalement au centre */
-    padding: 0 15px; /* Marge sur les côtés */
+    align-items: center;
+    padding: 0 10px;
     gap: 10px;
     z-index: 95;
     border-top: 1px solid #222;
 }
 
 .chat-input-container input {
-    flex: 1; /* Prend tout l'espace restant */
-    min-width: 0; /* Important pour que le flex-shrink fonctionne sur mobile */
+    flex: 1; 
+    min-width: 0; /* Empêche l'input de déborder */
     height: 40px;
     background: #fff;
     border: none;
@@ -29,19 +65,200 @@
 }
 
 .chat-input-container button {
-    flex-shrink: 0; /* Empêche le bouton de s'écraser */
+    flex-shrink: 0; /* Garde le bouton visible quoi qu'il arrive */
     background: var(--accent);
     border: none;
     color: #fff;
     height: 40px;
     padding: 0 20px;
     font-weight: bold;
-    text-transform: uppercase;
-    font-size: 14px;
 }
-</style>
 
-<div class="chat-input-container" id="chat-bar" style="display:none;">
-    <input id="msgInput" type="text" placeholder="message...">
-    <button onclick="send()">OK</button>
+/* Navigation Basse */
+.nav-bottom { 
+    position: fixed; bottom: 0; left: 0; width: 100%; 
+    height: var(--nav-h); background: #000; 
+    display: flex; justify-content: space-around; align-items: center; 
+    border-top: 1px solid #333; z-index: 100;
+}
+
+.nav-item { font-size: 11px; text-transform: uppercase; color: #666; font-weight: bold; }
+.nav-item.active { color: #fff; border-bottom: 2px solid var(--accent); }
+
+/* UI Metro */
+.tiles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.tile { background: var(--accent); aspect-ratio: 1/1; padding: 15px; display: flex; align-items: flex-end; font-size: 18px; font-weight: 600; }
+.list-item { padding: 15px 10px; border-bottom: 1px solid #222; font-size: 22px; font-weight: 300; }
+.msg-bubble { margin-bottom: 15px; border-left: 3px solid var(--accent); padding-left: 12px; }
+.msg-pseudo { color: var(--accent); font-size: 12px; font-weight: bold; }
+.msg-text { font-size: 19px; font-weight: 300; word-wrap: break-word; }
+
+#auth { position: fixed; inset: 0; background: #000; z-index: 1000; padding: 40px 20px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="auth">
+    <div class="page-title">THINKTALK</div>
+    <h1 class="section-header">identification</h1>
+    <input id="pseudo" type="text" placeholder="pseudo" style="width:100%; padding:15px; margin-bottom:10px; border:none;">
+    <input id="code" type="password" placeholder="code" style="width:100%; padding:15px; margin-bottom:20px; border:none;">
+    <button onclick="handleAuth('login')" style="width:100%; padding:15px; background:var(--accent); color:#fff; border:none; font-weight:bold;">CONNEXION</button>
+    <button onclick="handleAuth('register')" style="width:100%; padding:10px; background:none; color:#888; border:none; margin-top:10px;">créer un compte</button>
 </div>
+
+<div id="panorama">
+    <section class="view">
+        <div class="page-title">THINKTALK</div>
+        <h1 class="section-header">accueil</h1>
+        <div class="tiles-container">
+            <div class="tile" onclick="openRoom('general', 'room')">#general</div>
+            <div class="tile" onclick="openRoom('gaming', 'room')">#gaming</div>
+            <div class="tile" style="background:#333" onclick="goTo(2)">contacts</div>
+            <div class="tile" style="background:#e81123" onclick="logout()">quitter</div>
+        </div>
+    </section>
+
+    <section class="view">
+        <div class="page-title">DISCUTER</div>
+        <h1 class="section-header" id="chat-title">salon</h1>
+        <div id="message-container" class="scroll-area"></div>
+        <div class="chat-input-container" id="chat-bar" style="display:none;">
+            <input id="msgInput" type="text" placeholder="répondre...">
+            <button onclick="send()">OK</button>
+        </div>
+    </section>
+
+    <section class="view">
+        <div class="page-title">PERSONNES</div>
+        <h1 class="section-header">contacts</h1>
+        <div id="contacts-list" class="scroll-area"></div>
+        <button onclick="addContactPrompt()" style="width:100%; padding:15px; background:none; border:2px solid #fff; color:#fff;">+ AJOUTER</button>
+    </section>
+</div>
+
+<nav class="nav-bottom">
+    <div class="nav-item active" onclick="goTo(0)">accueil</div>
+    <div class="nav-item" onclick="goTo(1)">chat</div>
+    <div class="nav-item" onclick="goTo(2)">contacts</div>
+</nav>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
+  authDomain: "chat-github-6abb5.firebaseapp.com",
+  databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "chat-github-6abb5",
+  storageBucket: "chat-github-6abb5.firebasestorage.app",
+  messagingSenderId: "1038562300660",
+  appId: "1:1038562300660:web:b57b74a7539466e16384a1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let user = localStorage.getItem('tt_user');
+let currentCtx = { id: 'general', type: 'room' };
+
+function goTo(index) {
+    document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
+    const navs = document.querySelectorAll('.nav-item');
+    navs.forEach((n, i) => n.classList.toggle('active', i === index));
+    const cb = document.getElementById('chat-bar');
+    if(cb) cb.style.display = (index === 1) ? 'flex' : 'none';
+}
+
+async function handleAuth(type) {
+    const p = document.getElementById('pseudo').value.trim();
+    const c = document.getElementById('code').value.trim();
+    if(!p || c.length < 4) return alert("Pseudo et code requis");
+    const userRef = db.ref('users/' + p);
+    const snap = await userRef.get();
+
+    if(type === 'register') {
+        if(snap.exists()) return alert("Déjà utilisé");
+        await userRef.set({ code: c });
+        alert("Compte créé, connectez-vous !");
+    } else {
+        if(!snap.exists() || snap.val().code !== c) return alert("Erreur d'identifiants");
+        user = p;
+        localStorage.setItem('tt_user', p);
+        document.getElementById('auth').classList.add('hidden');
+        loadContacts();
+        openRoom('general', 'room');
+    }
+}
+
+function openRoom(id, type) {
+    currentCtx = { id: id, type: type };
+    const titleEl = document.getElementById('chat-title');
+    if(titleEl) titleEl.textContent = (type === 'room' ? '#' : '') + id;
+    listenMessages();
+    goTo(1);
+}
+
+function listenMessages() {
+    let path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
+    const ref = db.ref(path);
+    const container = document.getElementById('message-container');
+    ref.off();
+    container.innerHTML = "";
+    ref.limitToLast(20).on('child_added', snap => {
+        const m = snap.val();
+        const div = document.createElement('div');
+        div.className = 'msg-bubble';
+        div.innerHTML = `<div class="msg-pseudo">${m.pseudo}</div><div class="msg-text">${m.text}</div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    });
+}
+
+function send() {
+    const input = document.getElementById('msgInput');
+    const txt = input.value.trim();
+    if(!txt || !user) return;
+    let path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
+    db.ref(path).push({ pseudo: user, text: txt, timestamp: Date.now() });
+    input.value = "";
+}
+
+async function loadContacts() {
+    const list = document.getElementById('contacts-list');
+    if(!list) return;
+    const snap = await db.ref('contacts/' + user).get();
+    list.innerHTML = "";
+    if(snap.exists()) {
+        Object.keys(snap.val()).forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.textContent = name;
+            div.onclick = () => openRoom(name, 'dm');
+            list.appendChild(div);
+        });
+    }
+}
+
+async function addContactPrompt() {
+    const target = prompt("Pseudo :");
+    if(!target || target === user) return;
+    const check = await db.ref('users/' + target).get();
+    if(!check.exists()) return alert("Inconnu");
+    await db.ref(`contacts/${user}/${target}`).set(true);
+    await db.ref(`contacts/${target}/${user}`).set(true);
+    loadContacts();
+}
+
+function getConvId(a, b) { return [a, b].sort().join("__"); }
+function logout() { localStorage.clear(); location.reload(); }
+
+// Au chargement
+window.onload = () => {
+    if(user) { 
+        document.getElementById('auth').classList.add('hidden');
+        loadContacts();
+        openRoom('general', 'room');
+    }
+}
+</script>
+</body>
+</html>
