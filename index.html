@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ThinkTalk Mobile v2.6</title>
+<title>ThinkTalk Mobile v2.7</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -130,6 +130,42 @@ html, body {
 #edit-btn { background: #00a2e8; }
 #delete-btn { background: #e81123; }
 
+/* Popup Metro */
+#popup {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+#popup-box {
+    background: #111;
+    border: 2px solid var(--accent);
+    padding: 20px;
+    width: 80%;
+    max-width: 300px;
+    text-align: center;
+}
+#popup-title {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: var(--accent);
+}
+#popup-msg {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+#popup-ok {
+    background: var(--accent);
+    border: none;
+    padding: 10px 20px;
+    color: #fff;
+    font-weight: bold;
+    width: 100%;
+}
+
 /* Auth */
 #auth { position: fixed; inset: 0; background: #000; z-index: 1000; padding: 40px 20px; }
 .hidden { display: none !important; }
@@ -148,6 +184,15 @@ html, body {
 </style>
 </head>
 <body>
+
+<!-- POPUP METRO -->
+<div id="popup">
+    <div id="popup-box">
+        <div id="popup-title">THINKTALK</div>
+        <div id="popup-msg"></div>
+        <button id="popup-ok">OK</button>
+    </div>
+</div>
 
 <!-- AUTH -->
 <div id="auth">
@@ -186,7 +231,6 @@ html, body {
         <div class="page-title">PERSONNES</div>
         <h1 class="section-header">contacts</h1>
 
-        <!-- Bouton ajouter contact bien visible -->
         <button id="add-contact-top" onclick="addContactPrompt()">+ ajouter un contact</button>
 
         <div id="contacts-list" class="scroll-area"></div>
@@ -231,6 +275,15 @@ let user = localStorage.getItem('tt_user');
 let currentCtx = { id: 'general', type: 'room' };
 let selectedMessage = null;
 
+/* POPUP */
+function showPopup(msg) {
+    document.getElementById("popup-msg").textContent = msg;
+    document.getElementById("popup").style.display = "flex";
+}
+document.getElementById("popup-ok").onclick = () => {
+    document.getElementById("popup").style.display = "none";
+};
+
 /* Navigation */
 function goTo(index) {
     document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
@@ -242,17 +295,17 @@ function goTo(index) {
 async function handleAuth(type) {
     const p = document.getElementById('pseudo').value.trim();
     const c = document.getElementById('code').value.trim();
-    if (!p || c.length < 4) return alert("Pseudo et code requis");
+    if (!p || c.length < 4) return showPopup("Pseudo et code requis");
 
     const userRef = db.ref('users/' + p);
     const snap = await userRef.get();
 
     if (type === 'register') {
-        if (snap.exists()) return alert("Déjà utilisé");
+        if (snap.exists()) return showPopup("Ce pseudo est déjà utilisé");
         await userRef.set({ code: c });
-        alert("Compte créé, connectez-vous !");
+        showPopup("Compte créé, connectez-vous");
     } else {
-        if (!snap.exists() || snap.val().code !== c) return alert("Erreur d'identifiants");
+        if (!snap.exists() || snap.val().code !== c) return showPopup("Identifiants incorrects");
         user = p;
         localStorage.setItem('tt_user', p);
         document.getElementById('auth').classList.add('hidden');
@@ -397,14 +450,15 @@ async function loadContacts() {
 
 async function addContactPrompt() {
     const target = prompt("Pseudo :");
-    if (!target || target === user) return;
+    if (!target || target === user) return showPopup("Pseudo invalide");
 
     const check = await db.ref('users/' + target).get();
-    if (!check.exists()) return alert("Inconnu");
+    if (!check.exists()) return showPopup("Ce pseudo n'existe pas");
 
     await db.ref(`contacts/${user}/${target}`).set(true);
     await db.ref(`contacts/${target}/${user}`).set(true);
     loadContacts();
+    showPopup("Contact ajouté");
 }
 
 /* Utils */
@@ -427,4 +481,4 @@ window.onload = () => {
 };
 </script>
 </body>
-</html>
+</
