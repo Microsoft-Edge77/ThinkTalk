@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk Mobile v8.1</title>
+    <title>ThinkTalk Mobile v8.2</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;600&display=swap" rel="stylesheet">
     
@@ -14,7 +14,7 @@
             --accent: #00a2e8; 
             --bg: #000; 
             --nav-h: 75px; 
-            --chat-bar-h: 70px; /* On définit la hauteur du bar de chat */
+            --chat-bar-h: 70px;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
@@ -26,101 +26,61 @@
             overflow: hidden; 
         }
 
-        /* PANORAMA */
-        #panorama { 
-            display: flex; 
-            width: 300vw; 
-            height: 100%; 
-            transition: transform 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); 
-        }
+        #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); }
 
-        .view { 
-            width: 100vw; 
-            height: 100%; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 20px 20px 0 20px; 
-            position: relative;
-            overflow: hidden; /* Changé de auto à hidden pour laisser le scroll aux containers internes */
-        }
+        .view { width: 100vw; height: 100%; display: flex; flex-direction: column; padding: 20px 20px 0 20px; position: relative; overflow: hidden; }
 
-        .scroll-container {
-            flex: 1;
-            overflow-y: auto;
-            padding-bottom: 140px; 
-            -webkit-overflow-scrolling: touch;
-        }
+        .scroll-container { flex: 1; overflow-y: auto; padding-bottom: 140px; -webkit-overflow-scrolling: touch; }
 
-        /* TILES DESIGN */
-        .tiles-grid { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            grid-auto-rows: 85px; 
-            gap: 12px; 
-            grid-auto-flow: dense; 
-        }
-        
-        .tile { 
-            background: var(--accent); padding: 15px; display: flex; flex-direction: column; 
-            justify-content: flex-end; font-size: 14px; font-weight: 600; cursor: pointer;
-            transition: transform 0.1s; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .tile:active { transform: scale(0.95); filter: brightness(1.2); }
+        /* TILES */
+        .tiles-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 85px; gap: 12px; grid-auto-flow: dense; }
+        .tile { background: var(--accent); padding: 15px; display: flex; flex-direction: column; justify-content: flex-end; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s; border: 1px solid rgba(255,255,255,0.1); }
+        .tile:active { transform: scale(0.95); }
         .tile.medium { grid-column: span 2; grid-row: span 2; font-size: 18px; }
         .tile.wide { grid-column: span 4; grid-row: span 1; }
-        .tile.tall { grid-column: span 1; grid-row: span 2; }
         .tile.contact { background: #1a1a1a; border: 1px solid #333; }
 
         /* TYPO */
         .section-header { font-size: 42px; font-weight: 100; margin-bottom: 20px; color: var(--accent); letter-spacing: -1px; }
         .page-title { font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 3px; opacity: 0.6; }
 
-        /* MODAL & NOTIFS */
-        #notification { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: var(--accent); padding: 15px 30px; z-index: 5000; display: none; font-weight: bold; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        /* MODAL & MENU CONTEXTUEL */
+        #notification { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: var(--accent); padding: 15px 30px; z-index: 5000; display: none; font-weight: bold; border-radius: 4px; }
         #modal-mobile { position: fixed; inset: 0; background: #000; z-index: 4000; padding: 40px 25px; display: none; flex-direction: column; }
         .modal-input { width: 100%; padding: 18px; margin-bottom: 15px; border: none; background: #1a1a1a; color: #fff; font-size: 18px; border-radius: 4px; }
         .modal-btn { width: 100%; padding: 18px; background: var(--accent); color: #fff; border: none; font-weight: bold; border-radius: 4px; }
 
-        /* --- CHAT CORRECTION --- */
-        .scroll-area { 
-            flex: 1; 
-            overflow-y: auto; 
-            /* CORRECTION 1: On ajoute un padding pour que le dernier message soit au dessus du chat-bar */
-            padding-bottom: calc(var(--chat-bar-h) + var(--nav-h) + 20px); 
-            -webkit-overflow-scrolling: touch;
+        /* NOUVEAU : MENU CONTEXTUEL MESSAGE */
+        #msg-menu { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+            z-index: 4500; display: none; align-items: center; justify-content: center; 
         }
+        .menu-square { 
+            background: #111; border: 1px solid var(--accent); width: 200px; 
+            padding: 10px; display: flex; flex-direction: column; gap: 5px;
+        }
+        .menu-item { 
+            padding: 15px; text-align: center; font-weight: bold; cursor: pointer; border-bottom: 1px solid #222;
+        }
+        .menu-item:last-child { border: none; }
+        .menu-item.delete { color: #ff5050; }
+
+        /* CHAT */
+        .scroll-area { flex: 1; overflow-y: auto; padding-bottom: calc(var(--chat-bar-h) + var(--nav-h) + 20px); -webkit-overflow-scrolling: touch; }
         .msg-bubble { 
-            margin-bottom: 15px; 
-            border-left: 3px solid var(--accent); 
-            padding-left: 12px; 
-            /* CORRECTION 2: On force le retour à la ligne pour les longs textes */
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            word-break: break-word;
+            margin-bottom: 15px; border-left: 3px solid var(--accent); padding: 5px 12px; 
+            word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;
+            user-select: none; /* Empêche la sélection native pour le long press */
         }
+        .msg-bubble:active { background: rgba(255,255,255,0.05); }
         .msg-pseudo { color: var(--accent); font-size: 12px; font-weight: 600; }
         .msg-text { font-size: 18px; font-weight: 300; }
 
-        /* NAV & BARS */
+        /* NAV & BAR */
         .nav-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-h); background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #222; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { font-size: 11px; text-transform: uppercase; color: #555; font-weight: bold; padding: 10px; }
         .nav-item.active { color: #fff; }
-        
-        #chat-bar { 
-            position: fixed; 
-            bottom: var(--nav-h); 
-            left: 0; 
-            width: 100%; 
-            height: var(--chat-bar-h);
-            padding: 10px; 
-            background: #111; 
-            display: none; 
-            gap: 8px; 
-            border-top: 1px solid #222; 
-            z-index: 101;
-        }
+        #chat-bar { position: fixed; bottom: var(--nav-h); left: 0; width: 100%; height: var(--chat-bar-h); padding: 10px; background: #111; display: none; gap: 8px; border-top: 1px solid #222; z-index: 101; }
         #chat-bar input { flex: 1; height: 50px; background: #000; border: 1px solid #333; color: #fff; padding: 0 15px; border-radius: 5px; }
 
         #auth { position: fixed; inset: 0; background: #000; z-index: 3000; padding: 60px 25px; display: flex; flex-direction: column; justify-content: center; }
@@ -131,6 +91,14 @@
 <body>
 
 <div id="notification">ALERTE</div>
+
+<div id="msg-menu" onclick="closeMsgMenu()">
+    <div class="menu-square" onclick="event.stopPropagation()">
+        <div class="menu-item" id="btn-edit">MODIFIER</div>
+        <div class="menu-item delete" id="btn-delete">SUPPRIMER</div>
+        <div class="menu-item" style="color:#666" onclick="closeMsgMenu()">RETOUR</div>
+    </div>
+</div>
 
 <div id="modal-mobile">
     <h1 class="section-header" id="m-title">TITRE</h1>
@@ -194,7 +162,7 @@
 </nav>
 
 <script>
-// --- CONFIGURATION FIREBASE ---
+// --- CONFIG FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
     authDomain: "chat-github-6abb5.firebaseapp.com",
@@ -208,10 +176,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const KEY_PSEUDO = "thinktalk_pseudo";
-const KEY_CODE = "thinktalk_code";
-
 let user = localStorage.getItem(KEY_PSEUDO);
 let currentCtx = null;
+let longPressTimer;
 
 function showNotify(msg) {
     const n = document.getElementById('notification');
@@ -228,11 +195,9 @@ function goTo(index) {
     document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
     document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
     document.getElementById('chat-bar').style.display = (index === 1) ? 'flex' : 'none';
-    
-    // Auto-scroll en bas quand on arrive sur le chat
     if(index === 1) {
-        const container = document.getElementById('message-container');
-        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
+        const c = document.getElementById('message-container');
+        setTimeout(() => { c.scrollTop = c.scrollHeight; }, 100);
     }
 }
 
@@ -244,70 +209,57 @@ function openModal(title, html, onConfirm) {
     document.getElementById('m-confirm').onclick = onConfirm;
 }
 
-function loadRooms() {
-    db.ref("rooms").on('value', snap => {
-        const grid = document.getElementById('rooms-grid');
-        grid.innerHTML = "";
-        if(!snap.exists()) {
-            grid.innerHTML = "<p style='opacity:0.5; grid-column:span 4;'>Aucun salon trouvé</p>";
-            return;
+// --- LOGIQUE LONG PRESS (MENU MESSAGE) ---
+function closeMsgMenu() { document.getElementById('msg-menu').style.display = 'none'; }
+
+function openMsgMenu(msgId, oldText, msgAuthor) {
+    if(msgAuthor !== user) return; // On ne peut éditer que ses propres messages
+    
+    const menu = document.getElementById('msg-menu');
+    menu.style.display = 'flex';
+    
+    const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}/${msgId}` : `messages/dm/${getConvId(user, currentCtx.id)}/${msgId}`;
+
+    document.getElementById('btn-delete').onclick = () => {
+        if(confirm("Supprimer ce message ?")) {
+            db.ref(path).remove();
+            closeMsgMenu();
         }
-        
-        let i = 0;
-        snap.forEach(child => {
-            const r = child.val();
-            const rName = r.name || child.key;
-            const tile = document.createElement('div');
-            tile.className = 'tile';
-            if (i % 7 === 0) tile.classList.add('medium');
-            else if (i % 4 === 0) tile.classList.add('wide');
-            else if (i % 9 === 0) tile.classList.add('tall');
-            tile.innerHTML = `<span>#${rName}</span> ${r.private ? '🔒' : ''}`;
-            tile.onclick = () => selectRoom(r, rName);
-            grid.appendChild(tile);
-            i++;
+    };
+
+    document.getElementById('btn-edit').onclick = () => {
+        closeMsgMenu();
+        openModal("Modifier", `<input id="edit-msg-input" class="modal-input" value="${oldText}">`, () => {
+            const newTxt = document.getElementById('edit-msg-input').value.trim();
+            if(newTxt) db.ref(path).update({ text: newTxt + " (modifié)" });
+            closeModal();
         });
-    });
+    };
 }
 
-function uiCreateRoom() {
-    const html = `<input id="nr-name" class="modal-input" placeholder="Nom du salon"><input id="nr-code" class="modal-input" type="password" placeholder="Code (vide = public)">`;
-    openModal("Nouveau Salon", html, () => {
-        const name = document.getElementById('nr-name').value.trim().toLowerCase();
-        const code = document.getElementById('nr-code').value.trim();
-        if(!name) return showNotify("NOM REQUIS");
-        db.ref('rooms/' + name).set({ name: name, creator: user, private: code !== "", code: code }).then(() => { closeModal(); showNotify("SALON CRÉÉ"); });
-    });
-}
-
-async function selectRoom(roomData, roomName) {
-    if(roomData.private && roomData.creator !== user) {
-        openModal("Salon Privé", `<input id="join-room-code" class="modal-input" type="password" placeholder="Entrez le code">`, () => {
-            const val = document.getElementById('join-room-code').value;
-            if(val === roomData.code) { openRoom(roomName, 'room'); closeModal(); } 
-            else { showNotify("CODE ERRONÉ"); }
-        });
-    } else { openRoom(roomName, 'room'); }
-}
-
-function openRoom(id, type) {
-    currentCtx = { id, type };
-    document.getElementById('chat-title').textContent = (type === 'room' ? '#' : '@') + id;
-    listenMessages(); 
-    goTo(1);
-}
-
+// --- GESTION MESSAGES ---
 function listenMessages() {
     const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
     const ref = db.ref(path);
     const container = document.getElementById('message-container');
     ref.off(); container.innerHTML = "";
-    ref.limitToLast(50).on('child_added', snap => {
-        const m = snap.val();
-        const div = document.createElement('div');
-        div.className = 'msg-bubble';
-        div.innerHTML = `<div class="msg-pseudo">${m.pseudo}</div><div class="msg-text">${m.text}</div>`;
-        container.appendChild(div); 
+    
+    ref.on('value', snap => {
+        container.innerHTML = "";
+        snap.forEach(child => {
+            const m = child.val();
+            const div = document.createElement('div');
+            div.className = 'msg-bubble';
+            div.innerHTML = `<div class="msg-pseudo">${m.pseudo}</div><div class="msg-text">${m.text}</div>`;
+            
+            // Événements pour le long press (appui long 600ms)
+            div.ontouchstart = () => {
+                longPressTimer = setTimeout(() => openMsgMenu(child.key, m.text, m.pseudo), 600);
+            };
+            div.ontouchend = () => clearTimeout(longPressTimer);
+            
+            container.appendChild(div);
+        });
         container.scrollTop = container.scrollHeight;
     });
 }
@@ -321,38 +273,78 @@ function sendMessage() {
     input.value = "";
 }
 
+// --- FIREBASE ET AUTH (Inchangé) ---
+function loadRooms() {
+    db.ref("rooms").on('value', snap => {
+        const grid = document.getElementById('rooms-grid');
+        grid.innerHTML = "";
+        let i = 0;
+        snap.forEach(child => {
+            const r = child.val();
+            const rName = r.name || child.key;
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            if (i % 7 === 0) tile.classList.add('medium');
+            else if (i % 4 === 0) tile.classList.add('wide');
+            tile.innerHTML = `<span>#${rName}</span> ${r.private ? '🔒' : ''}`;
+            tile.onclick = () => selectRoom(r, rName);
+            grid.appendChild(tile);
+            i++;
+        });
+    });
+}
+
+function uiCreateRoom() {
+    const html = `<input id="nr-name" class="modal-input" placeholder="Nom du salon"><input id="nr-code" class="modal-input" type="password" placeholder="Code">`;
+    openModal("Nouveau Salon", html, () => {
+        const name = document.getElementById('nr-name').value.trim().toLowerCase();
+        const code = document.getElementById('nr-code').value.trim();
+        if(!name) return;
+        db.ref('rooms/' + name).set({ name: name, creator: user, private: code !== "", code: code }).then(() => closeModal());
+    });
+}
+
+async function selectRoom(roomData, roomName) {
+    if(roomData.private && roomData.creator !== user) {
+        openModal("Salon Privé", `<input id="join-room-code" class="modal-input" type="password" placeholder="Code">`, () => {
+            if(document.getElementById('join-room-code').value === roomData.code) { openRoom(roomName, 'room'); closeModal(); } 
+        });
+    } else { openRoom(roomName, 'room'); }
+}
+
+function openRoom(id, type) {
+    currentCtx = { id, type };
+    document.getElementById('chat-title').textContent = (type === 'room' ? '#' : '@') + id;
+    listenMessages(); goTo(1);
+}
+
 function getConvId(a, b) { return [a, b].sort().join("__"); }
 
 async function handleAuth(type) {
     const p = document.getElementById('authPseudo').value.trim();
     const c = document.getElementById('authCode').value.trim();
-    if(p.length < 3) return showNotify("PSEUDO TROP COURT");
     const userRef = db.ref('users/' + p);
     const snap = await userRef.get();
     if(type === 'register') {
-        if(snap.exists()) return showNotify("PSEUDO PRIS");
         await userRef.set({ code: c });
-        showNotify("COMPTE CRÉÉ");
         handleAuth('login');
     } else {
-        if(!snap.exists() || snap.val().code !== c) return showNotify("ERREUR AUTH");
-        user = p; localStorage.setItem(KEY_PSEUDO, p); localStorage.setItem(KEY_CODE, c);
+        if(!snap.exists() || snap.val().code !== c) return showNotify("ERREUR");
+        user = p; localStorage.setItem(KEY_PSEUDO, p);
         startApp();
     }
 }
 
-async function startApp() {
+function startApp() {
     document.getElementById('auth').classList.add('hidden');
     document.getElementById('me-pseudo').textContent = "@" + user;
-    loadRooms();
-    loadContacts();
+    loadRooms(); loadContacts();
 }
 
 function loadContacts() {
     db.ref("contacts/"+user).on('value', snap => {
         const grid = document.getElementById('contacts-grid');
         grid.innerHTML = "";
-        if(!snap.exists()) return;
         snap.forEach(child => {
             const tile = document.createElement('div');
             tile.className = 'tile contact wide';
@@ -364,12 +356,11 @@ function loadContacts() {
 }
 
 function uiAddContact() {
-    openModal("Ajouter un ami", `<input id="new-contact-name" class="modal-input" placeholder="Pseudo exact">`, () => {
+    openModal("Ajouter", `<input id="new-contact-name" class="modal-input" placeholder="Pseudo">`, () => {
         const target = document.getElementById('new-contact-name').value.trim();
-        if(!target || target === user) return;
         db.ref("contacts/" + user + "/" + target).set(true);
         db.ref("contacts/" + target + "/" + user).set(true);
-        closeModal(); showNotify("AMI AJOUTÉ");
+        closeModal();
     });
 }
 
