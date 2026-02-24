@@ -96,6 +96,12 @@ html, body {
 
 #auth { position: fixed; inset: 0; background: #000; z-index: 3000; padding: 60px 25px; display: flex; flex-direction: column; justify-content: center; }
 .hidden { display: none !important; }
+
+/* PROFILE MENU */
+#profile-menu {
+    position: fixed; top: 0; left: 0; width: 85%; height: 100%; background: #051933; z-index: 2000;
+    transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 50px 30px; border-right: 3px solid var(--accent);
+}
 </style>
 </head>
 <body>
@@ -109,10 +115,9 @@ html, body {
     <button onclick="closeModal()" style="width: 100%; padding: 15px; background: none; color: #666; border: none; margin-top: 10px; font-size: 14px;">ANNULER</button>
 </div>
 
-<div id="profile-menu" style="position: fixed; top: 0; left: 0; width: 85%; height: 100%; background: #051933; z-index: 2000; transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 50px 30px; border-right: 3px solid var(--accent);">
+<div id="profile-menu">
     <h2 id="me-pseudo" class="section-header" style="font-size: 32px; margin-bottom: 40px;">PSEUDO</h2>
     <div onclick="uiChangeCode()" style="padding: 20px 0; font-size: 20px; border-bottom: 1px solid #1a1a1a;">Changer mon code</div>
-    <div onclick="uiDeleteAccount()" style="padding: 20px 0; font-size: 20px; color: #ff8080; border-bottom: 1px solid #1a1a1a;">Supprimer mon compte</div>
     <div onclick="logout()" style="padding: 20px 0; font-size: 20px; color: #ff5050;">Déconnexion</div>
     <button onclick="toggleMenu()" style="margin-top:60px; background:none; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:12px; width: 100%;">RETOUR</button>
 </div>
@@ -121,14 +126,17 @@ html, body {
     <h1 class="section-header" style="font-size: 60px;">ThinkTalk</h1>
     <p style="margin-bottom: 40px; opacity: 0.5;">BIENVENUE DANS LE RÉSEAU</p>
     <input id="authPseudo" class="modal-input" placeholder="pseudo">
-    <input id="authCode" type="password" class="modal-input" placeholder="code">
+    <input id="authCode" type="password" class="modal-input" placeholder="code (4-8 chiffres)">
     <button onclick="handleAuth('login')" class="modal-btn">CONNEXION</button>
     <button onclick="handleAuth('register')" style="background:none; color:#555; border:none; margin-top:20px;">CRÉER UN COMPTE</button>
 </div>
 
 <div id="panorama">
     <section class="view">
-        <div class="header-row"><div style="font-size: 28px; color: var(--accent);" onclick="toggleMenu()">☰</div><div class="page-title">THINKTALK</div></div>
+        <div class="header-row">
+            <div style="font-size: 28px; color: var(--accent);" onclick="toggleMenu()">☰</div>
+            <div class="page-title">THINKTALK</div>
+        </div>
         <h1 class="section-header">accueil</h1>
         <div id="rooms-grid" class="tiles-grid"></div>
         <button onclick="uiCreateRoom()" style="margin-top:25px; width:100%; padding:18px; background:none; border:2px solid #222; color:#aaa; font-weight: bold;">+ NOUVEAU SALON</button>
@@ -160,7 +168,7 @@ html, body {
 </nav>
 
 <script>
-// CONFIG FIREBASE (Inchangée)
+// CONFIG FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
     authDomain: "chat-github-6abb5.firebaseapp.com",
@@ -176,6 +184,7 @@ const db = firebase.database();
 let user = localStorage.getItem('tt_user');
 let currentCtx = null;
 
+// NOTIF
 function showNotify(msg) {
     const n = document.getElementById('notification');
     n.textContent = msg;
@@ -183,11 +192,11 @@ function showNotify(msg) {
     setTimeout(() => { n.style.display = 'none'; }, 2000);
 }
 
+// NAV / UI
 function toggleMenu() {
     const m = document.getElementById('profile-menu');
     m.style.transform = (m.style.transform === 'translateX(0%)') ? 'translateX(-100%)' : 'translateX(0%)';
 }
-
 function goTo(index) {
     document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
     document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
@@ -204,25 +213,70 @@ function openModal(title, html, onConfirm) {
 }
 function closeModal() { modal.style.display = 'none'; }
 
-// ACTIONS
+// CRÉATION SALON
 function uiCreateRoom() {
     openModal("Nouveau Salon", `
         <input id="new-room-name" class="modal-input" placeholder="nom">
-        <div style="margin: 15px 0;"><input type="checkbox" id="new-room-priv" style="transform: scale(1.5);"> <label style="margin-left:10px">Salon privé</label></div>
+        <div style="margin: 15px 0;">
+            <input type="checkbox" id="new-room-priv" style="transform: scale(1.5);">
+            <label style="margin-left:10px">Salon privé</label>
+        </div>
         <input id="new-room-code" class="modal-input" placeholder="code secret" style="display:none">
     `, async () => {
-        const nameRaw = document.getElementById('new-room-name').value.trim();
-        if (!nameRaw) { showNotify("NOM REQUIS"); return; }
-        const name = nameRaw.toLowerCase().replace(/\s+/g, '-');
-        const isPriv = document.getElementById('new-room-priv').checked;
-        const code = document.getElementById('new-room-code').value.trim();
-        await db.ref("rooms/"+name).set({ name, private: isPriv, code, creator: user });
-        closeModal();
-        showNotify("SALON PRÊT");
-        openRoom(name, 'room');
+        try {
+            const nameInput = document.getElementById('new-room-name');
+            const privInput = document.getElementById('new-room-priv');
+            const codeInput = document.getElementById('new-room-code');
+
+            if (!nameInput || !privInput || !codeInput) {
+                showNotify("ERREUR INTERNE");
+                return;
+            }
+
+            const raw = nameInput.value.trim();
+            if (!raw) {
+                showNotify("NOM REQUIS");
+                return;
+            }
+
+            let name = raw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+            if (name.length < 3) {
+                showNotify("NOM TROP COURT");
+                return;
+            }
+
+            const isPriv = privInput.checked;
+            const code = codeInput.value.trim();
+
+            if (isPriv && !code) {
+                showNotify("CODE REQUIS");
+                return;
+            }
+
+            const exists = await db.ref("rooms/" + name).get();
+            if (exists.exists()) {
+                showNotify("SALON EXISTE DÉJÀ");
+                return;
+            }
+
+            await db.ref("rooms/" + name).set({
+                name,
+                private: isPriv,
+                code,
+                creator: user
+            });
+
+            closeModal();
+            showNotify("SALON PRÊT");
+            openRoom(name, 'room');
+        } catch (e) {
+            console.error(e);
+            showNotify("ERREUR CRÉATION");
+        }
     });
 }
 
+// CONTACTS
 function uiAddContact() {
     openModal("Ajouter Ami", `<input id="new-contact-name" class="modal-input" placeholder="pseudo exact">`, async () => {
         const p = document.getElementById('new-contact-name').value.trim();
@@ -237,79 +291,22 @@ function uiAddContact() {
     });
 }
 
-function uiChangeCode() {
-    openModal("Changer mon code", `
-        <input id="old-code" class="modal-input" type="password" placeholder="ancien code">
-        <input id="new-code" class="modal-input" type="password" placeholder="nouveau code (min. 4 chiffres)">
-    `, async () => {
-        const oldC = document.getElementById('old-code').value.trim();
-        const newC = document.getElementById('new-code').value.trim();
-        if (!oldC || !newC || newC.length < 4) {
-            showNotify("CODES INVALIDES");
-            return;
-        }
-
-        const userRef = db.ref('users/' + user);
-        const snap = await userRef.get();
-        if (!snap.exists() || snap.val().code !== oldC) {
-            showNotify("ANCIEN CODE FAUX");
-            return;
-        }
-
-        await userRef.update({ code: newC });
-        showNotify("CODE MIS À JOUR");
-        closeModal();
-    });
-}
-
-function uiDeleteAccount() {
-    openModal("Supprimer mon compte", `
-        <p style="margin-bottom:15px;">Cette action est définitive.</p>
-        <input id="del-code" class="modal-input" type="password" placeholder="confirmez votre code">
-    `, async () => {
-        const c = document.getElementById('del-code').value.trim();
-        if (!c) { showNotify("CODE REQUIS"); return; }
-
-        const userRef = db.ref('users/' + user);
-        const snap = await userRef.get();
-        if (!snap.exists() || snap.val().code !== c) {
-            showNotify("CODE INCORRECT");
-            return;
-        }
-
-        // Supprimer l’utilisateur
-        await userRef.remove();
-
-        // Supprimer ses contacts
-        await db.ref('contacts/' + user).remove();
-
-        // Supprimer les liens chez les autres
-        const allContactsSnap = await db.ref('contacts').get();
-        if (allContactsSnap.exists()) {
-            allContactsSnap.forEach(child => {
-                db.ref(`contacts/${child.key}/${user}`).remove();
-            });
-        }
-
-        showNotify("COMPTE SUPPRIMÉ");
-        localStorage.clear();
-        setTimeout(() => location.reload(), 1500);
-    });
-}
-
+// SÉLECTION SALON
 async function selectRoom(room) {
     if(room.private && room.creator !== user) {
         openModal("Salon Privé", `<input id="join-room-code" class="modal-input" type="password" placeholder="code">`, () => {
-            if(document.getElementById('join-room-code').value === room.code) { openRoom(room.name, 'room'); closeModal(); } 
+            const val = document.getElementById('join-room-code').value;
+            if(val === room.code) { openRoom(room.name, 'room'); closeModal(); } 
             else { showNotify("CODE ERRONÉ"); }
         });
     } else { openRoom(room.name, 'room'); }
 }
 
+// AUTH
 async function handleAuth(type) {
     const p = document.getElementById('authPseudo').value.trim();
     const c = document.getElementById('authCode').value.trim();
-    if(!p || c.length < 4) return showNotify("PSEUDO / CODE REQUIS");
+    if(p.length < 3 || c.length < 4) return showNotify("PSEUDO / CODE INVALIDES");
     const userRef = db.ref('users/' + p);
     const snap = await userRef.get();
     if(type === 'register') {
@@ -326,23 +323,27 @@ async function handleAuth(type) {
 async function startApp() {
     document.getElementById('auth').classList.add('hidden');
     document.getElementById('me-pseudo').textContent = user;
-
-    // Créer le salon "general" s'il n'existe pas
-    const genRef = db.ref('rooms/general');
-    const genSnap = await genRef.get();
-    if (!genSnap.exists()) {
-        await genRef.set({ name: 'general', private: false, code: '', creator: 'system' });
-    }
-
+    await ensureGeneralRoom();
     loadRooms();
     loadContacts();
     openRoom('general', 'room');
 }
 
+// CRÉATION AUTO SALON GENERAL
+async function ensureGeneralRoom() {
+    const ref = db.ref("rooms/general");
+    const snap = await ref.get();
+    if(!snap.exists()) {
+        await ref.set({ name: "general", private: false, code: "", creator: "system" });
+    }
+}
+
+// ROOMS
 function loadRooms() {
     db.ref("rooms").on('value', snap => {
         const grid = document.getElementById('rooms-grid');
         grid.innerHTML = ""; let i = 0;
+        if(!snap.exists()) return;
         snap.forEach(child => {
             const r = child.val();
             const tile = document.createElement('div');
@@ -356,6 +357,7 @@ function loadRooms() {
     });
 }
 
+// CONTACTS LIST
 function loadContacts() {
     db.ref("contacts/"+user).on('value', snap => {
         const grid = document.getElementById('contacts-grid');
@@ -371,6 +373,7 @@ function loadContacts() {
     });
 }
 
+// ROOM / DM
 function openRoom(id, type) {
     currentCtx = { id, type };
     document.getElementById('chat-title').textContent = (type === 'room' ? '#' : '@') + id;
@@ -401,8 +404,34 @@ function sendMessage() {
 }
 
 function getConvId(a, b) { return [a, b].sort().join("__"); }
+
+// CHANGE CODE
+async function uiChangeCode() {
+    openModal("Changer mon code", `
+        <input id="m_oldCode" class="modal-input" type="password" placeholder="ancien code">
+        <input id="m_newCode" class="modal-input" type="password" placeholder="nouveau code (min. 4)">
+    `, async () => {
+        const oldC = document.getElementById("m_oldCode").value.trim();
+        const newC = document.getElementById("m_newCode").value.trim();
+        const snap = await db.ref("users/"+user).get();
+        if(!snap.exists() || snap.val().code !== oldC) {
+            showNotify("ANCIEN CODE FAUX");
+            return;
+        }
+        if(newC.length < 4) {
+            showNotify("CODE TROP COURT");
+            return;
+        }
+        await db.ref("users/"+user).update({ code: newC });
+        showNotify("CODE MIS À JOUR");
+        closeModal();
+    });
+}
+
+// LOGOUT
 function logout() { localStorage.clear(); location.reload(); }
 
+// AUTO-LOGIN
 window.onload = () => { if(user) startApp(); };
 
 // Event listener pour le mode privé
