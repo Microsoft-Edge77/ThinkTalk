@@ -9,31 +9,34 @@
     <style>
         :root { --accent: #00a2e8; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
         body { background: #000; color: #fff; height: 100vh; overflow: hidden; }
 
-        /* --- LOGIN (FIXÉ) --- */
+        /* --- ECRAN DE BIENVENUE --- */
         #login-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; align-items: center; justify-content: center; }
-        .login-box { width: 85%; max-width: 350px; padding: 30px; border: 2px solid var(--accent); background: #000; text-align: center; }
-        .login-box input { width:100%; padding:15px; background:#111; border:1px solid #333; color:white; margin-bottom:10px; outline:none; }
-        .login-box button { width:100%; padding:15px; background:var(--accent); border:none; color:white; font-weight:bold; cursor:pointer; }
+        .login-box { width: 85%; max-width: 380px; padding: 30px; border: 2px solid var(--accent); background: #111; text-align: center; }
+        .login-box h1 { font-weight: 100; margin-bottom: 25px; letter-spacing: 2px; }
+        .login-box input { width:100%; padding:15px; background:#000; border:1px solid #333; color:white; margin-bottom:10px; outline:none; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-main { flex: 1; padding: 15px; background: var(--accent); border: none; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-main:hover { opacity: 0.8; }
+        .btn-sec { background: #333; }
 
-        /* --- MESSAGES --- */
+        /* --- MESSAGES (FIXÉ : TOUS À GAUCHE) --- */
         .msg-list { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .msg { background: rgba(30,30,30,0.9); padding: 12px; border-left: 4px solid var(--accent); align-self: flex-start; max-width: 90%; }
+        .msg { background: rgba(40,40,40,0.8); padding: 12px; border-left: 4px solid var(--accent); align-self: flex-start !important; max-width: 90%; width: fit-content; }
         .msg-author { font-size: 10px; color: var(--accent); font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
 
         /* --- PC LAYOUT --- */
         #pc-layout { display: none; height: 100vh; }
         #sidebar { width: 340px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; padding: 25px; }
-        .pc-scroll-area { overflow-y: auto; flex: 1; margin-bottom: 15px; }
+        .pc-scroll-area { overflow-y: auto; flex: 1; margin-bottom: 20px; }
         .pc-item { padding: 12px; background: #111; margin-bottom: 6px; cursor: pointer; border-left: 3px solid transparent; }
-        .pc-item:hover { background: #1a1a1a; border-left-color: var(--accent); }
+        .pc-item:hover { border-left-color: var(--accent); background: #1a1a1a; }
 
         /* --- MOBILE LAYOUT --- */
         #mobile-layout { display: none; background: #000; height: 100vh; }
-        #panorama { display: flex; width: 300vw; height: 100%; transition: 0.4s ease-out; }
-        .view { width: 100vw; height: 100%; background: #000; flex-shrink: 0; overflow-y: auto; padding-top: 40px; }
+        #panorama { display: flex; width: 300vw; height: 100%; transition: 0.5s cubic-bezier(0.1, 0.9, 0.2, 1); }
+        .view { width: 100vw; height: 100%; background: #000; flex-shrink: 0; overflow-y: auto; padding-top: 50px; }
         .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 20px; }
         .tile { background: var(--accent); padding: 15px; height: 120px; cursor: pointer; display: flex; align-items: flex-end; font-weight: bold; }
         
@@ -42,7 +45,7 @@
         .nav-item.active { color: #fff; }
 
         .input-area { display: flex; background: #000; padding: 15px; gap: 10px; border-top: 1px solid #222; }
-        .input-area input { flex: 1; background: #111; border: 1px solid #333; color: #fff; padding: 10px; outline: none; }
+        .input-area input { flex: 1; background: #111; border: 1px solid #333; color: #fff; padding: 12px; outline: none; }
 
         @media (min-width: 851px) { #pc-layout { display: flex; } }
         @media (max-width: 850px) { #mobile-layout { display: block; } }
@@ -52,10 +55,13 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <h1 style="font-weight:100; margin-bottom:20px;">ThinkTalk</h1>
-            <input type="text" id="log-user" placeholder="Choisis un pseudo">
-            <input type="password" id="log-pass" placeholder="Code d'accès">
-            <button onclick="login()">ACCÉDER</button>
+            <h1>THINKTALK</h1>
+            <input type="text" id="log-user" placeholder="Pseudo">
+            <input type="password" id="log-pass" placeholder="Code de sécurité Firebase">
+            <div class="btn-group">
+                <button class="btn-main btn-sec" onclick="handleAuth('login')">SE CONNECTER</button>
+                <button class="btn-main" onclick="handleAuth('signup')">CRÉER UN COMPTE</button>
+            </div>
         </div>
     </div>
 
@@ -66,13 +72,13 @@
             <div id="pc-rooms" class="pc-scroll-area"></div>
             <p style="color:var(--accent); font-size:11px; margin-bottom:10px;">CONTACTS</p>
             <div id="pc-contacts" class="pc-scroll-area"></div>
-            <button onclick="logout()" style="padding:10px; background:#e51400; color:white; border:none; cursor:pointer;">SORTIR</button>
+            <button onclick="logout()" style="padding:10px; background:#e51400; color:white; border:none; cursor:pointer;">QUITTER</button>
         </aside>
         <main style="flex:1; display:flex; flex-direction:column;">
             <div id="msg-pc" class="msg-list"></div>
             <div class="input-area">
                 <input type="text" id="in-pc" placeholder="Message..." onkeypress="if(event.key==='Enter') send('pc')">
-                <button onclick="send('pc')" style="background:var(--accent); border:none; color:white; padding:0 15px;">ENVOYER</button>
+                <button onclick="send('pc')" style="background:var(--accent); border:none; color:white; padding:0 20px; cursor:pointer;">ENVOYER</button>
             </div>
         </main>
     </div>
@@ -87,7 +93,7 @@
                 <h1 id="mob-title" style="margin:20px; font-weight:100; font-size:20px;">#accueil</h1>
                 <div id="msg-mob" class="msg-list"></div>
                 <div class="input-area" id="mob-input-bar" style="display:none; position:fixed; bottom:70px; width:100%;">
-                    <input type="text" id="in-mob" placeholder="Réponse..." onkeypress="if(event.key==='Enter') send('mob')">
+                    <input type="text" id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
                     <button onclick="send('mob')" style="background:var(--accent); border:none; color:white; padding:0 15px;">OK</button>
                 </div>
             </section>
@@ -112,22 +118,36 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const ACCESS_CODE = "1234"; 
         let user = localStorage.getItem("tt_user");
         let current = { id: 'general', type: 'room' };
 
-        function login() {
+        function handleAuth(mode) {
             const u = document.getElementById('log-user').value.trim();
-            const p = document.getElementById('log-pass').value;
-            if (u && p === ACCESS_CODE) {
-                // Création/Mise à jour du compte instantanée
-                db.ref('users/' + u).set(true).then(() => {
-                    localStorage.setItem("tt_user", u);
-                    location.reload();
+            const p = document.getElementById('log-pass').value.trim();
+
+            if (!u || !p) return alert("Champs vides !");
+
+            db.ref('code').once('value', (s) => {
+                const realCode = String(s.val());
+                if (p !== realCode) return alert("Code Firebase incorrect");
+
+                db.ref('users/' + u).once('value', (snap) => {
+                    const exists = snap.exists();
+
+                    if (mode === 'login') {
+                        if (!exists) return alert("Ce compte n'existe pas. Créez-le d'abord !");
+                        success(u);
+                    } else {
+                        if (exists) return alert("Ce pseudo est déjà pris !");
+                        db.ref('users/' + u).set(true).then(() => success(u));
+                    }
                 });
-            } else {
-                alert("Code incorrect ou pseudo vide.");
-            }
+            });
+        }
+
+        function success(u) {
+            localStorage.setItem("tt_user", u);
+            location.reload();
         }
 
         function setChat(id, type) {
@@ -155,8 +175,7 @@
                     pr.innerHTML += `<div class="pc-item" onclick="setChat('${id}','room')"># ${id}</div>`;
                     mr.innerHTML += `<div class="tile" onclick="setChat('${id}','room');goTo(1)">${id}</div>`;
                 };
-                render('general');
-                s.forEach(r => { if(r.key!=='general') render(r.key); });
+                render('general'); s.forEach(r => { if(r.key!=='general') render(r.key); });
             });
             db.ref("users").on('value', s => {
                 const pc = document.getElementById('pc-contacts'), mc = document.getElementById('mob-contacts');
