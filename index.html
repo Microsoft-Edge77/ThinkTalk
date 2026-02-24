@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk</title>
+    <title>ThinkTalk v8.1</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -22,7 +22,7 @@
             overflow: hidden; 
         }
 
-        /* --- TRANSPARENCE --- */
+        /* --- TRANSPARENCE & BLUR --- */
         #pc-layout, #mobile-layout, #panorama, .view { background: transparent !important; }
         #sidebar, .mobile-header, .nav-bottom, .input-area, #mobile-menu { 
             background: rgba(0, 0, 0, 0.8) !important; 
@@ -30,7 +30,7 @@
         }
 
         /* --- MODALES --- */
-        #metro-modal-overlay, #msg-context-menu { 
+        #metro-modal-overlay { 
             position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
             z-index: 10000; display: none; align-items: center; justify-content: center; padding: 15px;
         }
@@ -52,49 +52,56 @@
             height: 60px; padding: 0 20px; align-items: center; justify-content: space-between; z-index: 900;
         }
 
-        /* --- PANORAMA ET VUES (CORRECTIONS SCROLL) --- */
+        /* --- PANORAMA & VIEWS --- */
         #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); }
         .view { 
             width: 100vw; 
             height: 100%; 
-            padding: 20px 15px 150px 15px; /* Padding bas important pour voir les dernières tuiles */
+            padding: 20px 15px 150px 15px; 
             overflow-y: auto; 
             -webkit-overflow-scrolling: touch;
         }
 
-        /* --- GRILLE SALONS (FIXÉE) --- */
+        /* --- GRILLE TUILES (RETOUR AUX SOURCES) --- */
         .tiles-grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 10px; 
-            /* Pas de height fixe ici, on laisse le contenu s'étendre */
         }
         .tile { 
             background: var(--accent); 
             padding: 15px; 
-            height: 120px; /* Taille d'une tuile */
+            height: 120px; /* Retour à la forme rectangulaire Metro */
             display: flex; 
             align-items: flex-end; 
             font-weight: bold; 
             cursor: pointer; 
+            font-size: 16px;
         }
 
         /* --- MESSAGES --- */
         .msg-list { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 10px 0; }
-        .msg { background: rgba(30,30,30,0.7); padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; }
-        .msg.mine { border-left-color: var(--accent); }
-        .media-content { max-width: 100%; max-height: 250px; margin-top: 5px; display: block; }
+        .msg { background: rgba(255,255,255,0.1); padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; }
+        .msg.mine { border-left-color: var(--accent); align-self: flex-end; }
 
         /* --- BARS --- */
         .input-area { display: flex; align-items: center; gap: 8px; padding: 10px; border-top: 1px solid #222; width: 100%; }
         .input-area input { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
         .btn-action { padding: 12px; border: none; font-weight: bold; cursor: pointer; background: #222; color: #fff; }
+        
         .nav-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-h); border-top: 1px solid #222; display: flex; z-index: 1000; }
         .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #444; }
         .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
 
-        @media (min-width: 851px) { #pc-layout { display: flex; height: 100vh; } }
-        @media (max-width: 850px) { #mobile-layout { display: block; padding-top: 60px; } .mobile-header { display: flex; } }
+        /* --- RESPONSIVE --- */
+        @media (min-width: 851px) { 
+            #pc-layout { display: flex; height: 100vh; } 
+            .nav-bottom, .mobile-header { display: none !important; }
+        }
+        @media (max-width: 850px) { 
+            #mobile-layout { display: block; padding-top: 60px; } 
+            .mobile-header { display: flex; } 
+        }
     </style>
 </head>
 <body>
@@ -109,12 +116,12 @@
     </div>
 
     <div class="mobile-header">
-        <span style="font-weight: 100;">THINKTALK</span>
-        <div style="font-size:30px;" onclick="toggleMenu()">≡</div>
+        <span style="font-weight: 100; letter-spacing: 2px;">THINKTALK</span>
+        <div style="font-size:30px; cursor:pointer;" onclick="toggleMenu()">≡</div>
     </div>
 
     <div id="metro-modal-overlay">
-        <div class="metro-modal" onclick="event.stopPropagation()">
+        <div class="metro-modal">
             <h3 id="modal-title" style="margin-bottom:15px;"></h3>
             <div id="modal-content"></div>
             <button class="metro-btn btn-blue" id="modal-confirm">Valider</button>
@@ -124,10 +131,10 @@
 
     <div id="pc-layout">
         <aside id="sidebar" style="width:280px; padding:20px; display:flex; flex-direction:column; border-right:1px solid #222;">
-            <h1 style="color:var(--accent); margin-bottom:20px;">thinktalk</h1>
+            <h1 style="color:var(--accent); margin-bottom:20px; font-weight:100;">thinktalk</h1>
             <div id="pc-rooms" style="flex:1; overflow-y:auto;"></div>
             <button class="metro-btn btn-gray" onclick="uiChangeBg()">🖼 Fond d'écran</button>
-            <button onclick="logout()" style="color:red; margin-top:10px; background:none; border:none; cursor:pointer;">Déconnexion</button>
+            <button onclick="logout()" style="color:red; margin-top:10px; background:none; border:none; cursor:pointer; text-align:left; font-weight:bold;">DÉCONNEXION</button>
         </aside>
         <main style="flex:1; display:flex; flex-direction:column;">
             <div id="msg-pc" style="flex:1; overflow-y:auto; padding:20px;"></div>
@@ -141,15 +148,15 @@
     <div id="mobile-layout">
         <div id="panorama">
             <section class="view">
-                <h1 style="font-size:38px; color:var(--accent); margin-bottom:15px;">salons</h1>
+                <h1 style="font-size:38px; color:var(--accent); margin-bottom:15px; font-weight:100;">salons</h1>
                 <div id="mob-rooms" class="tiles-grid"></div>
             </section>
             <section class="view">
-                <h1 id="chat-title-mob" style="font-size:24px; margin-bottom:15px;">Chat</h1>
+                <h1 id="chat-title-mob" style="font-size:24px; margin-bottom:15px; font-weight:100;">Chat</h1>
                 <div id="msg-mob" class="msg-list"></div>
             </section>
             <section class="view">
-                <h1 style="font-size:38px; color:var(--accent); margin-bottom:15px;">amis</h1>
+                <h1 style="font-size:38px; color:var(--accent); margin-bottom:15px; font-weight:100;">amis</h1>
                 <div id="mob-contacts" class="tiles-grid"></div>
             </section>
         </div>
@@ -180,8 +187,9 @@
             const savedBg = localStorage.getItem("thinktalk_bg");
             if(savedBg) document.body.style.backgroundImage = `url('${savedBg}')`;
             if(!user) {
-                openModal("Pseudo", `<input id="ap" class="metro-input">`, () => {
+                openModal("Pseudo", `<input id="ap" class="metro-input" placeholder="Votre nom">`, () => {
                     user = document.getElementById('ap').value;
+                    if(!user) return;
                     localStorage.setItem("thinktalk_pseudo", user);
                     location.reload();
                 });
@@ -192,8 +200,9 @@
             db.ref("rooms").on('value', s => {
                 const pc = document.getElementById('pc-rooms'); const mb = document.getElementById('mob-rooms');
                 pc.innerHTML = ""; mb.innerHTML = "";
+                if(!s.exists()) db.ref('rooms/general').set({owner:'system'});
                 s.forEach(r => {
-                    pc.innerHTML += `<div style="padding:10px; background:#111; margin-bottom:5px; cursor:pointer;" onclick="setChat('${r.key}','room')">#${r.key}</div>`;
+                    pc.innerHTML += `<div style="padding:10px; background:rgba(255,255,255,0.05); margin-bottom:5px; cursor:pointer;" onclick="setChat('${r.key}','room')">#${r.key}</div>`;
                     mb.innerHTML += `<div class="tile" onclick="setChat('${r.key}','room'); goTo(1);">#${r.key}</div>`;
                 });
             });
@@ -202,6 +211,7 @@
         function setChat(id, type) {
             current = { id, type };
             const path = `messages/public/${id}`;
+            document.getElementById('chat-title-mob').textContent = "#" + id;
             db.ref(path).off();
             db.ref(path).limitToLast(30).on('value', snap => {
                 const pc = document.getElementById('msg-pc'); const mob = document.getElementById('msg-mob');
@@ -210,12 +220,13 @@
                     const m = c.val();
                     const div = document.createElement('div');
                     div.className = 'msg' + (m.pseudo === user ? ' mine' : '');
-                    div.innerHTML = `<small style="color:var(--accent)">${m.pseudo}</small><div>${m.text}</div>`;
+                    div.innerHTML = `<small style="color:var(--accent); font-weight:bold;">${m.pseudo}</small><div>${m.text}</div>`;
                     mob.appendChild(div);
                     pc.appendChild(div.cloneNode(true));
                 });
                 pc.scrollTop = pc.scrollHeight;
-                mob.parentElement.scrollTop = mob.parentElement.scrollHeight;
+                const view = mob.closest('.view');
+                if(view) view.scrollTo({ top: view.scrollHeight, behavior: 'smooth' });
             });
         }
 
@@ -228,7 +239,7 @@
         function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('open'); }
         function uiChangeBg() { document.getElementById('bgInput').click(); }
         function handleBgUpload(input) {
-            const f = input.files[0];
+            const f = input.files[0]; if(!f) return;
             const r = new FileReader();
             r.onload = (e) => {
                 document.body.style.backgroundImage = `url('${e.target.result}')`;
