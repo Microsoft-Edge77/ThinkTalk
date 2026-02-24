@@ -71,7 +71,6 @@
 
 <div id="profile-menu">
     <h2 id="me-pseudo" class="section-header">PSEUDO</h2>
-    <div onclick="uiChangeCode()" style="padding: 20px 0; border-bottom: 1px solid #1a1a1a;">Changer mon code</div>
     <div onclick="logout()" style="padding: 20px 0; color: #ff5050;">Déconnexion</div>
     <button onclick="toggleMenu()" style="margin-top:40px; width:100%; padding:10px; background:none; border:1px solid #333; color:#fff;">RETOUR</button>
 </div>
@@ -133,7 +132,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// HARMONISATION AVEC LE SITE PC
 const KEY_PSEUDO = "thinktalk_pseudo";
 const KEY_CODE = "thinktalk_code";
 
@@ -165,20 +163,43 @@ function openModal(title, html, onConfirm) {
     document.getElementById('m-confirm').onclick = onConfirm;
 }
 
-// LECTURE DES SALONS (CORRIGÉE)
+// CRÉATION DE SALON (AJOUTÉE ET FIXÉE SUR 'rooms')
+function uiCreateRoom() {
+    const html = `
+        <input id="nr-name" class="modal-input" placeholder="Nom du salon">
+        <input id="nr-code" class="modal-input" type="password" placeholder="Code (laisser vide pour public)">
+    `;
+    openModal("Nouveau Salon", html, () => {
+        const name = document.getElementById('nr-name').value.trim().toLowerCase();
+        const code = document.getElementById('nr-code').value.trim();
+        if(!name) return showNotify("NOM REQUIS");
+        
+        db.ref('rooms/' + name).set({
+            name: name,
+            creator: user,
+            private: code !== "",
+            code: code
+        }).then(() => {
+            closeModal();
+            showNotify("SALON CRÉÉ");
+        });
+    });
+}
+
+// LECTURE DES SALONS (SUR 'rooms')
 function loadRooms() {
     db.ref("rooms").on('value', snap => {
         const grid = document.getElementById('rooms-grid');
         grid.innerHTML = "";
         if(!snap.exists()) {
-            grid.innerHTML = "<p style='opacity:0.5'>Aucun salon trouvé</p>";
+            grid.innerHTML = "<p style='opacity:0.5; grid-column:span 4;'>Aucun salon trouvé</p>";
             return;
         }
         
         let i = 0;
         snap.forEach(child => {
             const r = child.val();
-            const rName = r.name || child.key; // Sécurité si r.name est absent
+            const rName = r.name || child.key;
             const tile = document.createElement('div');
             tile.className = 'tile';
             if(i % 5 === 0) tile.classList.add('medium');
@@ -233,7 +254,6 @@ function sendMessage() {
 
 function getConvId(a, b) { return [a, b].sort().join("__"); }
 
-// AUTH & APP START
 async function handleAuth(type) {
     const p = document.getElementById('authPseudo').value.trim();
     const c = document.getElementById('authCode').value.trim();
@@ -276,6 +296,17 @@ function loadContacts() {
             tile.onclick = () => openRoom(child.key, 'dm');
             grid.appendChild(tile);
         });
+    });
+}
+
+function uiAddContact() {
+    openModal("Ajouter un ami", `<input id="new-contact-name" class="modal-input" placeholder="pseudo exact">`, () => {
+        const target = document.getElementById('new-contact-name').value.trim();
+        if(!target || target === user) return;
+        db.ref("contacts/" + user + "/" + target).set(true);
+        db.ref("contacts/" + target + "/" + user).set(true);
+        closeModal();
+        showNotify("AMI AJOUTÉ");
     });
 }
 
