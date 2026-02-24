@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ThinkTalk Mobile v3.1</title>
+<title>ThinkTalk Mobile v8.1</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -40,7 +40,7 @@ html, body {
 .page-title { font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; opacity: 0.7; }
 .section-header { font-size: 45px; font-weight: 100; margin-bottom: 20px; color: var(--accent); }
 
-/* GRILLE DE TUILES ASYMÉTRIQUE */
+/* GRILLE DE TUILES */
 .tiles-grid { 
     display: grid; 
     grid-template-columns: repeat(4, 1fr); 
@@ -195,6 +195,14 @@ const db = firebase.database();
 let user = localStorage.getItem('tt_user');
 let currentCtx = null;
 
+// GESTIONNAIRE D'ÉVÉNEMENTS GLOBAL (Correction bug visuel salon privé)
+document.addEventListener('change', (e) => {
+    if(e.target.id === 'new-room-priv') {
+        const c = document.getElementById('new-room-code');
+        if(c) c.style.display = e.target.checked ? 'block' : 'none';
+    }
+});
+
 // UI UTILS
 function toggleMenu() { document.getElementById('profile-menu').classList.toggle('open'); }
 function goTo(index) {
@@ -230,82 +238,43 @@ function uiCreateRoom() {
         const name = document.getElementById('new-room-name').value.trim().toLowerCase().replace(/\s+/g, '-');
         const isPriv = document.getElementById('new-room-priv').checked;
         const code = document.getElementById('new-room-code').value.trim();
+        
         if(!name) return;
+        if(isPriv && !code) return alert("Code requis pour salon privé");
+
         await db.ref("rooms/"+name).set({ name, private: isPriv, code, creator: user });
         closeModal();
-    });
-
-    document.body.addEventListener('change', (e) => {
-        if(e.target.id === 'new-room-priv') {
-            document.getElementById('new-room-code').style.display = e.target.checked ? 'block' : 'none';
-        }
+        openRoom(name, 'room'); // Redirection auto
     });
 }
 
 function uiAddContact() {
-    openModal("Ajouter un ami", `
-        <input id="new-contact-name" class="modal-input" placeholder="pseudo exact">
-    `, async () => {
+    openModal("Ajouter un ami", `<input id="new-contact-name" class="modal-input" placeholder="pseudo exact">`, async () => {
         const p = document.getElementById('new-contact-name').value.trim();
-        if(!p || p === user) return closeModal();
+        if(!p) return;
+        if(p === user) return alert("C'est vous !");
+        
         const check = await db.ref("users/"+p).get();
         if(!check.exists()) return alert("Utilisateur inconnu");
+        
         await db.ref(`contacts/${user}/${p}`).set(true);
         await db.ref(`contacts/${p}/${user}`).set(true);
+        alert("Ami ajouté !");
         closeModal();
     });
 }
 
 async function selectRoom(room) {
     if(room.private && room.creator !== user) {
-        openModal("Salon Privé", `
-            <input id="join-room-code" class="modal-input" type="password" placeholder="code d'accès">
-        `, () => {
+        openModal("Salon Privé", `<input id="join-room-code" class="modal-input" type="password" placeholder="code d'accès">`, () => {
             const pass = document.getElementById('join-room-code').value;
-            if(pass === room.code) {
-                openRoom(room.name, 'room');
-                closeModal();
-            } else { alert("Code erroné"); }
+            if(pass === room.code) { openRoom(room.name, 'room'); closeModal(); } 
+            else { alert("Code erroné"); }
         });
     } else { openRoom(room.name, 'room'); }
 }
 
-function uiChangeCode() {
-    openModal("Changer Code", `
-        <input id="new-user-code" class="modal-input" type="password" placeholder="nouveau code (4+)">
-    `, async () => {
-        const n = document.getElementById('new-user-code').value;
-        if(n && n.length >= 4) {
-            await db.ref(`users/${user}`).update({code: n});
-            closeModal();
-            toggleMenu();
-        }
-    });
-}
-
-function uiDeleteAccount() {
-    openModal("Supprimer ?", `
-        <p style="color:red; margin-bottom:10px">Cette action est définitive.</p>
-        <input id="del-confirm" class="modal-input" placeholder="tapez votre pseudo">
-    `, async () => {
-        if(document.getElementById('del-confirm').value === user) {
-            await db.ref(`users/${user}`).remove();
-            logout();
-        }
-    });
-}
-
 // LOGIQUE CORE
-async function ensureDefaultRooms() {
-    const snap = await db.ref("rooms/general").get();
-    if(!snap.exists()) {
-        const defaults = ["general", "gaming", "music"];
-        for(let r of defaults) {
-            await db.ref("rooms/"+r).set({ name: r, private: false, code: "", creator: "system" });
-        }
-    }
-}
-
 async function handleAuth(type) {
     const p = document.getElementById('authPseudo').value.trim();
     const c = document.getElementById('authCode').value.trim();
@@ -318,6 +287,7 @@ async function handleAuth(type) {
         if(snap.exists()) return alert("Pseudo déjà pris");
         await userRef.set({ code: c });
         alert("Compte créé !");
+        handleAuth('login');
     } else {
         if(!snap.exists() || snap.val().code !== c) return alert("Erreur d'identification");
         user = p;
@@ -329,7 +299,6 @@ async function handleAuth(type) {
 async function startApp() {
     document.getElementById('auth').classList.add('hidden');
     document.getElementById('me-pseudo').textContent = user;
-    await ensureDefaultRooms();
     loadRooms();
     loadContacts();
     openRoom('general', 'room');
@@ -354,6 +323,21 @@ function loadRooms() {
     });
 }
 
+function loadContacts() {
+    const grid = document.getElementById('contacts-grid');
+    db.ref("contacts/"+user).on('value', snap => {
+        grid.innerHTML = "";
+        if(!snap.exists()) return;
+        snap.forEach(child => {
+            const tile = document.createElement('div');
+            tile.className = 'tile contact wide';
+            tile.innerHTML = `<span>@${child.key}</span>`;
+            tile.onclick = () => openRoom(child.key, 'dm');
+            grid.appendChild(tile);
+        });
+    });
+}
+
 function openRoom(id, type) {
     currentCtx = { id, type };
     document.getElementById('chat-title').textContent = (type === 'room' ? '#' : '@') + id;
@@ -371,44 +355,46 @@ function listenMessages() {
         const m = snap.val();
         const div = document.createElement('div');
         div.className = 'msg-bubble';
-        div.id = "msg-" + snap.key;
         div.innerHTML = `<div class="msg-pseudo">${m.pseudo}</div><div class="msg-text">${m.text}</div>`;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
-    });
-    ref.on('child_removed', snap => {
-        const el = document.getElementById("msg-"+snap.key);
-        if(el) el.remove();
     });
 }
 
 function sendMessage() {
     const input = document.getElementById('msgInput');
     const txt = input.value.trim();
-    if(!txt) return;
+    if(!txt || !currentCtx) return;
     const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
     db.ref(path).push({ pseudo: user, text: txt, timestamp: Date.now() });
     input.value = "";
-}
-
-function loadContacts() {
-    const grid = document.getElementById('contacts-grid');
-    db.ref("contacts/"+user).on('value', snap => {
-        grid.innerHTML = "";
-        snap.forEach(child => {
-            const tile = document.createElement('div');
-            tile.className = 'tile contact wide';
-            tile.innerHTML = `<span>@${child.key}</span>`;
-            tile.onclick = () => openRoom(child.key, 'dm');
-            grid.appendChild(tile);
-        });
-    });
 }
 
 function getConvId(a, b) { return [a, b].sort().join("__"); }
 function logout() { localStorage.clear(); location.reload(); }
 
 window.onload = () => { if(user) startApp(); };
+
+// Autres fonctions profil
+function uiChangeCode() {
+    openModal("Nouveau Code", `<input id="new-user-code" class="modal-input" type="password">`, async () => {
+        const n = document.getElementById('new-user-code').value;
+        if(n.length >= 4) {
+            await db.ref(`users/${user}`).update({code: n});
+            closeModal();
+            toggleMenu();
+        }
+    });
+}
+
+function uiDeleteAccount() {
+    openModal("Supprimer ?", `<input id="del-confirm" class="modal-input" placeholder="votre pseudo">`, async () => {
+        if(document.getElementById('del-confirm').value === user) {
+            await db.ref(`users/${user}`).remove();
+            logout();
+        }
+    });
+}
 </script>
 </body>
 </html>
