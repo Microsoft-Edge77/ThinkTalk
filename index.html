@@ -4,103 +4,61 @@
     <meta charset="UTF-8">
     <title>ThinkTalk</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
     <style>
         :root { --accent: #00a2e8; --bg: #000; --nav-h: 70px; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        
-        body { 
-            background: var(--bg); 
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: #fff; 
-            height: 100vh; 
-            overflow: hidden; 
-            transition: background 0.5s ease;
-        }
-
+        body { background: var(--bg); background-size: cover; background-position: center; background-attachment: fixed; color: #fff; height: 100vh; overflow: hidden; transition: background 0.5s ease; }
         #pc-layout, #mobile-layout, #panorama, .view { background: transparent !important; }
         .msg-list { background: rgba(0, 0, 0, 0.1); }
-        #sidebar, .mobile-header, .nav-bottom, .input-area, #mobile-menu { 
-            background: rgba(0, 0, 0, 0.8) !important; 
-            backdrop-filter: blur(15px); 
-        }
-
-        #metro-modal-overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
-            z-index: 99999; display: none; align-items: center; justify-content: center; padding: 15px;
-        }
+        #sidebar, .mobile-header, .nav-bottom, .input-area, #mobile-menu { background: rgba(0, 0, 0, 0.8) !important; backdrop-filter: blur(15px); }
+        #metro-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; display: none; align-items: center; justify-content: center; padding: 15px; }
         .metro-modal { background: #000; border: 2px solid var(--accent); width: 100%; max-width: 380px; padding: 25px; box-shadow: 0 0 30px rgba(0,162,232,0.3); }
         .metro-input { width: 100%; padding: 12px; background: #111; border: 2px solid #333; color: #fff; margin-bottom: 10px; outline: none; }
         .metro-btn { padding: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 10px; }
         .btn-blue { background: var(--accent); color: #fff; }
         .btn-gray { background: #333; color: #fff; }
         .search-box { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #333; color: #fff; margin-bottom: 15px; font-size: 14px; outline: none; }
-
         .msg-actions-pc { display: none; gap: 5px; margin-top: 5px; }
         .msg:hover .msg-actions-pc { display: flex; }
         .btn-mini { font-size: 10px; padding: 4px 8px; background: var(--accent); color: white; border: none; cursor: pointer; }
-        
         .wp-menu { display: flex; flex-direction: column; gap: 2px; background: #000; }
         .wp-item { background: #111; padding: 20px; font-size: 20px; color: white; cursor: pointer; text-transform: lowercase; }
         .wp-item:active { background: var(--accent); }
-
-        #mobile-menu {
-            position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
-            border-left: 2px solid var(--accent); z-index: 11000;
-            transition: 0.3s; padding: 20px; display: flex; flex-direction: column;
-        }
+        #mobile-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; border-left: 2px solid var(--accent); z-index: 11000; transition: 0.3s; padding: 20px; display: flex; flex-direction: column; }
         #mobile-menu.open { right: 0; }
         .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; z-index: 10500; }
-        .mobile-header {
-            display: none; position: fixed; top: 0; left: 0; width: 100%;
-            height: 60px; padding: 0 20px; align-items: center; justify-content: space-between;
-            z-index: 900;
-        }
-
+        .mobile-header { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 60px; padding: 0 20px; align-items: center; justify-content: space-between; z-index: 900; }
         #pc-layout { display: none; height: 100vh; }
         #mobile-layout { display: none; height: 100vh; position: relative; padding-top: 60px; }
         #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0; }
-        
         .pc-item { padding: 10px; cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
         .pc-item:hover { background: rgba(0,162,232,0.15); border-left-color: var(--accent); }
-
         .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; }
-        .msg { background: rgba(30,30,30,0.7); padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; cursor: pointer; word-wrap: break-word; }
+        .msg { background: rgba(30,30,30,0.7); padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; cursor: pointer; word-wrap: break-word; -webkit-tap-highlight-color: transparent; }
         .msg.mine { border-left-color: var(--accent); }
         .media-content { max-width: 100%; max-height: 250px; margin-top: 5px; display: block; border-radius: 2px; }
-
         .input-area { display: flex; align-items: center; gap: 8px; padding: 10px; border-top: 1px solid #222; width: 100%; }
         .input-area input[type="text"] { flex: 1; min-width: 50px; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
         .btn-action { flex-shrink: 0; padding: 12px; border: none; font-weight: bold; cursor: pointer; }
         .btn-file { width: 45px; background: #000 !important; color: var(--accent) !important; border: 1px solid var(--accent); }
         .btn-send { min-width: 70px; background: var(--accent); color: #fff; }
-        
         .nav-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-h); border-top: 1px solid #222; display: flex; z-index: 1000; }
         .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #444; }
         .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
-
         #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); }
         .view { width: 100vw; height: 100%; padding: 15px 15px 180px 15px; display: flex; flex-direction: column; overflow-y: auto; }
-        
         .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; width: 100%; }
         .tile { background: var(--accent); padding: 15px; height: 110px; display: flex; align-items: flex-end; font-weight: bold; cursor: pointer; position: relative; transition: 0.2s; }
-        
         .notif-badge { position: absolute; top: 10px; right: 10px; background: #ff5050; color: white; border-radius: 50%; width: 22px; height: 22px; display: none; align-items: center; justify-content: center; font-size: 10px; }
-
         @media (min-width: 851px) { #pc-layout { display: flex; } }
         @media (max-width: 850px) { #mobile-layout { display: block; } .mobile-header { display: flex; } }
     </style>
 </head>
 <body>
-
     <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(this)">
     <input type="file" id="bgInput" style="display: none;" accept="image/*" onchange="handleBgUpload(this)">
-
     <div id="menu-overlay" class="menu-overlay" onclick="toggleMenu()"></div>
     <div id="mobile-menu">
         <h2 style="font-weight:100; margin-bottom:20px; color:var(--accent);">Options</h2>
@@ -109,12 +67,7 @@
         <button class="metro-btn btn-gray" onclick="logout()" style="color:#ff5050;">Déconnexion</button>
         <button class="metro-btn btn-blue" onclick="toggleMenu()">Retour</button>
     </div>
-
-    <div class="mobile-header">
-        <span style="font-weight: 100; letter-spacing: 2px;">THINKTALK</span>
-        <div style="font-size:30px; cursor:pointer; color:var(--accent);" onclick="toggleMenu()">≡</div>
-    </div>
-
+    <div class="mobile-header"><span style="font-weight: 100; letter-spacing: 2px;">THINKTALK</span><div style="font-size:30px; cursor:pointer; color:var(--accent);" onclick="toggleMenu()">≡</div></div>
     <div id="metro-modal-overlay">
         <div class="metro-modal">
             <h3 id="modal-title" style="font-weight:100; margin-bottom:15px;">titre</h3>
@@ -123,14 +76,12 @@
             <button class="metro-btn btn-gray" onclick="closeModal()">Annuler</button>
         </div>
     </div>
-
     <div id="pc-layout">
         <aside id="sidebar">
             <h1 style="font-weight:100; color:var(--accent); margin-bottom:15px;">thinktalk</h1>
             <div style="flex:1; overflow-y:auto;">
                 <input type="text" class="search-box" placeholder="Salons..." oninput="filterList('pc-rooms', this.value)">
-                <div id="pc-rooms"></div>
-                <div style="height:20px;"></div>
+                <div id="pc-rooms"></div><div style="height:20px;"></div>
                 <input type="text" class="search-box" placeholder="Amis..." oninput="filterList('pc-contacts', this.value)">
                 <div id="pc-contacts"></div>
             </div>
@@ -147,34 +98,18 @@
             </div>
         </main>
     </div>
-
     <div id="mobile-layout">
         <div id="panorama">
-            <section class="view">
-                <h1 style="font-weight:100; font-size:38px; color:var(--accent); margin-bottom:10px;">salons</h1>
-                <input type="text" class="search-box" placeholder="Chercher un salon..." oninput="filterTiles('mob-rooms', this.value)">
-                <div id="mob-rooms" class="tiles-grid"></div>
-            </section>
-            <section class="view">
-                <h1 id="chat-title-mob" style="font-weight:100; font-size:28px; margin-bottom:10px;">Chat</h1>
-                <div id="msg-mob" class="msg-list"></div>
-            </section>
-            <section class="view">
-                <h1 style="font-weight:100; font-size:38px; color:var(--accent); margin-bottom:10px;">contacts</h1>
-                <input type="text" class="search-box" placeholder="Chercher un ami..." oninput="filterTiles('mob-contacts', this.value)">
-                <div id="mob-contacts" class="tiles-grid"></div>
-            </section>
+            <section class="view"><h1 style="font-weight:100; font-size:38px; color:var(--accent); margin-bottom:10px;">salons</h1><input type="text" class="search-box" placeholder="Chercher un salon..." oninput="filterTiles('mob-rooms', this.value)"><div id="mob-rooms" class="tiles-grid"></div></section>
+            <section class="view"><h1 id="chat-title-mob" style="font-weight:100; font-size:28px; margin-bottom:10px;">Chat</h1><div id="msg-mob" class="msg-list"></div></section>
+            <section class="view"><h1 style="font-weight:100; font-size:38px; color:var(--accent); margin-bottom:10px;">contacts</h1><input type="text" class="search-box" placeholder="Chercher un ami..." oninput="filterTiles('mob-contacts', this.value)"><div id="mob-contacts" class="tiles-grid"></div></section>
         </div>
         <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:70px; left:0;">
             <button class="btn-action btn-file" onclick="triggerFile()">📁</button>
             <input type="text" id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
             <button class="btn-action btn-send" onclick="send('mob')">OK</button>
         </div>
-        <nav class="nav-bottom">
-            <div class="nav-btn active" onclick="goTo(0)">ACCUEIL</div>
-            <div class="nav-btn" onclick="goTo(1)">CHAT</div>
-            <div class="nav-btn" onclick="goTo(2)">CONTACTS</div>
-        </nav>
+        <nav class="nav-bottom"><div class="nav-btn active" onclick="goTo(0)">ACCUEIL</div><div class="nav-btn" onclick="goTo(1)">CHAT</div><div class="nav-btn" onclick="goTo(2)">CONTACTS</div></nav>
     </div>
 
     <script>
@@ -190,163 +125,96 @@
         let current = { id: 'general', type: 'room' };
         let pressTimer;
 
-        // --- CORE FUNCTIONS ---
-        function getPath() {
-            return current.type === 'room' 
-                ? `messages/public/${current.id}` 
-                : `messages/dm/${[user, current.id].sort().join("__")}`;
-        }
+        function getPath() { return current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`; }
 
-        function deleteMsg(msgId) {
-            if(!confirm("Supprimer ce message ?")) return;
-            db.ref(getPath() + "/" + msgId).remove();
-            closeModal();
-        }
-
-        function editMsg(msgId, oldText) {
-            openModal("Éditer", `<input id="edit-in" class="metro-input" value="${oldText.replace(/"/g, '&quot;')}">`, () => {
-                const nt = document.getElementById('edit-in').value.trim();
-                if(!nt) return;
-                db.ref(getPath() + "/" + msgId).update({ text: nt, edited: true });
+        function deleteMsg(mid) { if(confirm("Supprimer ?")) db.ref(getPath()+"/"+mid).remove(); closeModal(); }
+        function editMsg(mid, txt) {
+            openModal("Éditer", `<input id="ed-in" class="metro-input" value="${txt.replace(/"/g, '&quot;')}">`, () => {
+                const nt = document.getElementById('ed-in').value.trim();
+                if(nt) db.ref(getPath()+"/"+mid).update({ text: nt, edited: true, timestamp: Date.now() });
                 closeModal();
             });
         }
-
-        function handleLongPress(msgId, text) {
-            pressTimer = window.setTimeout(() => {
-                openModal("Actions", `
-                    <div class="wp-menu">
-                        <div class="wp-item" onclick="editMsg('${msgId}', '${text.replace(/'/g, "\\'")}')">modifier</div>
-                        <div class="wp-item" onclick="deleteMsg('${msgId}')" style="color:#ff5050">supprimer</div>
-                    </div>
-                `, null);
+        function handleLongPress(mid, txt) {
+            pressTimer = setTimeout(() => {
+                openModal("Actions", `<div class="wp-menu"><div class="wp-item" onclick="editMsg('${mid}','${txt.replace(/'/g, "\\'")}')">modifier</div><div class="wp-item" onclick="deleteMsg('${mid}')" style="color:#ff5050">supprimer</div></div>`, null);
                 document.getElementById('modal-confirm').style.display = 'none';
             }, 600);
         }
-
         function cancelLongPress() { clearTimeout(pressTimer); document.getElementById('modal-confirm').style.display = 'block'; }
 
         function send(m) {
             const i = document.getElementById(m==='pc'?'in-pc':'in-mob');
-            const val = i.value.trim();
-            if(!val || !user) return;
-            db.ref(getPath()).push({ pseudo: user, text: val }).then(() => { i.value = ""; });
-        }
-
-        // --- UI & INITIALISATION ---
-        function applyBg(url) { document.body.style.backgroundImage = `url('${url}')`; }
-        function uiChangeBg() {
-            openModal("Fond d'écran", `<button class="metro-btn btn-blue" onclick="document.getElementById('bgInput').click()">SÉLECTIONNER UN FICHIER</button><p style="text-align:center; margin:10px 0; font-size:11px; color:#555;">OU URL DIRECTE</p><input id="bgurl" class="metro-input" placeholder="https://...">`, () => {
-                const url = document.getElementById('bgurl').value.trim();
-                if(url) { applyBg(url); localStorage.setItem("thinktalk_bg", url); }
-                closeModal();
-            });
-        }
-        function handleBgUpload(input) {
-            const file = input.files[0]; if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => { applyBg(e.target.result); localStorage.setItem("thinktalk_bg", e.target.result); closeModal(); };
-            reader.readAsDataURL(file);
-        }
-
-        async function init() {
-            const savedBg = localStorage.getItem("thinktalk_bg");
-            if(savedBg) applyBg(savedBg);
-            if(!user) {
-                openModal("Connexion", `<input id="ap" class="metro-input" placeholder="Pseudo"><input id="ac" type="password" class="metro-input" placeholder="Code">`, async () => {
-                    const p = document.getElementById('ap').value.trim();
-                    const c = document.getElementById('ac').value.trim();
-                    if(!p || !c) return;
-                    const snap = await db.ref('users/'+p).get();
-                    if(snap.exists()) {
-                        if(snap.val().code === c) loginSuccess(p); else alert("Code erroné");
-                    } else {
-                        await db.ref('users/'+p).set({ code: c }); loginSuccess(p);
-                    }
-                });
-            } else { loginSuccess(user); }
-        }
-
-        function loginSuccess(pseudo) { user = pseudo; localStorage.setItem("thinktalk_pseudo", user); closeModal(); loadLists(); setChat('general', 'room'); }
-
-        function loadLists() {
-            db.ref("rooms").on('value', s => {
-                const pc = document.getElementById('pc-rooms'); const mb = document.getElementById('mob-rooms');
-                pc.innerHTML = ""; mb.innerHTML = "";
-                s.forEach(r => {
-                    pc.innerHTML += `<div class="pc-item" onclick="setChat('${r.key}','room')">#${r.key}</div>`;
-                    mb.innerHTML += `<div class="tile" data-name="${r.key}" onclick="setChat('${r.key}','room'); goTo(1);"><div class="notif-badge" id="notif-room-${r.key}">!</div>#${r.key}</div>`;
-                });
-            });
-            db.ref("contacts/"+user).on('value', s => {
-                const pc = document.getElementById('pc-contacts'); const mb = document.getElementById('mob-contacts');
-                pc.innerHTML = ""; mb.innerHTML = "";
-                s.forEach(c => {
-                    pc.innerHTML += `<div class="pc-item" onclick="setChat('${c.key}','dm')">@${c.key}</div>`;
-                    mb.innerHTML += `<div class="tile" data-name="${c.key}" style="background:#222" onclick="setChat('${c.key}','dm'); goTo(1);"><div class="notif-badge" id="notif-dm-${c.key}">1</div>@${c.key}</div>`;
-                });
-            });
+            const v = i.value.trim();
+            if(!v || !user) return;
+            db.ref(getPath()).push({ pseudo: user, text: v, timestamp: Date.now() }).then(()=> i.value="");
         }
 
         function setChat(id, type) {
             current = { id, type };
-            const title = (type === 'room' ? '#' : '@') + id;
-            document.getElementById('chat-title-pc').textContent = title;
-            document.getElementById('chat-title-mob').textContent = title;
-            
+            document.getElementById('chat-title-pc').textContent = (type==='room'?'#':'@')+id;
+            document.getElementById('chat-title-mob').textContent = (type==='room'?'#':'@')+id;
             db.ref(getPath()).off();
-            db.ref(getPath()).limitToLast(30).on('value', snap => {
-                const pc = document.getElementById('msg-pc'); const mob = document.getElementById('msg-mob');
-                pc.innerHTML = ""; mob.innerHTML = "";
-                snap.forEach(c => {
+            db.ref(getPath()).limitToLast(30).on('value', s => {
+                const pc = document.getElementById('msg-pc'), mb = document.getElementById('msg-mob');
+                pc.innerHTML = ""; mb.innerHTML = "";
+                s.forEach(c => {
                     const m = c.val(), mid = c.key, isMine = m.pseudo === user;
-                    const edited = m.edited ? '<small style="opacity:0.5"> (modifié)</small>' : '';
                     const div = document.createElement('div');
                     div.className = 'msg' + (isMine ? ' mine' : '');
-                    
-                    let html = `<span style="color:var(--accent); font-size:10px; font-weight:bold;">${m.pseudo}</span>`;
-                    html += m.type === 'image' ? `<img src="${m.url}" class="media-content">` : `<div>${m.text}${edited}</div>`;
-                    if(isMine && m.type !== 'image') {
-                        html += `<div class="msg-actions-pc"><button class="btn-mini" onclick="editMsg('${mid}','${m.text}')">éditer</button><button class="btn-mini" onclick="deleteMsg('${mid}')">supprimer</button></div>`;
-                    }
-                    div.innerHTML = html;
-                    if(isMine && m.type !== 'image') {
-                        div.ontouchstart = () => handleLongPress(mid, m.text);
-                        div.ontouchend = cancelLongPress;
-                    }
-                    mob.appendChild(div);
-                    pc.appendChild(div.cloneNode(true));
+                    let h = `<span style="color:var(--accent); font-size:10px; font-weight:bold;">${m.pseudo}</span>`;
+                    h += m.type==='image' ? `<img src="${m.url}" class="media-content">` : `<div>${m.text}${m.edited?'<small style="opacity:0.5"> (modifié)</small>':''}</div>`;
+                    if(isMine && m.type!=='image') h += `<div class="msg-actions-pc"><button class="btn-mini" onclick="editMsg('${mid}','${m.text}')">éditer</button><button class="btn-mini" onclick="deleteMsg('${mid}')">suppr.</button></div>`;
+                    div.innerHTML = h;
+                    if(isMine && m.type!=='image') { div.ontouchstart = () => handleLongPress(mid, m.text); div.ontouchend = cancelLongPress; }
+                    mb.appendChild(div); pc.appendChild(div.cloneNode(true));
                 });
-                pc.scrollTop = pc.scrollHeight; mob.scrollTop = mob.scrollHeight;
+                pc.scrollTop = pc.scrollHeight; mb.scrollTop = mb.scrollHeight;
             });
         }
 
+        function loadLists() {
+            db.ref("rooms").on('value', s => {
+                const pc = document.getElementById('pc-rooms'), mb = document.getElementById('mob-rooms');
+                pc.innerHTML = ""; mb.innerHTML = "";
+                s.forEach(r => {
+                    pc.innerHTML += `<div class="pc-item" onclick="setChat('${r.key}','room')">#${r.key}</div>`;
+                    mb.innerHTML += `<div class="tile" data-name="${r.key}" onclick="setChat('${r.key}','room'); goTo(1);">#${r.key}</div>`;
+                });
+            });
+            db.ref("contacts/"+user).on('value', s => {
+                const pc = document.getElementById('pc-contacts'), mb = document.getElementById('mob-contacts');
+                pc.innerHTML = ""; mb.innerHTML = "";
+                s.forEach(c => {
+                    pc.innerHTML += `<div class="pc-item" onclick="setChat('${c.key}','dm')">@${c.key}</div>`;
+                    mb.innerHTML += `<div class="tile" data-name="${c.key}" style="background:#222" onclick="setChat('${c.key}','dm'); goTo(1);">@${c.key}</div>`;
+                });
+            });
+        }
+
+        function applyBg(u) { document.body.style.backgroundImage = `url('${u}')`; }
+        function uiChangeBg() { openModal("Fond", `<button class="metro-btn btn-blue" onclick="document.getElementById('bgInput').click()">FICHIER</button><input id="bgurl" class="metro-input" placeholder="URL">`, () => { const u = document.getElementById('bgurl').value.trim(); if(u){ applyBg(u); localStorage.setItem("thinktalk_bg", u); } closeModal(); }); }
+        function handleBgUpload(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload=(e)=>{ applyBg(e.target.result); localStorage.setItem("thinktalk_bg", e.target.result); closeModal(); }; r.readAsDataURL(f); }
+        function triggerFile() { document.getElementById('fileInput').click(); }
+        function handleFileUpload(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload=(e)=>{ db.ref(getPath()).push({ pseudo: user, url: e.target.result, type: 'image', timestamp: Date.now() }); }; r.readAsDataURL(f); }
+        async function init() {
+            const b = localStorage.getItem("thinktalk_bg"); if(b) applyBg(b);
+            if(!user) { openModal("Connexion", `<input id="ap" class="metro-input" placeholder="Pseudo"><input id="ac" type="password" class="metro-input" placeholder="Code">`, async () => {
+                const p = document.getElementById('ap').value.trim(), c = document.getElementById('ac').value.trim();
+                if(!p || !c) return;
+                const s = await db.ref('users/'+p).get();
+                if(s.exists()) { if(s.val().code === c) loginSuccess(p); else alert("Code faux"); }
+                else { await db.ref('users/'+p).set({ code: c }); loginSuccess(p); }
+            }); } else { loginSuccess(user); }
+        }
+        function loginSuccess(p) { user = p; localStorage.setItem("thinktalk_pseudo", p); closeModal(); loadLists(); setChat('general', 'room'); }
         function filterTiles(id, v) { Array.from(document.getElementById(id).getElementsByClassName('tile')).forEach(t => { t.style.display = t.getAttribute('data-name').toLowerCase().includes(v.toLowerCase()) ? "flex" : "none"; }); }
         function filterList(id, v) { Array.from(document.getElementById(id).children).forEach(i => i.style.display = i.textContent.toLowerCase().includes(v.toLowerCase()) ? "block" : "none"); }
-        function triggerFile() { document.getElementById('fileInput').click(); }
-        function handleFileUpload(input) {
-            const file = input.files[0]; if(!file) return;
-            const r = new FileReader();
-            r.onload = (e) => { db.ref(getPath()).push({ pseudo: user, url: e.target.result, type: 'image' }); };
-            r.readAsDataURL(file);
-        }
-        function goTo(idx) {
-            document.getElementById('panorama').style.transform = `translateX(-${idx * 100}vw)`;
-            document.querySelectorAll('.nav-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
-            document.getElementById('mob-bar').style.display = (idx === 1) ? 'flex' : 'none';
-        }
-        function toggleMenu() { const isOpen = document.getElementById('mobile-menu').classList.toggle('open'); document.getElementById('menu-overlay').style.display = isOpen ? 'block' : 'none'; }
-        function openModal(t, h, c) {
-            document.getElementById('modal-title').textContent = t;
-            document.getElementById('modal-content').innerHTML = h;
-            document.getElementById('metro-modal-overlay').style.display = 'flex';
-            const confirmBtn = document.getElementById('modal-confirm');
-            confirmBtn.style.display = c ? 'block' : 'none';
-            confirmBtn.onclick = c;
-        }
+        function goTo(x) { document.getElementById('panorama').style.transform = `translateX(-${x*100}vw)`; document.querySelectorAll('.nav-btn').forEach((b, i) => b.classList.toggle('active', i === x)); document.getElementById('mob-bar').style.display = (x === 1) ? 'flex' : 'none'; }
+        function toggleMenu() { const o = document.getElementById('mobile-menu').classList.toggle('open'); document.getElementById('menu-overlay').style.display = o ? 'block' : 'none'; }
+        function openModal(t, h, c) { document.getElementById('modal-title').textContent = t; document.getElementById('modal-content').innerHTML = h; document.getElementById('metro-modal-overlay').style.display = 'flex'; const b = document.getElementById('modal-confirm'); b.style.display = c ? 'block' : 'none'; b.onclick = c; }
         function closeModal() { document.getElementById('metro-modal-overlay').style.display = 'none'; }
         function logout() { localStorage.clear(); location.reload(); }
-
         window.onload = init;
     </script>
 </body>
