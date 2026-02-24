@@ -7,78 +7,129 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        :root { --accent: #00a2e8; --bg: #000; --nav-h: 70px; }
+        :root { --accent: #00a2e8; --bg: #000; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; }
-        #pc-layout { display: none; height: 100vh; }
-        #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); }
-        .pc-tabs { display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
-        .pc-tab { font-size: 12px; font-weight: bold; cursor: pointer; color: #555; text-transform: uppercase; }
-        .pc-tab.active { color: #fff; border-bottom: 2px solid var(--accent); }
-        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; }
-        .msg { background: rgba(255,255,255,0.07); padding: 10px; border-left: 4px solid #333; width: fit-content; max-width: 90%; align-self: flex-start; word-wrap: break-word; }
-        .msg.mine { border-left-color: var(--accent); }
-        .msg-header { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px; color: var(--accent); font-weight: bold; gap: 20px; }
-        .msg-text img { max-width: 100%; border: 1px solid #333; margin-top: 5px; display: block; border-radius: 4px; }
-        .msg-actions { margin-top: 8px; display: flex; gap: 10px; opacity: 0.6; }
-        .msg-actions span { font-size: 10px; cursor: pointer; text-transform: uppercase; color: #888; }
-        .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-        .tile { background: var(--accent); opacity: 0.8; padding: 12px; height: 110px; display: flex; flex-direction: column; justify-content: flex-end; font-weight: bold; cursor: pointer; position: relative; overflow: hidden; }
-        .tile .live-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 10px; background: inherit; display: flex; flex-direction: column; font-size: 11px; font-weight: normal; animation: slideUp 0.5s ease-out; z-index: 1; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .input-area { display: flex; align-items: center; gap: 10px; padding: 10px; background: #000; border-top: 1px solid #222; }
-        .btn-attach { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-        .input-area input[type="text"] { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
-        .btn-send { background: var(--accent); border: none; color: #fff; font-weight: bold; padding: 12px 20px; cursor: pointer; }
-        .color-picker { display: flex; gap: 8px; margin: 10px 0; }
-        .color-dot { width: 24px; height: 24px; cursor: pointer; border: 1px solid #333; }
-        .btn-action-metro { padding: 10px; font-size: 11px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #333; cursor: pointer; text-align: left; text-transform: uppercase; margin-bottom: 5px; width: 100%; }
+        body { 
+            background: var(--bg); 
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed;
+            color: #fff; height: 100vh; overflow: hidden; 
+        }
+        
+        /* SIDE MENU (HAMBURGER) */
+        #menu-overlay { position: fixed; display: none; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
+        #side-menu { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #111; z-index: 1000; transition: 0.3s; padding: 20px; border-right: 1px solid var(--accent); }
+        #side-menu.open { left: 0; }
+
+        /* PC LAYOUT */
+        #pc-layout { display: none; height: 100vh; background: rgba(0,0,0,0.3); }
+        #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); }
+        
+        /* MOBILE PANORAMA */
         #mobile-layout { display: none; height: 100vh; padding-top: 60px; }
-        .mobile-header { position: fixed; top: 0; width: 100%; height: 60px; background: rgba(0,0,0,0.8); display: flex; align-items: center; padding: 0 20px; z-index: 900; }
+        .mobile-header { position: fixed; top: 0; width: 100%; height: 60px; background: rgba(0,0,0,0.9); display: flex; align-items: center; padding: 0 15px; z-index: 900; border-bottom: 1px solid #222; }
         #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.6s cubic-bezier(0.1, 0.7, 0.1, 1); }
         .view { width: 100vw; height: 100%; padding: 15px; overflow-y: auto; padding-bottom: 150px; }
+
+        /* UI ELEMENTS */
+        .hamburger { font-size: 24px; cursor: pointer; margin-right: 15px; width: 30px; }
+        .pc-tabs { display: flex; gap: 15px; margin-bottom: 15px; }
+        .pc-tab { font-size: 12px; font-weight: bold; cursor: pointer; opacity: 0.5; text-transform: uppercase; }
+        .pc-tab.active { opacity: 1; border-bottom: 2px solid var(--accent); }
+        .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .tile { background: var(--accent); opacity: 0.8; padding: 12px; height: 110px; display: flex; flex-direction: column; justify-content: flex-end; font-weight: bold; cursor: pointer; position: relative; overflow: hidden; }
+        .tile .live-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 10px; background: inherit; display: flex; flex-direction: column; font-size: 11px; font-weight: normal; }
+
+        /* MESSAGES */
+        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; }
+        .msg { background: rgba(255,255,255,0.1); padding: 10px; border-left: 4px solid #333; width: fit-content; max-width: 90%; align-self: flex-start; }
+        .msg.mine { border-left-color: var(--accent); }
+        .msg-text img { max-width: 100%; margin-top: 5px; display: block; border-radius: 4px; }
+
+        /* BARRE DE CHAT & EPINGLE */
+        .input-area { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.9); border-top: 1px solid #222; }
+        .btn-attach { 
+            width: 42px; height: 42px; border-radius: 50%; background: var(--accent); 
+            border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; 
+        }
+        .btn-attach svg { width: 20px; height: 20px; fill: white; }
+        .input-area input[type="text"] { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
+        
+        .btn-action-metro { padding: 10px; font-size: 11px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #333; cursor: pointer; width: 100%; margin-bottom: 5px; text-align: left; text-transform: uppercase; }
+        .color-dot { width: 28px; height: 28px; cursor: pointer; border: 1px solid #fff; margin: 4px; }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 70px; background: #000; border-top: 1px solid #222; display: flex; }
-        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #555; font-weight: bold; }
+        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #555; font-weight: bold; }
         .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
+
         @media (min-width: 851px) { #pc-layout { display: flex; } }
-        @media (max-width: 850px) { #mobile-layout { display: block; } .mobile-header { display: flex; } }
+        @media (max-width: 850px) { #mobile-layout { display: block; } }
     </style>
 </head>
 <body>
+
+    <div id="menu-overlay" onclick="toggleMenu()"></div>
+    <div id="side-menu">
+        <h2 style="font-weight:100; color:var(--accent); margin-bottom:20px;">ThinkTalk</h2>
+        <p style="font-size:10px; opacity:0.6; margin-bottom:10px;">COULEUR D'ACCENT</p>
+        <div id="accent-selector-menu" style="display:flex; flex-wrap:wrap; margin-bottom:20px;"></div>
+        <button class="btn-action-metro" onclick="uiChangeBg()">🖼 CHANGER LE FOND</button>
+        <button class="btn-action-metro" onclick="logout()" style="color:#ff4b4b; margin-top:20px;">DÉCONNEXION</button>
+    </div>
+
     <div id="pc-layout">
         <aside id="sidebar">
-            <h1 style="color:var(--accent); font-weight:100; margin-bottom:10px;">ThinkTalk</h1>
-            <div id="accent-selector" class="color-picker"></div>
-            <div class="pc-tabs"><div class="pc-tab active" id="tab-pc-rooms" onclick="switchPcTab('rooms')">Salons</div><div class="pc-tab" id="tab-pc-contacts" onclick="switchPcTab('contacts')">Contacts</div></div>
-            <div id="pc-actions-rooms"><button class="btn-action-metro" onclick="uiCreateRoom()">+ CRÉER UN SALON</button><button class="btn-action-metro" onclick="uiJoinPrivate()">🔑 REJOINDRE PRIVÉ</button></div>
-            <div id="pc-content-list" style="flex:1; overflow-y:auto; margin-top:10px;"></div>
-            <button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer; text-align:left; font-size:11px;">DÉCONNEXION</button>
+            <div style="display:flex; align-items:center; margin-bottom:20px;">
+                <div class="hamburger" onclick="toggleMenu()">≡</div>
+                <h1 style="color:var(--accent); font-weight:100; font-size:24px;">ThinkTalk</h1>
+            </div>
+            <div class="pc-tabs">
+                <div class="pc-tab active" id="tab-pc-rooms" onclick="switchPcTab('rooms')">Salons</div>
+                <div class="pc-tab" id="tab-pc-contacts" onclick="switchPcTab('contacts')">Contacts</div>
+            </div>
+            <div id="pc-actions-rooms">
+                <button class="btn-action-metro" onclick="uiCreateRoom()">+ CRÉER UN SALON</button>
+                <button class="btn-action-metro" onclick="uiJoinPrivate()">🔑 REJOINDRE PRIVÉ</button>
+            </div>
+            <div id="pc-content-list" style="flex:1; overflow-y:auto;"></div>
         </aside>
         <main style="flex:1; display:flex; flex-direction:column;">
             <div style="padding:20px; border-bottom:1px solid #222;"><h2 id="chat-title-pc" style="font-weight:100;">#accueil</h2></div>
             <div id="msg-pc" class="msg-list"></div>
             <div class="input-area">
                 <input type="file" id="file-pc" style="display:none" onchange="handleFile(this)" accept="image/*">
-                <button class="btn-attach" onclick="document.getElementById('file-pc').click()">📎</button>
-                <input type="text" id="in-pc" placeholder="Écrire..." onkeypress="if(event.key==='Enter') send('pc')">
-                <button class="btn-send" onclick="send('pc')">ENVOYER</button>
+                <button class="btn-attach" onclick="document.getElementById('file-pc').click()">
+                    <svg viewBox="0 0 24 24"><path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z" /></svg>
+                </button>
+                <input type="text" id="in-pc" placeholder="Message..." onkeypress="if(event.key==='Enter') send('pc')">
+                <button onclick="send('pc')" style="background:var(--accent); border:none; padding:12px 20px; color:white; font-weight:bold; cursor:pointer;">ENVOYER</button>
             </div>
         </main>
     </div>
+
     <div id="mobile-layout">
-        <div class="mobile-header"><span>THINKTALK</span></div>
+        <div class="mobile-header">
+            <div class="hamburger" onclick="toggleMenu()">≡</div>
+            <span>THINKTALK</span>
+        </div>
         <div id="panorama">
             <section class="view"><h1 style="font-size:40px; font-weight:100; color:var(--accent); margin-bottom:20px;">salons</h1><div id="mob-rooms" class="tiles-grid"></div></section>
             <section class="view"><h2 id="chat-title-mob" style="font-weight:100; margin-bottom:10px;">Chat</h2><div id="msg-mob" class="msg-list"></div></section>
-            <section class="view"><h1 style="font-size:40px; font-weight:100; color:var(--accent); margin-bottom:10px;">moi</h1><div id="accent-selector-mob" class="color-picker"></div><h2 style="font-size:24px; font-weight:100; margin-top:20px; color:var(--accent);">contacts</h2><div id="mob-contacts" class="tiles-grid" style="margin-top:10px;"></div></section>
+            <section class="view"><h1 style="font-size:40px; font-weight:100; color:var(--accent); margin-bottom:20px;">contacts</h1><div id="mob-contacts" class="tiles-grid"></div></section>
         </div>
         <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:70px; width:100%;">
             <input type="file" id="file-mob" style="display:none" onchange="handleFile(this)" accept="image/*">
-            <button class="btn-attach" onclick="document.getElementById('file-mob').click()">📎</button>
+            <button class="btn-attach" onclick="document.getElementById('file-mob').click()">
+                <svg viewBox="0 0 24 24"><path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z" /></svg>
+            </button>
             <input type="text" id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
-            <button class="btn-send" onclick="send('mob')">OK</button>
+            <button onclick="send('mob')" style="background:var(--accent); border:none; padding:12px; color:white; font-weight:bold;">OK</button>
         </div>
-        <nav class="nav-bottom"><div class="nav-btn active" onclick="goTo(0)">ACCUEIL</div><div class="nav-btn" onclick="goTo(1)">CHAT</div><div class="nav-btn" onclick="goTo(2)">MOI</div></nav>
+        <nav class="nav-bottom">
+            <div class="nav-btn active" onclick="goTo(0)">SALONS</div>
+            <div class="nav-btn" onclick="goTo(1)">CHAT</div>
+            <div class="nav-btn" onclick="goTo(2)">CONTACTS</div>
+        </nav>
     </div>
 
     <script>
@@ -86,6 +137,17 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let user = localStorage.getItem("thinktalk_pseudo"), current = { id: 'general', type: 'room' }, activePcTab = 'rooms';
+
+        function toggleMenu() {
+            const menu = document.getElementById('side-menu'), over = document.getElementById('menu-overlay');
+            const open = menu.classList.toggle('open');
+            over.style.display = open ? 'block' : 'none';
+        }
+
+        function uiChangeBg() {
+            const url = prompt("URL de l'image :");
+            if(url) { document.body.style.backgroundImage = `url('${url}')`; localStorage.setItem("thinktalk_bg", url); }
+        }
 
         function handleFile(input) {
             const file = input.files[0]; if (!file) return;
@@ -110,9 +172,7 @@
         function cleanOldMessages(path) {
             const oneWeek = 7 * 24 * 60 * 60 * 1000;
             const now = Date.now();
-            db.ref(path).once('value', s => {
-                s.forEach(snap => { if (snap.val().timestamp && (now - snap.val().timestamp > oneWeek)) snap.ref.remove(); });
-            });
+            db.ref(path).once('value', s => { s.forEach(snap => { if (snap.val().timestamp && (now - snap.val().timestamp > oneWeek)) snap.ref.remove(); }); });
         }
 
         function pushMsg(text) {
@@ -137,7 +197,7 @@
                     const html = `<div class="msg ${isMine?'mine':''}">
                         <div class="msg-header"><span>${m.pseudo}</span><span class="msg-time">${m.time||''}</span></div>
                         <div class="msg-text">${content}</div>
-                        ${isMine ? `<div class="msg-actions"><span onclick="deleteMsg('${snap.key}')">Del</span></div>` : ''}
+                        ${isMine ? `<div class="msg-actions"><span onclick="deleteMsg('${snap.key}')">Supprimer</span></div>` : ''}
                     </div>`;
                     pc.insertAdjacentHTML('beforeend', html); mb.insertAdjacentHTML('beforeend', html);
                 });
@@ -148,13 +208,14 @@
         function initColors() {
             const colors = ["#00a2e8", "#a200ff", "#99b433", "#ff0097", "#e3a21a", "#da532c", "#00aba9"];
             const saved = localStorage.getItem("thinktalk_accent") || "#00a2e8";
+            const bg = localStorage.getItem("thinktalk_bg");
+            if(bg) document.body.style.backgroundImage = `url('${bg}')`;
             document.documentElement.style.setProperty('--accent', saved);
-            [document.getElementById('accent-selector'), document.getElementById('accent-selector-mob')].forEach(c => {
-                colors.forEach(col => {
-                    const dot = document.createElement('div'); dot.className = 'color-dot'; dot.style.background = col;
-                    dot.onclick = () => { document.documentElement.style.setProperty('--accent', col); localStorage.setItem("thinktalk_accent", col); };
-                    c.appendChild(dot);
-                });
+            const container = document.getElementById('accent-selector-menu');
+            colors.forEach(col => {
+                const dot = document.createElement('div'); dot.className = 'color-dot'; dot.style.background = col;
+                dot.onclick = () => { document.documentElement.style.setProperty('--accent', col); localStorage.setItem("thinktalk_accent", col); toggleMenu(); };
+                container.appendChild(dot);
             });
         }
 
@@ -187,7 +248,7 @@
                 const mc = document.getElementById('mob-contacts'), pc = document.getElementById('pc-content-list');
                 mc.innerHTML = ""; if(activePcTab === 'contacts') pc.innerHTML = "";
                 s.forEach(c => {
-                    const t = document.createElement('div'); t.className="tile"; t.style.background="rgba(100,100,100,0.5)"; t.innerHTML="@ "+c.key;
+                    const t = document.createElement('div'); t.className="tile"; t.style.background="rgba(255,255,255,0.1)"; t.innerHTML="@ "+c.key;
                     t.onclick=()=>{ setChat(c.key,'dm'); goTo(1); }; mc.appendChild(t); bindLiveTile(c.key,'dm',t);
                     if(activePcTab==='contacts'){ const b=document.createElement('button'); b.className="btn-action-metro"; b.textContent="@ "+c.key; b.onclick=()=>setChat(c.key,'dm'); pc.appendChild(b); }
                 });
@@ -195,11 +256,11 @@
         }
 
         function send(m) { const i = document.getElementById(m==='pc'?'in-pc':'in-mob'); const v = i.value.trim(); if(v && user) { pushMsg(v); i.value = ""; } }
-        function deleteMsg(mid) { const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`; if(confirm("Supprimer ?")) db.ref(path + "/" + mid).remove(); }
-        function uiCreateRoom() { const n = prompt("Nom :"), c = prompt("Code :"); if(n) { db.ref('rooms/'+n.toLowerCase()).set({ code: c || null }); if(c) { let s = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]"); s.push(n.toLowerCase()); localStorage.setItem("thinktalk_private_rooms", JSON.stringify(s)); } } }
-        function uiJoinPrivate() { const n = prompt("Nom :").toLowerCase(), c = prompt("Code :"); db.ref('rooms/'+n).get().then(s => { if(s.exists() && s.val().code === c) { let saved = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]"); if(!saved.includes(n)) saved.push(n); localStorage.setItem("thinktalk_private_rooms", JSON.stringify(saved)); setChat(n, 'room'); goTo(1); } else alert("Erreur"); }); }
+        function deleteMsg(mid) { const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`; if(confirm("Supprimer ce message ?")) db.ref(path + "/" + mid).remove(); }
+        function uiCreateRoom() { const n = prompt("Nom du salon :"), c = prompt("Code secret (vide si public) :"); if(n) { db.ref('rooms/'+n.toLowerCase()).set({ code: c || null }); if(c) { let s = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]"); s.push(n.toLowerCase()); localStorage.setItem("thinktalk_private_rooms", JSON.stringify(s)); } } }
+        function uiJoinPrivate() { const n = prompt("Nom du salon :").toLowerCase(), c = prompt("Code secret :"); db.ref('rooms/'+n).get().then(s => { if(s.exists() && s.val().code === c) { let saved = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]"); if(!saved.includes(n)) saved.push(n); localStorage.setItem("thinktalk_private_rooms", JSON.stringify(saved)); setChat(n, 'room'); goTo(1); } else alert("Accès refusé"); }); }
         function goTo(x) { document.getElementById('panorama').style.transform = `translateX(-${x*100}vw)`; document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i===x)); document.getElementById('mob-bar').style.display = (x===1) ? 'flex' : 'none'; }
-        window.onload = () => { if(!user) { user = prompt("Pseudo :"); localStorage.setItem("thinktalk_pseudo", user); } initColors(); loadLists(); setChat('general', 'room'); }
+        window.onload = () => { if(!user) { user = prompt("Ton pseudo :"); localStorage.setItem("thinktalk_pseudo", user); } initColors(); loadLists(); setChat('general', 'room'); }
         function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
