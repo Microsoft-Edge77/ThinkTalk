@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk</title>
+    <title>ThinkTalk Metro Pro</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -11,7 +11,14 @@
     <style>
         :root { --accent: #00a2e8; --bg: #000; --nav-h: 70px; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; }
+        body { 
+            background: var(--bg); 
+            background-size: cover;
+            background-position: center;
+            color: #fff; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
 
         /* --- MODALES --- */
         #metro-modal-overlay, #msg-context-menu { 
@@ -25,18 +32,38 @@
         .btn-gray { background: #333; color: #fff; }
         .search-box { width: 100%; padding: 10px; background: #111; border: 1px solid #333; color: #fff; margin-bottom: 10px; font-size: 13px; }
 
+        /* --- SIDEBAR MOBILE (HAMBURGER MENU) --- */
+        #mobile-menu {
+            position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
+            background: #000; border-left: 2px solid var(--accent); z-index: 11000;
+            transition: 0.3s; padding: 20px; display: flex; flex-direction: column;
+        }
+        #mobile-menu.open { right: 0; }
+        .menu-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); 
+            display: none; z-index: 10500; 
+        }
+
+        /* --- HEADER MOBILE --- */
+        .mobile-header {
+            display: none; position: fixed; top: 0; left: 0; width: 100%;
+            height: 60px; padding: 0 20px; align-items: center; justify-content: space-between;
+            z-index: 900; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+        }
+        .hamburger { font-size: 30px; cursor: pointer; color: var(--accent); }
+
         /* --- LAYOUTS --- */
         #pc-layout { display: none; height: 100vh; }
-        #mobile-layout { display: none; height: 100vh; position: relative; }
+        #mobile-layout { display: none; height: 100vh; position: relative; padding-top: 60px; }
 
         /* --- SIDEBAR PC --- */
-        #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .pc-item { padding: 10px; background: #0a0a0a; margin-bottom: 4px; cursor: pointer; border-left: 0 solid var(--accent); transition: 0.1s; }
-        .pc-item:hover { background: #111; border-left-width: 4px; }
+        #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0; background: rgba(0,0,0,0.8); }
+        .pc-item { padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 4px; cursor: pointer; border-left: 0 solid var(--accent); transition: 0.1s; }
+        .pc-item:hover { background: rgba(255,255,255,0.1); border-left-width: 4px; }
 
         /* --- MESSAGES --- */
         .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; }
-        .msg { background: #111; padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; transition: 0.2s; cursor: pointer; word-wrap: break-word; }
+        .msg { background: rgba(17,17,17,0.85); padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; cursor: pointer; word-wrap: break-word; backdrop-filter: blur(5px); }
         .msg.mine { border-left-color: var(--accent); }
         .msg-u { color: var(--accent); font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px; }
         .media-content { max-width: 100%; max-height: 250px; margin-top: 5px; display: block; }
@@ -60,12 +87,31 @@
         .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
 
         @media (min-width: 851px) { #pc-layout { display: flex; } }
-        @media (max-width: 850px) { #mobile-layout { display: block; } }
+        @media (max-width: 850px) { 
+            #mobile-layout { display: block; } 
+            .mobile-header { display: flex; }
+        }
     </style>
 </head>
 <body>
 
     <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(this)">
+
+    <div id="menu-overlay" class="menu-overlay" onclick="toggleMenu()"></div>
+    <div id="mobile-menu">
+        <h2 style="font-weight:100; margin-bottom:20px; color:var(--accent);">Options</h2>
+        <p id="user-tag" style="font-size:12px; color:#888; margin-bottom:20px;">Utilisateur: ...</p>
+        
+        <button class="metro-btn btn-gray" onclick="uiChangeBg()">Fond d'écran (URL)</button>
+        <div style="flex:1;"></div>
+        <button class="metro-btn btn-gray" onclick="logout()" style="color:#ff5050;">Déconnexion</button>
+        <button class="metro-btn btn-blue" onclick="toggleMenu()">Retour</button>
+    </div>
+
+    <div class="mobile-header">
+        <span style="font-weight: 100; letter-spacing: 2px;">THINKTALK</span>
+        <div class="hamburger" onclick="toggleMenu()">≡</div>
+    </div>
 
     <div id="msg-context-menu" onclick="closeCtx()">
         <div class="metro-modal" onclick="event.stopPropagation()">
@@ -89,15 +135,15 @@
         <aside id="sidebar">
             <h1 style="font-weight:100; color:var(--accent); margin-bottom:15px;">thinktalk</h1>
             <div style="flex:1; overflow-y:auto;">
-                <p style="font-size:10px; color:#555; margin-bottom:5px;">SALONS</p>
                 <input type="text" class="search-box" placeholder="Filtrer..." oninput="filterList('pc-rooms', this.value)">
                 <button class="metro-btn btn-blue" onclick="uiCreateRoom()" style="margin-bottom:15px; font-size:11px;">+ NOUVEAU SALON</button>
                 <div id="pc-rooms"></div>
-                <p style="font-size:10px; color:#555; margin:20px 0 5px 0;">CONTACTS</p>
+                <div style="height:20px;"></div>
                 <input type="text" class="search-box" placeholder="Filtrer..." oninput="filterList('pc-contacts', this.value)">
                 <button class="metro-btn btn-gray" onclick="uiAddContact()" style="margin-bottom:15px; font-size:11px;">+ AJOUTER AMI</button>
                 <div id="pc-contacts"></div>
             </div>
+            <button class="metro-btn btn-gray" onclick="uiChangeBg()" style="font-size:11px; margin-bottom:5px;">🖼 FOND D'ÉCRAN</button>
             <button onclick="logout()" style="color:#ff5050; border:none; background:none; cursor:pointer; text-align:left; font-weight:bold; padding:10px 0;">DÉCONNEXION</button>
         </aside>
         <main style="flex:1; display:flex; flex-direction:column;">
@@ -154,29 +200,27 @@
 
         let user = localStorage.getItem("thinktalk_pseudo");
         let current = { id: 'general', type: 'room' };
-        let holdTimer;
 
-        // --- AUTH & INIT (FIXED) ---
+        // --- AUTH & INIT ---
         async function init() {
+            // Appliquer le fond d'écran sauvegardé
+            const savedBg = localStorage.getItem("thinktalk_bg");
+            if(savedBg) document.body.style.backgroundImage = `url('${savedBg}')`;
+
             if(!user) {
-                // Masquer le bouton annuler pour la connexion obligatoire
                 document.getElementById('modal-cancel-btn').style.display = 'none';
                 openModal("Bienvenue", `
-                    <p style="font-size:12px; margin-bottom:10px; color:#888;">Entrez un pseudo. S'il n'existe pas, il sera créé.</p>
                     <input id="ap" class="metro-input" placeholder="Pseudo">
                     <input id="ac" type="password" class="metro-input" placeholder="Code secret">
                 `, async () => {
                     const p = document.getElementById('ap').value.trim();
                     const c = document.getElementById('ac').value.trim();
-                    if(!p || !c) { alert("Champs requis"); location.reload(); return; }
-                    
+                    if(!p || !c) return;
                     const snap = await db.ref('users/'+p).get();
                     if(snap.exists()) {
-                        // Connexion
-                        if(snap.val().code === c) { loginSuccess(p); } 
-                        else { alert("Code incorrect"); location.reload(); }
+                        if(snap.val().code === c) loginSuccess(p);
+                        else alert("Code incorrect");
                     } else {
-                        // Inscription
                         await db.ref('users/'+p).set({ code: c, created: Date.now() });
                         loginSuccess(p);
                     }
@@ -189,12 +233,32 @@
         function loginSuccess(pseudo) {
             user = pseudo;
             localStorage.setItem("thinktalk_pseudo", user);
+            document.getElementById('user-tag').textContent = "Connecté en tant que: " + user;
             closeModal();
             loadLists();
             setChat('general', 'room');
         }
 
-        // --- LISTES ---
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const overlay = document.getElementById('menu-overlay');
+            const isOpen = menu.classList.toggle('open');
+            overlay.style.display = isOpen ? 'block' : 'none';
+        }
+
+        function uiChangeBg() {
+            openModal("Fond d'écran", `<input id="bgurl" class="metro-input" placeholder="Lien direct vers image (https://...)">`, () => {
+                const url = document.getElementById('bgurl').value;
+                if(url) {
+                    document.body.style.backgroundImage = `url('${url}')`;
+                    localStorage.setItem("thinktalk_bg", url);
+                }
+                closeModal();
+                if(window.innerWidth <= 850) toggleMenu();
+            });
+        }
+
+        // --- RESTE DU CODE (SALONS, MESSAGES, ETC) ---
         function loadLists() {
             db.ref("rooms").on('value', s => {
                 const pc = document.getElementById('pc-rooms'); const mb = document.getElementById('mob-rooms');
@@ -215,7 +279,6 @@
             });
         }
 
-        // --- CHAT ENGINE ---
         function setChat(id, type) {
             current = { id, type };
             const path = type === 'room' ? `messages/public/${id}` : `messages/dm/${[user, id].sort().join("__")}`;
@@ -228,26 +291,20 @@
                 const pc = document.getElementById('msg-pc'); const mob = document.getElementById('msg-mob');
                 pc.innerHTML = ""; mob.innerHTML = "";
                 snap.forEach(c => {
-                    const msgEl = createMsgElement(c.key, c.val(), path);
-                    pc.appendChild(msgEl.cloneNode(true)); // On clone pour le PC
-                    // Re-appliquer les events sur le clone car cloneNode ne copie pas les listeners
-                    const lastPc = pc.lastElementChild;
-                    lastPc.onclick = () => openOptions(c.key, c.val(), path);
-                    mob.appendChild(msgEl);
+                    const m = c.val();
+                    const div = document.createElement('div');
+                    div.className = 'msg' + (m.pseudo === user ? ' mine' : '');
+                    let content = `<div>${m.text || ''}</div>`;
+                    if(m.type === 'image') content = `<img src="${m.url}" class="media-content">`;
+                    if(m.type === 'video') content = `<video src="${m.url}" class="media-content" controls></video>`;
+                    div.innerHTML = `<span class="msg-u">${m.pseudo}</span>${content}`;
+                    div.onclick = () => openOptions(c.key, m, path);
+                    
+                    mob.appendChild(div);
+                    pc.appendChild(div.cloneNode(true)).onclick = div.onclick;
                 });
                 pc.scrollTop = pc.scrollHeight; mob.scrollTop = mob.scrollHeight;
             });
-        }
-
-        function createMsgElement(id, m, path) {
-            const div = document.createElement('div');
-            div.className = 'msg' + (m.pseudo === user ? ' mine' : '');
-            let content = `<div>${m.text || ''}</div>`;
-            if(m.type === 'image') content = `<img src="${m.url}" class="media-content">`;
-            if(m.type === 'video') content = `<video src="${m.url}" class="media-content" controls></video>`;
-            div.innerHTML = `<span class="msg-u">${m.pseudo}</span>${content}`;
-            div.onclick = () => openOptions(id, m, path);
-            return div;
         }
 
         function openOptions(id, m, path) {
@@ -259,11 +316,11 @@
                 openModal("Modifier", `<input id="newTxt" class="metro-input" value="${m.text || ''}">`, () => {
                     const nt = document.getElementById('newTxt').value;
                     if(nt) db.ref(path+'/'+id).update({ text: nt });
+                    closeModal();
                 });
             };
         }
 
-        // --- ACTIONS ---
         function send(m) {
             const i = document.getElementById(m==='pc'?'in-pc':'in-mob');
             if(!i.value.trim()) return;
@@ -285,7 +342,6 @@
             r.readAsDataURL(file);
         }
 
-        // --- UI UTILS ---
         function openModal(title, html, confirmFn) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-content').innerHTML = html;
