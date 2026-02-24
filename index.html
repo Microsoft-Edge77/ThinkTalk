@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk Mobile v8.5</title>
+    <title>ThinkTalk Mobile</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;600&display=swap" rel="stylesheet">
     
@@ -69,6 +69,14 @@
         .msg-text { font-size: 18px; font-weight: 300; word-wrap: break-word; }
         .msg-file { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #333; }
         .file-link { color: var(--accent); text-decoration: none; font-size: 14px; display: block; margin-top: 5px; }
+
+        /* EMPTY STATE CHAT */
+        #empty-chat-state { 
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px; padding: 40px; 
+        }
+        .empty-btn { 
+            width: 100%; padding: 15px; background: #111; border: 1px solid var(--accent); color: #fff; font-weight: 600; border-radius: 5px; 
+        }
 
         /* NAV & BAR */
         .nav-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-h); background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #222; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
@@ -139,8 +147,15 @@
 
     <section class="view">
         <div class="page-title">DISCUSSION</div>
-        <h1 class="section-header" id="chat-title" style="margin-bottom: 10px;">#salon</h1>
-        <div id="message-container" class="scroll-area"></div>
+        <h1 class="section-header" id="chat-title" style="margin-bottom: 10px;">Chat</h1>
+        
+        <div id="empty-chat-state">
+            <p style="opacity: 0.6;">Aucune discussion active.</p>
+            <button class="empty-btn" onclick="goTo(0)">CHOISIR UN SALON</button>
+            <button class="empty-btn" onclick="goTo(2)">CHOISIR UN CONTACT</button>
+        </div>
+
+        <div id="message-container" class="scroll-area" style="display:none;"></div>
     </section>
 
     <section class="view">
@@ -201,7 +216,26 @@ function toggleMenu() {
 function goTo(index) {
     document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
     document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
-    document.getElementById('chat-bar').style.display = (index === 1) ? 'flex' : 'none';
+    
+    // GESTION DE LA BARRE DE CHAT ET DE L'ETAT VIDE
+    const chatBar = document.getElementById('chat-bar');
+    const emptyState = document.getElementById('empty-chat-state');
+    const msgContainer = document.getElementById('message-container');
+
+    if (index === 1) {
+        if (!currentCtx) {
+            chatBar.style.display = 'none';
+            emptyState.style.display = 'flex';
+            msgContainer.style.display = 'none';
+            document.getElementById('chat-title').textContent = "Chat";
+        } else {
+            chatBar.style.display = 'flex';
+            emptyState.style.display = 'none';
+            msgContainer.style.display = 'block';
+        }
+    } else {
+        chatBar.style.display = 'none';
+    }
 }
 
 function closeModal() { document.getElementById('modal-mobile').style.display = 'none'; }
@@ -309,7 +343,7 @@ function sendMessage() {
 function sendFile(el) {
     const file = el.files[0];
     if(!file || !currentCtx) return;
-    if(file.size > 1024 * 1024 * 2) return showNotify("MAX 2MO"); // Limite Firebase Base64
+    if(file.size > 1024 * 1024 * 2) return showNotify("MAX 2MO"); 
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -340,7 +374,8 @@ function selectRoom(roomData, roomName) {
 function openRoom(id, type) {
     currentCtx = { id, type };
     document.getElementById('chat-title').textContent = (type === 'room' ? '#' : '@') + id;
-    listenMessages(); goTo(1);
+    listenMessages(); 
+    goTo(1);
 }
 
 function uiCreateRoom() {
