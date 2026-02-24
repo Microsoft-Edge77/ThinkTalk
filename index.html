@@ -2,55 +2,47 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk OS - Infinity</title>
+    <title>ThinkTalk</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        :root { --accent: #00a2e8; --bg-img: none; }
+        :root { --accent: #00a2e8; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        body { 
-            background: #000; color: #fff; height: 100vh; overflow: hidden; 
-            background-image: var(--bg-img); background-size: cover; background-position: center;
-        }
+        body { background: #000; color: #fff; height: 100vh; overflow: hidden; }
 
-        /* --- MESSAGES (ALIGNÉS À GAUCHE) --- */
-        .msg-list { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
-        .msg { 
-            background: rgba(25, 25, 25, 0.95); padding: 12px; border-left: 4px solid var(--accent); 
-            align-self: flex-start !important; /* Force l'alignement à gauche */
-            max-width: 85%; width: fit-content;
-        }
+        /* --- LOGIN (FIXÉ) --- */
+        #login-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; align-items: center; justify-content: center; }
+        .login-box { width: 85%; max-width: 350px; padding: 30px; border: 2px solid var(--accent); background: #000; text-align: center; }
+        .login-box input { width:100%; padding:15px; background:#111; border:1px solid #333; color:white; margin-bottom:10px; outline:none; }
+        .login-box button { width:100%; padding:15px; background:var(--accent); border:none; color:white; font-weight:bold; cursor:pointer; }
+
+        /* --- MESSAGES --- */
+        .msg-list { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .msg { background: rgba(30,30,30,0.9); padding: 12px; border-left: 4px solid var(--accent); align-self: flex-start; max-width: 90%; }
         .msg-author { font-size: 10px; color: var(--accent); font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
 
-        /* --- PC LAYOUT (SIDEBAR FIXE) --- */
-        #pc-layout { display: none; height: 100vh; width: 100vw; }
-        #sidebar { width: 340px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; padding: 25px; height: 100%; }
-        .pc-scroll-area { overflow-y: auto; flex: 1; margin-bottom: 15px; padding-right: 5px; }
-        .pc-item { padding: 12px; background: #111; margin-bottom: 6px; cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
+        /* --- PC LAYOUT --- */
+        #pc-layout { display: none; height: 100vh; }
+        #sidebar { width: 340px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; padding: 25px; }
+        .pc-scroll-area { overflow-y: auto; flex: 1; margin-bottom: 15px; }
+        .pc-item { padding: 12px; background: #111; margin-bottom: 6px; cursor: pointer; border-left: 3px solid transparent; }
         .pc-item:hover { background: #1a1a1a; border-left-color: var(--accent); }
 
         /* --- MOBILE LAYOUT --- */
-        #mobile-layout { display: none; background: #000; height: 100vh; width: 100vw; position: relative; }
-        #panorama { display: flex; width: 300vw; height: 100%; transition: 0.5s cubic-bezier(0.1, 0.9, 0.2, 1); }
-        .view { width: 100vw; height: 100%; background: #000; flex-shrink: 0; overflow-y: auto; padding-top: 60px; }
+        #mobile-layout { display: none; background: #000; height: 100vh; }
+        #panorama { display: flex; width: 300vw; height: 100%; transition: 0.4s ease-out; }
+        .view { width: 100vw; height: 100%; background: #000; flex-shrink: 0; overflow-y: auto; padding-top: 40px; }
         .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 20px; }
-        .tile { background: var(--accent); padding: 15px; height: 140px; cursor: pointer; display: flex; align-items: flex-end; font-weight: bold; font-size: 18px; }
+        .tile { background: var(--accent); padding: 15px; height: 120px; cursor: pointer; display: flex; align-items: flex-end; font-weight: bold; }
         
-        /* NAVIGATION BAR */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; height: 70px; background: #000; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-        .nav-item { font-size: 11px; color: #555; cursor: pointer; font-weight: bold; letter-spacing: 1px; }
-        .nav-item.active { color: #fff; border-bottom: 2px solid var(--accent); padding-bottom: 4px; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; height: 70px; background: #000; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-item { font-size: 11px; color: #555; cursor: pointer; font-weight: bold; }
+        .nav-item.active { color: #fff; }
 
-        /* --- INTERFACE INPUT --- */
-        .input-area { display: flex; background: #000; padding: 15px; gap: 10px; border-top: 1px solid #222; width: 100%; }
-        .input-area input { flex: 1; background: #111; border: 1px solid #333; color: #fff; padding: 12px; outline: none; }
-        .input-area button { background: var(--accent); border: none; padding: 0 20px; color: white; cursor: pointer; font-weight: bold; }
-
-        /* --- LOGIN --- */
-        #login-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; align-items: center; justify-content: center; }
-        .login-box { width: 85%; max-width: 350px; padding: 30px; border: 2px solid var(--accent); background: #000; }
+        .input-area { display: flex; background: #000; padding: 15px; gap: 10px; border-top: 1px solid #222; }
+        .input-area input { flex: 1; background: #111; border: 1px solid #333; color: #fff; padding: 10px; outline: none; }
 
         @media (min-width: 851px) { #pc-layout { display: flex; } }
         @media (max-width: 850px) { #mobile-layout { display: block; } }
@@ -60,27 +52,27 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <h1 style="font-weight: 100; font-size: 32px; margin-bottom: 20px;">ThinkTalk</h1>
-            <input type="text" id="log-user" placeholder="Pseudo" style="width:100%; padding:15px; background:#111; border:1px solid #333; color:white; margin-bottom:10px; outline:none;">
-            <input type="password" id="log-pass" placeholder="Code d'accès" style="width:100%; padding:15px; background:#111; border:1px solid #333; color:white; margin-bottom:20px; outline:none;">
-            <button onclick="login()" style="width:100%; padding:15px; background:var(--accent); border:none; color:white; font-weight:bold; cursor:pointer;">DÉVERROUILLER</button>
+            <h1 style="font-weight:100; margin-bottom:20px;">ThinkTalk</h1>
+            <input type="text" id="log-user" placeholder="Choisis un pseudo">
+            <input type="password" id="log-pass" placeholder="Code d'accès">
+            <button onclick="login()">ACCÉDER</button>
         </div>
     </div>
 
     <div id="pc-layout">
         <aside id="sidebar">
-            <h2 style="font-weight:100; font-size:32px; margin-bottom:30px;">ThinkTalk</h2>
-            <p style="color:var(--accent); font-size:11px; font-weight:bold; margin-bottom:10px;">SALONS</p>
+            <h2 style="font-weight:100; margin-bottom:30px;">ThinkTalk</h2>
+            <p style="color:var(--accent); font-size:11px; margin-bottom:10px;">SALONS</p>
             <div id="pc-rooms" class="pc-scroll-area"></div>
-            <p style="color:var(--accent); font-size:11px; font-weight:bold; margin-bottom:10px;">CONTACTS</p>
+            <p style="color:var(--accent); font-size:11px; margin-bottom:10px;">CONTACTS</p>
             <div id="pc-contacts" class="pc-scroll-area"></div>
-            <button onclick="logout()" style="padding:10px; background:#e51400; color:white; border:none; cursor:pointer;">DÉCONNEXION</button>
+            <button onclick="logout()" style="padding:10px; background:#e51400; color:white; border:none; cursor:pointer;">SORTIR</button>
         </aside>
         <main style="flex:1; display:flex; flex-direction:column;">
             <div id="msg-pc" class="msg-list"></div>
             <div class="input-area">
                 <input type="text" id="in-pc" placeholder="Message..." onkeypress="if(event.key==='Enter') send('pc')">
-                <button onclick="send('pc')">ENVOYER</button>
+                <button onclick="send('pc')" style="background:var(--accent); border:none; color:white; padding:0 15px;">ENVOYER</button>
             </div>
         </main>
     </div>
@@ -88,19 +80,19 @@
     <div id="mobile-layout">
         <div id="panorama">
             <section class="view">
-                <h1 style="margin:20px; font-weight:100; font-size:45px;">salons</h1>
+                <h1 style="margin:20px; font-weight:100;">salons</h1>
                 <div id="mob-rooms" class="tiles-grid"></div>
             </section>
-            <section class="view" style="display:flex; flex-direction:column; padding-bottom: 140px;">
-                <h1 id="mob-title" style="margin:20px; font-weight:100; font-size:24px;">#accueil</h1>
+            <section class="view" style="display:flex; flex-direction:column; padding-bottom: 150px;">
+                <h1 id="mob-title" style="margin:20px; font-weight:100; font-size:20px;">#accueil</h1>
                 <div id="msg-mob" class="msg-list"></div>
                 <div class="input-area" id="mob-input-bar" style="display:none; position:fixed; bottom:70px; width:100%;">
                     <input type="text" id="in-mob" placeholder="Réponse..." onkeypress="if(event.key==='Enter') send('mob')">
-                    <button onclick="send('mob')">OK</button>
+                    <button onclick="send('mob')" style="background:var(--accent); border:none; color:white; padding:0 15px;">OK</button>
                 </div>
             </section>
             <section class="view">
-                <h1 style="margin:20px; font-weight:100; font-size:45px;">contacts</h1>
+                <h1 style="margin:20px; font-weight:100;">contacts</h1>
                 <div id="mob-contacts" class="tiles-grid"></div>
             </section>
         </div>
@@ -112,19 +104,30 @@
     </div>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w", authDomain: "chat-github-6abb5.firebaseapp.com", databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app", projectId: "chat-github-6abb5" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w", 
+            authDomain: "chat-github-6abb5.firebaseapp.com", 
+            databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app", 
+            projectId: "chat-github-6abb5" 
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const ACCESS_CODE = "1234"; // TON CODE DE SÉCURITÉ
-        let user = localStorage.getItem("tt_user"), current = { id: 'general', type: 'room' };
+        const ACCESS_CODE = "1234"; 
+        let user = localStorage.getItem("tt_user");
+        let current = { id: 'general', type: 'room' };
 
         function login() {
             const u = document.getElementById('log-user').value.trim();
             const p = document.getElementById('log-pass').value;
-            if(u && p === ACCESS_CODE) {
-                localStorage.setItem("tt_user", u);
-                location.reload();
-            } else { alert("Accès refusé"); }
+            if (u && p === ACCESS_CODE) {
+                // Création/Mise à jour du compte instantanée
+                db.ref('users/' + u).set(true).then(() => {
+                    localStorage.setItem("tt_user", u);
+                    location.reload();
+                });
+            } else {
+                alert("Code incorrect ou pseudo vide.");
+            }
         }
 
         function setChat(id, type) {
@@ -152,7 +155,8 @@
                     pr.innerHTML += `<div class="pc-item" onclick="setChat('${id}','room')"># ${id}</div>`;
                     mr.innerHTML += `<div class="tile" onclick="setChat('${id}','room');goTo(1)">${id}</div>`;
                 };
-                render('general'); s.forEach(r => { if(r.key!=='general') render(r.key); });
+                render('general');
+                s.forEach(r => { if(r.key!=='general') render(r.key); });
             });
             db.ref("users").on('value', s => {
                 const pc = document.getElementById('pc-contacts'), mc = document.getElementById('mob-contacts');
