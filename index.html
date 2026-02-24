@@ -2,12 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ThinkTalk Mobile v2.9 - Full Sync</title>
+<title>ThinkTalk Mobile v3.0 - Metro Sync</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 
 <style>
 :root { 
@@ -19,64 +18,74 @@
 html, body { 
     margin: 0; padding: 0; 
     background: var(--bg); color: #fff; 
-    font-family: 'Segoe UI', sans-serif; 
-    height: 100%; 
-    overflow: hidden;
+    font-family: 'Segoe UI', 'Helvetica Neue', sans-serif; 
+    height: 100%; overflow: hidden;
 }
+
+/* PANORAMA */
 #panorama { 
     display: flex; 
-    width: 300vw; 
-    height: 100%; 
+    width: 300vw; height: 100%; 
     transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); 
 }
 .view { 
     width: 100vw; height: 100%; 
     display: flex; flex-direction: column; 
-    padding: 20px 20px 0 20px;
-    position: relative;
+    padding: 20px 20px 0 20px; position: relative;
 }
+
+/* HEADER & HAMBURGER */
+.header-row { display: flex; align-items: center; gap: 15px; margin-bottom: 5px; }
+.hamburger { font-size: 28px; cursor: pointer; color: var(--accent); }
 .page-title { font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; opacity: 0.7; }
-.section-header { font-size: 50px; font-weight: 100; margin-bottom: 20px; color: var(--accent); }
-.scroll-area { 
-    flex: 1; 
-    overflow-y: auto; 
-    padding-bottom: 140px; 
+.section-header { font-size: 45px; font-weight: 100; margin-bottom: 20px; color: var(--accent); }
+
+/* GRILLE DE TUILES ASYMÉTRIQUE */
+.tiles-grid { 
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); 
+    grid-auto-rows: 80px; 
+    gap: 10px; 
 }
-#chat-bar {
-    position: fixed;
-    bottom: var(--nav-h);
-    left: 0;
-    width: 100%;
-    padding: 8px;
-    background: #111;
-    display: none;
-    align-items: center;
-    gap: 8px;
-    z-index: 95;
-    border-top: 1px solid #222;
+.tile { 
+    background: var(--accent); 
+    padding: 12px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: flex-end; 
+    font-size: 16px; 
+    font-weight: 600; 
+    transition: transform 0.1s;
+    position: relative;
+    overflow: hidden;
 }
-#chat-bar input {
-    flex: 1;
-    min-width: 0;
-    height: 42px;
-    padding: 0 12px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    background: #fff;
-    color: #000;
-    outline: none;
+.tile:active { transform: scale(0.95); }
+.tile.large { grid-column: span 4; } /* Toute la largeur */
+.tile.medium { grid-column: span 2; grid-row: span 2; } /* Carré moyen */
+.tile.wide { grid-column: span 2; } /* Rectangle horizontal */
+.tile.tall { grid-row: span 2; } /* Rectangle vertical */
+.tile.contact { background: #333; }
+.tile.danger { background: #e81123; }
+.private-icon { position: absolute; top: 8px; right: 8px; font-size: 12px; }
+
+/* PROFIL OVERLAY */
+#profile-menu {
+    position: fixed; top: 0; left: 0; width: 85%; height: 100%;
+    background: #051933; z-index: 2000;
+    transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 40px 25px; border-right: 2px solid var(--accent);
 }
-#chat-bar button {
-    height: 42px;
-    padding: 0 18px;
-    background: var(--accent);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-weight: bold;
-    flex-shrink: 0;
-}
+#profile-menu.open { transform: translateX(0); }
+.profile-link { display: block; padding: 15px 0; font-size: 20px; color: #fff; text-decoration: none; border-bottom: 1px solid #1a3a5f; }
+.profile-link.delete { color: #ff5050; margin-top: 40px; border-bottom: none; }
+
+/* CHAT AREA */
+.scroll-area { flex: 1; overflow-y: auto; padding-bottom: 140px; }
+.msg-bubble { margin-bottom: 15px; border-left: 3px solid var(--accent); padding-left: 12px; }
+.msg-pseudo { color: var(--accent); font-size: 12px; font-weight: bold; }
+.msg-text { font-size: 18px; font-weight: 300; word-wrap: break-word; }
+
+/* NAV BAR */
 .nav-bottom { 
     position: fixed; bottom: 0; left: 0; width: 100%; 
     height: var(--nav-h); background: #000; 
@@ -85,88 +94,51 @@ html, body {
 }
 .nav-item { font-size: 11px; text-transform: uppercase; color: #666; font-weight: bold; }
 .nav-item.active { color: #fff; border-bottom: 2px solid var(--accent); }
-.tiles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.tile { background: var(--accent); aspect-ratio: 1/1; padding: 15px; display: flex; align-items: flex-end; font-size: 18px; font-weight: 600; }
-.list-item { padding: 15px 10px; border-bottom: 1px solid #222; font-size: 22px; font-weight: 300; }
-.msg-bubble { margin-bottom: 15px; border-left: 3px solid var(--accent); padding-left: 12px; }
-.msg-pseudo { color: var(--accent); font-size: 12px; font-weight: bold; }
-.msg-text { font-size: 19px; font-weight: 300; word-wrap: break-word; }
-#msg-menu {
-    position: fixed;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #222;
-    padding: 10px;
-    border-radius: 10px;
-    display: none;
-    z-index: 999;
+
+/* INPUTS */
+#chat-bar {
+    position: fixed; bottom: var(--nav-h); left: 0; width: 100%;
+    padding: 10px; background: #111; display: none; align-items: center; gap: 8px;
+    z-index: 95; border-top: 1px solid #222;
 }
-#msg-menu button {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    color: #fff;
-    margin-top: 5px;
-    border-radius: 6px;
-}
-#edit-btn { background: #00a2e8; }
-#delete-btn { background: #e81123; }
-#popup {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-}
-#popup-box {
-    background: #111;
-    border: 2px solid var(--accent);
-    padding: 20px;
-    width: 80%;
-    max-width: 300px;
-    text-align: center;
-}
-#popup-title { font-size: 20px; margin-bottom: 10px; color: var(--accent); }
-#popup-msg { font-size: 16px; margin-bottom: 20px; }
-#popup-ok { background: var(--accent); border: none; padding: 10px 20px; color: #fff; font-weight: bold; width: 100%; }
-#auth { position: fixed; inset: 0; background: #000; z-index: 1000; padding: 40px 20px; }
+#chat-bar input { flex: 1; height: 42px; padding: 0 12px; border-radius: 6px; border: none; background: #fff; color: #000; }
+#chat-bar button { height: 42px; padding: 0 15px; background: var(--accent); border: none; border-radius: 6px; color: #fff; font-weight: bold; }
+
+/* AUTH */
+#auth { position: fixed; inset: 0; background: #000; z-index: 3000; padding: 40px 20px; }
 .hidden { display: none !important; }
-#add-contact-top { width: 100%; padding: 12px; margin-bottom: 10px; background: none; border: 2px solid #fff; color: #fff; font-weight: bold; text-transform: uppercase; }
 </style>
 </head>
 <body>
 
-<div id="popup">
-    <div id="popup-box">
-        <div id="popup-title">THINKTALK</div>
-        <div id="popup-msg"></div>
-        <button id="popup-ok">OK</button>
-    </div>
+<div id="profile-menu">
+    <div style="font-size: 12px; opacity: 0.5; margin-bottom: 5px;">CONNECTÉ EN TANT QUE</div>
+    <h2 id="me-pseudo" style="margin-top:0; color:var(--accent); margin-bottom:30px;">PSEUDO</h2>
+    <a href="#" class="profile-link" onclick="changeCode()">Changer mon code</a>
+    <a href="#" class="profile-link" onclick="logout()">Se déconnecter</a>
+    <a href="#" class="profile-link delete" onclick="deleteMyAccount()">Supprimer le compte</a>
+    <button onclick="toggleMenu()" style="margin-top:50px; background:none; border:1px solid #fff; color:#fff; padding:10px 20px;">FERMER</button>
 </div>
 
 <div id="auth">
     <div class="page-title">THINKTALK</div>
     <h1 class="section-header">identification</h1>
-    <input id="pseudo" type="text" placeholder="pseudo" style="width:100%; padding:15px; margin-bottom:10px; border:none;">
-    <input id="code" type="password" placeholder="code" style="width:100%; padding:15px; margin-bottom:20px; border:none;">
-    <button onclick="handleAuth('login')" style="width:100%; padding:15px; background:var(--accent); color:#fff; border:none; font-weight:bold;">CONNEXION</button>
-    <button onclick="handleAuth('register')" style="width:100%; padding:10px; background:none; color:#888; border:none; margin-top:10px;">créer un compte</button>
+    <input id="authPseudo" type="text" placeholder="pseudo" style="width:100%; padding:15px; margin-bottom:10px; border:none; background:#222; color:#fff;">
+    <input id="authCode" type="password" placeholder="code" style="width:100%; padding:15px; margin-bottom:20px; border:none; background:#222; color:#fff;">
+    <button onclick="handleAuth('login')" style="width:100%; padding:18px; background:var(--accent); color:#fff; border:none; font-weight:bold; letter-spacing:2px;">CONNEXION</button>
+    <button onclick="handleAuth('register')" style="width:100%; padding:15px; background:none; color:#888; border:none; margin-top:10px;">créer un compte</button>
 </div>
 
 <div id="panorama">
     <section class="view">
-        <div class="page-title">THINKTALK</div>
-        <h1 class="section-header">accueil</h1>
-        
-        <div id="rooms-container" class="tiles-container"></div>
-        
-        <div class="tiles-container" style="margin-top:10px;">
-            <div class="tile" style="background:#333" onclick="goTo(2)">contacts</div>
-            <div class="tile" style="background:#e81123" onclick="logout()">quitter</div>
+        <div class="header-row">
+            <div class="hamburger" onclick="toggleMenu()">☰</div>
+            <div class="page-title">THINKTALK</div>
         </div>
+        <h1 class="section-header">accueil</h1>
+        <div id="rooms-grid" class="tiles-grid">
+            </div>
+        <button onclick="createRoomPrompt()" style="margin-top:15px; width:100%; padding:12px; background:none; border:1px solid #555; color:#fff;">+ CRÉER UN SALON</button>
     </section>
 
     <section class="view">
@@ -178,19 +150,15 @@ html, body {
     <section class="view">
         <div class="page-title">PERSONNES</div>
         <h1 class="section-header">contacts</h1>
-        <button id="add-contact-top" onclick="addContactPrompt()">+ ajouter un contact</button>
-        <div id="contacts-list" class="scroll-area"></div>
+        <div id="contacts-grid" class="tiles-grid">
+            </div>
+        <button onclick="addContactPrompt()" style="margin-top:15px; width:100%; padding:12px; background:none; border:1px solid #555; color:#fff;">+ AJOUTER UN AMI</button>
     </section>
 </div>
 
 <div id="chat-bar">
-    <input id="msgInput" type="text" placeholder="répondre...">
-    <button onclick="send()">OK</button>
-</div>
-
-<div id="msg-menu">
-    <button id="edit-btn">Modifier</button>
-    <button id="delete-btn">Supprimer</button>
+    <input id="msgInput" type="text" placeholder="Répondre...">
+    <button onclick="sendMessage()">OK</button>
 </div>
 
 <nav class="nav-bottom">
@@ -200,7 +168,7 @@ html, body {
 </nav>
 
 <script>
-/* Configuration Firebase */
+/* FIREBASE CONFIG */
 const firebaseConfig = {
     apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
     authDomain: "chat-github-6abb5.firebaseapp.com",
@@ -212,225 +180,169 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const messaging = firebase.messaging();
 
 let user = localStorage.getItem('tt_user');
-let currentCtx = { id: 'general', type: 'room' };
-let selectedMessage = null;
+let currentCtx = null;
 
-/* Push Notifications */
-async function initNotifications() {
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            const token = await messaging.getToken({
-                vapidKey: 'BIFTbjzAy_XOcfhd1U8p_tGxMZ-DX-hmMrnTFTOOTdcOlWcPxSqfKTkLkW3XYOS95rcnrksUKKIJ1KWBNE1SiZM'
-            });
-            if (token && user) await db.ref(`users/${user}/pushToken`).set(token);
-        }
-    } catch (e) { console.error("Erreur Push:", e); }
-}
-
-/* UI / Nav */
-function showPopup(msg) {
-    document.getElementById("popup-msg").textContent = msg;
-    document.getElementById("popup").style.display = "flex";
-}
-document.getElementById("popup-ok").onclick = () => document.getElementById("popup").style.display = "none";
-
+/* UI & NAV */
+function toggleMenu() { document.getElementById('profile-menu').classList.toggle('open'); }
 function goTo(index) {
     document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
     document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
     document.getElementById('chat-bar').style.display = (index === 1) ? 'flex' : 'none';
 }
 
-/* Auth */
+/* AUTH DYNAMIQUE */
 async function handleAuth(type) {
-    const p = document.getElementById('pseudo').value.trim();
-    const c = document.getElementById('code').value.trim();
-    if (!p || c.length < 4) return showPopup("Pseudo et code requis");
+    const p = document.getElementById('authPseudo').value.trim();
+    const c = document.getElementById('authCode').value.trim();
+    if(!p || c.length < 4) return alert("Pseudo et code (4+) requis");
 
     const userRef = db.ref('users/' + p);
     const snap = await userRef.get();
 
-    if (type === 'register') {
-        if (snap.exists()) return showPopup("Déjà pris");
+    if(type === 'register') {
+        if(snap.exists()) return alert("Pseudo déjà pris");
         await userRef.set({ code: c });
-        showPopup("Créé, connectez-vous");
+        alert("Compte créé !");
     } else {
-        if (!snap.exists() || snap.val().code !== c) return showPopup("Erreur");
+        if(!snap.exists() || snap.val().code !== c) return alert("Erreur d'identification");
         user = p;
         localStorage.setItem('tt_user', p);
-        loginSequence();
+        startApp();
     }
 }
 
-async function loginSequence() {
+function startApp() {
     document.getElementById('auth').classList.add('hidden');
-    await loadRooms(); // Synchronise les salons avec Firebase
+    document.getElementById('me-pseudo').textContent = user;
+    loadRooms();
     loadContacts();
-    initNotifications();
     openRoom('general', 'room');
 }
 
-/* Chargement des Salons (Comme sur PC) */
-async function loadRooms() {
-    const container = document.getElementById('rooms-container');
-    container.innerHTML = "";
-    const snap = await db.ref("publicRooms").get();
-    if (snap.exists()) {
-        Object.keys(snap.val()).forEach(name => {
-            const div = document.createElement('div');
-            div.className = 'tile';
-            div.textContent = "#" + name;
-            div.onclick = () => openRoom(name, 'room');
-            container.appendChild(div);
+/* SYNC SALONS (STYLE ASYMÉTRIQUE) */
+function loadRooms() {
+    const grid = document.getElementById('rooms-grid');
+    db.ref("rooms").on('value', snap => {
+        grid.innerHTML = "";
+        let i = 0;
+        snap.forEach(child => {
+            const r = child.val();
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            
+            // Logique de taille alternée pour le style Metro
+            if(i % 5 === 0) tile.classList.add('medium'); // 1ère, 6ème... sont grandes
+            else if(i % 3 === 0) tile.classList.add('wide'); // Rectangle large
+            
+            tile.innerHTML = `<span>#${r.name}</span> ${r.private ? '<span class="private-icon">🔒</span>' : ''}`;
+            tile.onclick = () => selectRoom(r);
+            grid.appendChild(tile);
+            i++;
         });
-    }
+    });
 }
 
-/* CHAT ET SYNC TEMPS RÉEL */
+async function selectRoom(room) {
+    if(room.private && room.creator !== user) {
+        const pass = prompt("Salon privé. Code :");
+        if(pass !== room.code) return alert("Code erroné");
+    }
+    openRoom(room.name, 'room');
+}
+
 function openRoom(id, type) {
     currentCtx = { id, type };
-    document.getElementById('chat-title').textContent = (type === 'room' ? '#' : '') + id;
+    document.getElementById('chat-title').textContent = (type === 'room' ? '#' : '@') + id;
     listenMessages();
     goTo(1);
 }
 
+/* CHAT SYNC (CORRIGÉ V2.9) */
 function listenMessages() {
-    let path = currentCtx.type === 'room'
-        ? `messages/public/${currentCtx.id}`
-        : `messages/dm/${getConvId(user, currentCtx.id)}`;
-
+    const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
     const ref = db.ref(path);
     const container = document.getElementById('message-container');
-
     ref.off();
     container.innerHTML = "";
-
-    // 1. Écoute les ajouts
     ref.limitToLast(50).on('child_added', snap => {
-        renderMessage(snap.key, snap.val());
+        const m = snap.val();
+        const div = document.createElement('div');
+        div.className = 'msg-bubble';
+        div.id = "msg-" + snap.key;
+        div.innerHTML = `<div class="msg-pseudo">${m.pseudo}</div><div class="msg-text">${m.text}</div>`;
+        container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     });
-
-    // 2. Écoute les suppressions (FIX)
     ref.on('child_removed', snap => {
-        const el = document.getElementById("msg-" + snap.key);
-        if (el) el.remove();
-    });
-
-    // 3. Écoute les changements (FIX)
-    ref.on('child_changed', snap => {
-        const el = document.getElementById("msg-" + snap.key);
-        if (el) {
-            el.querySelector('.msg-text').textContent = snap.val().text;
-        }
+        const el = document.getElementById("msg-"+snap.key);
+        if(el) el.remove();
     });
 }
 
-function renderMessage(key, m) {
-    const container = document.getElementById('message-container');
-    const div = document.createElement('div');
-    div.className = 'msg-bubble';
-    div.id = "msg-" + key;
-    div.dataset.id = key;
-
-    div.innerHTML = `
-        <div class="msg-pseudo">${m.pseudo}</div>
-        <div class="msg-text">${m.text}</div>
-    `;
-
-    if (m.pseudo === user) {
-        let pressTimer;
-        const start = () => pressTimer = setTimeout(() => showMessageMenu(div), 500);
-        const end = () => clearTimeout(pressTimer);
-        div.addEventListener('touchstart', start);
-        div.addEventListener('touchend', end);
-        div.addEventListener('mousedown', start);
-        div.addEventListener('mouseup', end);
-    }
-    container.appendChild(div);
-}
-
-function send() {
+function sendMessage() {
     const input = document.getElementById('msgInput');
-    const txt = input.value.trim();
-    if (!txt || !user) return;
-    let path = currentCtx.type === 'room'
-        ? `messages/public/${currentCtx.id}`
-        : `messages/dm/${getConvId(user, currentCtx.id)}`;
-    db.ref(path).push({ pseudo: user, text: txt, timestamp: Date.now() });
+    if(!input.value.trim()) return;
+    const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
+    db.ref(path).push({ pseudo: user, text: input.value.trim(), timestamp: Date.now() });
     input.value = "";
 }
 
-/* Actions Menu */
-function showMessageMenu(div) {
-    selectedMessage = div;
-    document.getElementById('msg-menu').style.display = 'block';
+/* FONCTIONS PROFIL (SYNC PC) */
+async function changeCode() {
+    const n = prompt("Nouveau code (4 chiffres min) :");
+    if(n && n.length >= 4) {
+        await db.ref(`users/${user}`).update({code: n});
+        alert("Code modifié !");
+        toggleMenu();
+    }
 }
 
-document.addEventListener('click', (e) => {
-    const menu = document.getElementById('msg-menu');
-    if (menu.style.display === 'block' && !menu.contains(e.target) && !e.target.closest('.msg-bubble')) {
-        menu.style.display = 'none';
+async function deleteMyAccount() {
+    if(confirm("Supprimer définitivement votre compte ?")) {
+        await db.ref(`users/${user}`).remove();
+        logout();
     }
-});
+}
 
-document.getElementById('delete-btn').onclick = () => {
-    if (!selectedMessage) return;
-    const id = selectedMessage.dataset.id;
-    let path = currentCtx.type === 'room'
-        ? `messages/public/${currentCtx.id}/${id}`
-        : `messages/dm/${getConvId(user, currentCtx.id)}/${id}`;
-    db.ref(path).remove();
-    document.getElementById('msg-menu').style.display = 'none';
-};
+async function createRoomPrompt() {
+    const name = prompt("Nom du salon :")?.trim().toLowerCase();
+    if(!name) return;
+    const isPriv = confirm("Privé ?");
+    let code = isPriv ? prompt("Code du salon :") : "";
+    await db.ref("rooms/"+name).set({ name, private: isPriv, code, creator: user });
+}
 
-document.getElementById('edit-btn').onclick = () => {
-    if (!selectedMessage) return;
-    const id = selectedMessage.dataset.id;
-    const oldT = selectedMessage.querySelector('.msg-text').textContent;
-    const newT = prompt("Modifier :", oldT);
-    if (newT && newT !== oldT) {
-        let path = currentCtx.type === 'room'
-            ? `messages/public/${currentCtx.id}/${id}`
-            : `messages/dm/${getConvId(user, currentCtx.id)}/${id}`;
-        db.ref(path).update({ text: newT });
-    }
-    document.getElementById('msg-menu').style.display = 'none';
-};
-
-/* Contacts */
-async function loadContacts() {
-    const list = document.getElementById('contacts-list');
-    const snap = await db.ref('contacts/' + user).get();
-    list.innerHTML = "";
-    if (snap.exists()) {
-        Object.keys(snap.val()).forEach(name => {
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.textContent = name;
-            div.onclick = () => openRoom(name, 'dm');
-            list.appendChild(div);
+/* CONTACTS & DM */
+function loadContacts() {
+    const grid = document.getElementById('contacts-grid');
+    db.ref("contacts/"+user).on('value', snap => {
+        grid.innerHTML = "";
+        snap.forEach(child => {
+            const name = child.key;
+            const tile = document.createElement('div');
+            tile.className = 'tile contact wide';
+            tile.innerHTML = `<span>@${name}</span>`;
+            tile.onclick = () => openRoom(name, 'dm');
+            grid.appendChild(tile);
         });
-    }
+    });
 }
 
 async function addContactPrompt() {
-    const target = prompt("Pseudo :");
-    if (!target || target === user) return;
-    const check = await db.ref('users/' + target).get();
-    if (!check.exists()) return showPopup("Inconnu");
-    await db.ref(`contacts/${user}/${target}`).set(true);
-    await db.ref(`contacts/${target}/${user}`).set(true);
-    loadContacts();
+    const p = prompt("Pseudo de l'ami :");
+    if(!p || p === user) return;
+    const check = await db.ref("users/"+p).get();
+    if(!check.exists()) return alert("Utilisateur inconnu");
+    await db.ref(`contacts/${user}/${p}`).set(true);
+    await db.ref(`contacts/${p}/${user}`).set(true);
 }
 
 function getConvId(a, b) { return [a, b].sort().join("__"); }
 function logout() { localStorage.clear(); location.reload(); }
 
-window.onload = () => { if (user) loginSequence(); };
+window.onload = () => { if(user) startApp(); };
 </script>
 </body>
 </html>
