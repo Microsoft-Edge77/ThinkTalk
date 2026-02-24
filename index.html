@@ -13,13 +13,13 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; }
 
-        /* --- MODALES & CONTEXT MENU --- */
+        /* --- MODALES --- */
         #metro-modal-overlay, #msg-context-menu { 
             position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
             z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px;
         }
         .metro-modal { background: #000; border: 2px solid var(--accent); width: 100%; max-width: 380px; padding: 25px; }
-        .metro-input { width: 100%; padding: 12px; background: #111; border: 2px solid #333; color: #fff; margin-bottom: 15px; outline: none; width: 100%; }
+        .metro-input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; margin-bottom: 15px; outline: none; }
         .metro-btn { padding: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 10px; }
         .btn-blue { background: var(--accent); color: #fff; }
         .btn-gray { background: #333; color: #fff; }
@@ -38,9 +38,8 @@
         .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; }
         .msg { background: #111; padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; transition: 0.2s; cursor: pointer; }
         .msg.mine { border-left-color: var(--accent); }
-        .msg:hover { background: #1a1a1a; }
         .msg-u { color: var(--accent); font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px; }
-        .media-content { max-width: 100%; max-height: 300px; margin-top: 10px; }
+        .media-content { max-width: 100%; max-height: 250px; margin-top: 8px; border: 1px solid #222; }
 
         /* --- PANORAMA MOBILE --- */
         #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); }
@@ -50,7 +49,7 @@
 
         /* --- BARS --- */
         .input-area { display: flex; gap: 8px; background: #000; padding: 10px; border-top: 1px solid #222; }
-        .input-area input { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
+        .input-area input[type="text"] { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
         .nav-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-h); background: #000; border-top: 1px solid #222; display: flex; }
         .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #444; }
         .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
@@ -60,6 +59,8 @@
     </style>
 </head>
 <body>
+
+    <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(this)">
 
     <div id="msg-context-menu" onclick="closeCtx()">
         <div class="metro-modal" onclick="event.stopPropagation()">
@@ -87,7 +88,6 @@
                 <input type="text" class="search-box" placeholder="Chercher salon..." oninput="filterList('pc-rooms', this.value)">
                 <button class="metro-btn btn-blue" onclick="uiCreateRoom()" style="margin-bottom:15px; font-size: 11px;">+ NOUVEAU SALON</button>
                 <div id="pc-rooms"></div>
-                
                 <p style="font-size:10px; color:#555; margin:20px 0 5px 0;">CONTACTS</p>
                 <input type="text" class="search-box" placeholder="Chercher ami..." oninput="filterList('pc-contacts', this.value)">
                 <button class="metro-btn btn-gray" onclick="uiAddContact()" style="margin-bottom:15px; font-size: 11px;">+ AJOUTER AMI</button>
@@ -99,8 +99,8 @@
             <div style="padding:20px; border-bottom:1px solid #111;"><h2 id="chat-title-pc" style="font-weight:100; font-size:32px;">#accueil</h2></div>
             <div id="msg-pc" class="msg-list"></div>
             <div class="input-area">
-                <button class="metro-btn btn-gray" onclick="uiUpload()" style="width:50px; flex:none; margin-top:0;">+</button>
-                <input id="in-pc" placeholder="Écrire un message..." onkeypress="if(event.key==='Enter') send('pc')">
+                <button class="metro-btn btn-gray" onclick="triggerFile()" style="width:50px; flex:none; margin-top:0;">📁</button>
+                <input type="text" id="in-pc" placeholder="Écrire un message..." onkeypress="if(event.key==='Enter') send('pc')">
                 <button class="metro-btn btn-blue" onclick="send('pc')" style="width:100px; flex:none; margin-top:0;">Envoyer</button>
             </div>
         </main>
@@ -126,8 +126,8 @@
             </section>
         </div>
         <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:70px; width:100%;">
-            <button class="metro-btn btn-gray" onclick="uiUpload()" style="width:50px; flex:none; margin-top:0;">+</button>
-            <input id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
+            <button class="metro-btn btn-gray" onclick="triggerFile()" style="width:50px; flex:none; margin-top:0;">📁</button>
+            <input type="text" id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
             <button class="metro-btn btn-blue" onclick="send('mob')" style="width:70px; flex:none; margin-top:0;">OK</button>
         </div>
         <nav class="nav-bottom">
@@ -151,7 +151,36 @@
         let current = { id: 'general', type: 'room' };
         let holdTimer;
 
-        // --- UTILS ---
+        // --- GESTION DES FICHIERS ---
+        function triggerFile() { document.getElementById('fileInput').click(); }
+
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Limite à 1Mo pour ne pas saturer la Database gratuite
+            if (file.size > 1024 * 1024) { alert("Fichier trop lourd (max 1Mo)"); return; }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                let type = 'file';
+                if (file.type.startsWith('image/')) type = 'image';
+                if (file.type.startsWith('video/')) type = 'video';
+
+                const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`;
+                db.ref(path).push({
+                    pseudo: user,
+                    url: base64Data,
+                    text: file.name,
+                    type: type,
+                    timestamp: Date.now()
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- UI CORE ---
         function openModal(title, html, confirmFn) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-content').innerHTML = html;
@@ -176,7 +205,6 @@
             document.getElementById('mob-bar').style.display = (idx === 1) ? 'flex' : 'none';
         }
 
-        // --- MESSAGES ---
         function createMsgElement(id, m, path) {
             const div = document.createElement('div');
             div.className = 'msg' + (m.pseudo === user ? ' mine' : '');
@@ -201,12 +229,10 @@
                 };
             };
 
-            // Événements unifiés : Clic ou Clic droit = Options
             div.onclick = openOptions;
             div.oncontextmenu = openOptions;
             div.ontouchstart = () => holdTimer = setTimeout(() => openOptions({preventDefault:()=>{}}), 500);
             div.ontouchend = () => clearTimeout(holdTimer);
-
             return div;
         }
 
@@ -230,7 +256,6 @@
             });
         }
 
-        // --- SYSTEM ---
         function init() {
             if(!user) {
                 openModal("connexion", `<input id="ap" class="metro-input" placeholder="pseudo"><input id="ac" type="password" class="metro-input" placeholder="code">`, async () => {
@@ -265,16 +290,6 @@
             const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`;
             db.ref(path).push({ pseudo: user, text: i.value, timestamp: Date.now() });
             i.value = "";
-        }
-
-        function uiUpload() {
-            openModal("upload url", `<input id="uurl" class="metro-input" placeholder="Lien image ou vidéo">`, () => {
-                const u = document.getElementById('uurl').value;
-                if(!u) return;
-                const type = u.match(/\.(mp4|webm)$/) ? 'video' : 'image';
-                const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`;
-                db.ref(path).push({ pseudo: user, url: u, type: type });
-            });
         }
 
         function uiCreateRoom() { openModal("nouveau salon", `<input id="rn" class="metro-input">`, () => { db.ref('rooms/'+document.getElementById('rn').value).set({c:user}); }); }
