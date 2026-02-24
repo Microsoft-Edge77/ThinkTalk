@@ -9,90 +9,93 @@
     <style>
         :root { --accent: #00a2e8; --bg: #000; --nav-h: 70px; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); background-size: cover; background-position: center; background-attachment: fixed; color: #fff; height: 100vh; overflow: hidden; transition: background 0.5s ease; }
+        body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; }
         
+        /* Layouts */
         #pc-layout, #mobile-layout, #panorama, .view { background: transparent !important; }
-        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: rgba(0, 0, 0, 0.1); }
-        #sidebar, .mobile-header, .nav-bottom, .input-area, #mobile-menu { background: rgba(0, 0, 0, 0.8) !important; backdrop-filter: blur(15px); }
-        .mobile-header { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 60px; padding: 0 20px; align-items: center; justify-content: space-between; z-index: 900; }
-        
-        #metro-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; display: none; align-items: center; justify-content: center; padding: 15px; }
-        .metro-modal { background: #000; border: 2px solid var(--accent); width: 100%; max-width: 380px; padding: 25px; box-shadow: 0 0 30px rgba(0,162,232,0.3); }
-        .metro-input { width: 100%; padding: 12px; background: #111; border: 2px solid #333; color: #fff; margin-bottom: 10px; outline: none; border-radius: 0; }
-        .metro-btn { padding: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 10px; }
-        .btn-blue { background: var(--accent); color: #fff; }
-        .btn-gray { background: #333; color: #fff; }
-
         #pc-layout { display: none; height: 100vh; }
-        #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .pc-tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #222; }
-        .pc-tab { padding-bottom: 5px; cursor: pointer; font-size: 12px; font-weight: bold; color: #555; text-transform: uppercase; }
-        .pc-tab.active { color: #fff; border-bottom: 2px solid var(--accent); }
-        .search-box { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #333; color: #fff; margin-bottom: 10px; font-size: 14px; outline: none; }
+        #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); }
         
-        .room-actions { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
-        .btn-action-metro { padding: 10px; font-size: 11px; background: #111; color: #fff; border: 1px solid #333; cursor: pointer; text-align: left; text-transform: uppercase; transition: 0.2s; }
-        .btn-action-metro:hover { border-color: var(--accent); background: #222; }
+        /* Messages (Style demandé : Alignés à gauche, saut de ligne) */
+        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; }
+        .msg { 
+            background: rgba(255,255,255,0.07); 
+            padding: 10px; 
+            border-left: 4px solid #333; 
+            width: fit-content;
+            max-width: 90%; 
+            align-self: flex-start; 
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
+            position: relative;
+        }
+        .msg.mine { border-left-color: var(--accent); }
+        .msg-header { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px; color: var(--accent); font-weight: bold; gap: 20px; }
+        .msg-time { color: #666; font-weight: normal; }
+        .msg-text { font-size: 15px; line-height: 1.4; color: #eee; white-space: pre-wrap; }
+        
+        .msg-actions { margin-top: 8px; display: flex; gap: 10px; opacity: 0.6; }
+        .msg-actions span { font-size: 10px; cursor: pointer; text-transform: uppercase; color: #888; }
+        .msg-actions span:hover { color: #fff; }
 
-        .pc-item { padding: 10px; cursor: pointer; border-left: 3px solid transparent; }
-        .pc-item:hover { background: rgba(0,162,232,0.15); border-left-color: var(--accent); }
+        /* Tiles Style (Transparentes & Live) */
+        .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .tile { 
+            background: rgba(0, 162, 232, 0.7); /* Transparence accent */
+            padding: 12px; height: 110px; display: flex; flex-direction: column; justify-content: flex-end;
+            font-weight: bold; cursor: pointer; position: relative; overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .tile:active { transform: scale(0.95); }
+        .tile.private { background: rgba(50, 50, 50, 0.7); border: 1px solid var(--accent); }
+        
+        .tile .tile-label { font-size: 14px; z-index: 2; text-transform: lowercase; }
+        .tile .live-preview { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            padding: 10px; background: inherit; display: flex; flex-direction: column;
+            font-size: 11px; font-weight: normal; animation: slideUp 0.5s ease-out;
+        }
+        .live-author { color: #fff; font-weight: bold; margin-bottom: 2px; font-size: 10px; opacity: 0.8; }
+        .live-text { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 
-        #mobile-layout { display: none; height: 100vh; position: relative; padding-top: 60px; }
-        #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.6s cubic-bezier(0.1, 0.7, 0.1, 1); perspective: 1500px; }
-        .view { width: 100vw; height: 100%; padding: 15px 15px 180px 15px; display: flex; flex-direction: column; overflow-y: auto; }
-        .nav-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-h); border-top: 1px solid #222; display: flex; z-index: 1000; }
-        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #444; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* UI elements */
+        .metro-input { width: 100%; padding: 12px; background: #111; border: 2px solid #333; color: #fff; margin-bottom: 10px; outline: none; }
+        .btn-action-metro { padding: 10px; font-size: 11px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #333; cursor: pointer; text-align: left; text-transform: uppercase; margin-bottom: 5px; width: 100%; }
+        .search-box { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #333; color: #fff; margin-bottom: 15px; outline: none; }
+
+        #mobile-layout { display: none; height: 100vh; padding-top: 60px; }
+        .mobile-header { position: fixed; top: 0; width: 100%; height: 60px; background: rgba(0,0,0,0.8); display: flex; align-items: center; padding: 0 20px; z-index: 900; }
+        #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.6s cubic-bezier(0.1, 0.7, 0.1, 1); }
+        .view { width: 100vw; height: 100%; padding: 15px; overflow-y: auto; padding-bottom: 150px; }
+        
+        .input-area { display: flex; gap: 8px; padding: 10px; background: #000; border-top: 1px solid #222; }
+        .input-area input { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
+        .btn-send { background: var(--accent); border: none; color: #fff; font-weight: bold; padding: 0 20px; cursor: pointer; }
+
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 70px; background: #000; border-top: 1px solid #222; display: flex; }
+        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #555; font-weight: bold; }
         .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
-
-        .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; width: 100%; }
-        .tile { background: var(--accent); padding: 15px; height: 110px; display: flex; align-items: flex-end; font-weight: bold; cursor: pointer; position: relative; transition: transform 0.6s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.5s; }
-        .tile.private { background: #333; border: 1px solid var(--accent); }
-        .view-exit .tile { opacity: 0; pointer-events: none; }
-        .view-exit .tile:nth-child(4n+1) { transform: translate3d(-200px, -200px, 800px) rotate(-20deg); }
-        .view-exit .tile:nth-child(4n+2) { transform: translate3d(200px, -200px, 800px) rotate(20deg); }
-        .view-exit .tile:nth-child(4n+3) { transform: translate3d(-200px, 200px, 800px) rotate(15deg); }
-        .view-exit .tile:nth-child(4n+4) { transform: translate3d(200px, 200px, 800px) rotate(-15deg); }
-
-        .msg { background: rgba(30,30,30,0.7); padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; word-wrap: break-word; margin-bottom: 4px;}
-        .msg.mine { border-left-color: var(--accent); align-self: flex-end;}
-
-        .input-area { display: flex; align-items: center; gap: 8px; padding: 10px; border-top: 1px solid #222; width: 100%; }
-        .input-area input[type="text"] { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
-        .btn-send { min-width: 70px; background: var(--accent); border: none; color: #fff; font-weight: bold; cursor: pointer; padding: 12px; }
 
         @media (min-width: 851px) { #pc-layout { display: flex; } }
         @media (max-width: 850px) { #mobile-layout { display: block; } .mobile-header { display: flex; } }
     </style>
 </head>
 <body>
-    <div id="metro-modal-overlay">
-        <div class="metro-modal">
-            <h3 id="modal-title" style="font-weight:100; margin-bottom:15px;">titre</h3>
-            <div id="modal-content"></div>
-            <button class="metro-btn btn-blue" id="modal-confirm">Valider</button>
-            <button class="metro-btn btn-gray" onclick="closeModal()">Annuler</button>
-        </div>
-    </div>
 
     <div id="pc-layout">
         <aside id="sidebar">
-            <h1 style="font-weight:100; color:var(--accent); margin-bottom:15px;">thinktalk</h1>
-            <div class="pc-tabs">
-                <div class="pc-tab active" id="tab-rooms-pc" onclick="switchPcTab('rooms')">Salons</div>
-                <div class="pc-tab" id="tab-contacts-pc" onclick="switchPcTab('contacts')">Contacts</div>
+            <h1 style="color:var(--accent); font-weight:100; margin-bottom:20px;">ThinkTalk</h1>
+            <div class="room-actions">
+                <button class="btn-action-metro" onclick="uiCreateRoom()">+ CRÉER UN SALON</button>
+                <button class="btn-action-metro" onclick="uiJoinPrivate()">🔑 REJOINDRE PRIVÉ</button>
             </div>
-            <div style="flex:1; overflow-y:auto;">
-                <input type="text" class="search-box" id="pc-search" placeholder="Chercher..." oninput="filterPcList(this.value)">
-                <div class="room-actions" id="pc-room-actions">
-                    <button class="btn-action-metro" onclick="uiCreateRoom()">+ CRÉER UN SALON</button>
-                    <button class="btn-action-metro" onclick="uiJoinPrivate()">🔑 REJOINDRE UN SALON PRIVÉ</button>
-                </div>
-                <div id="pc-content-list"></div>
-            </div>
-            <button onclick="logout()" style="color:#ff5050; border:none; background:none; cursor:pointer; font-weight:bold; padding:10px 0; text-align: left;">DÉCONNEXION</button>
+            <div id="pc-content-list" style="flex:1; overflow-y:auto; margin-top:10px;"></div>
+            <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; text-align:left; padding:10px 0;">DÉCONNEXION</button>
         </aside>
         <main style="flex:1; display:flex; flex-direction:column;">
-            <div style="padding:15px; border-bottom:1px solid #111;"><h2 id="chat-title-pc" style="font-weight:100; font-size:28px;">#accueil</h2></div>
+            <div style="padding:20px; border-bottom:1px solid #222;"><h2 id="chat-title-pc" style="font-weight:100;">#accueil</h2></div>
             <div id="msg-pc" class="msg-list"></div>
             <div class="input-area">
                 <input type="text" id="in-pc" placeholder="Écrire..." onkeypress="if(event.key==='Enter') send('pc')">
@@ -102,32 +105,30 @@
     </div>
 
     <div id="mobile-layout">
-        <div class="mobile-header"><span style="font-weight:100; letter-spacing:2px;">THINKTALK</span></div>
+        <div class="mobile-header"><span>THINKTALK</span></div>
         <div id="panorama">
-            <section class="view" id="view-0">
-                <h1 style="font-weight:100; font-size:38px; color:var(--accent); margin-bottom:10px;">salons</h1>
-                <input type="text" class="search-box" placeholder="Chercher un salon..." oninput="filterTiles('mob-rooms', this.value)">
-                <div class="room-actions">
-                    <button class="btn-action-metro" onclick="uiCreateRoom()">+ CRÉER UN SALON</button>
-                    <button class="btn-action-metro" onclick="uiJoinPrivate()">🔑 REJOINDRE UN SALON PRIVÉ</button>
-                </div>
+            <section class="view">
+                <h1 style="font-size:40px; font-weight:100; color:var(--accent); margin-bottom:20px;">salons</h1>
                 <div id="mob-rooms" class="tiles-grid"></div>
             </section>
-            <section class="view" id="view-1">
-                <h1 id="chat-title-mob" style="font-weight:100; font-size:28px; margin-bottom:10px;">Chat</h1>
+            <section class="view">
+                <h2 id="chat-title-mob" style="font-weight:100; margin-bottom:10px;">Chat</h2>
                 <div id="msg-mob" class="msg-list"></div>
             </section>
-            <section class="view" id="view-2">
-                <h1 style="font-weight:100; font-size:38px; color:var(--accent); margin-bottom:10px;">contacts</h1>
-                <input type="text" class="search-box" placeholder="Chercher un ami..." oninput="filterTiles('mob-contacts', this.value)">
+            <section class="view">
+                <h1 style="font-size:40px; font-weight:100; color:var(--accent);">contacts</h1>
                 <div id="mob-contacts" class="tiles-grid"></div>
             </section>
         </div>
-        <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:70px; left:0;">
+        <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:70px; width:100%;">
             <input type="text" id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
             <button class="btn-send" onclick="send('mob')">OK</button>
         </div>
-        <nav class="nav-bottom"><div class="nav-btn active" onclick="goTo(0)">ACCUEIL</div><div class="nav-btn" onclick="goTo(1)">CHAT</div><div class="nav-btn" onclick="goTo(2)">CONTACTS</div></nav>
+        <nav class="nav-bottom">
+            <div class="nav-btn active" onclick="goTo(0)">ACCUEIL</div>
+            <div class="nav-btn" onclick="goTo(1)">CHAT</div>
+            <div class="nav-btn" onclick="goTo(2)">CONTACTS</div>
+        </nav>
     </div>
 
     <script>
@@ -141,130 +142,159 @@
         const db = firebase.database();
         let user = localStorage.getItem("thinktalk_pseudo");
         let current = { id: 'general', type: 'room' };
-        let activePcTab = 'rooms'; 
 
-        function savePrivateRoom(id) {
-            let saved = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]");
-            if (!saved.includes(id)) { saved.push(id); localStorage.setItem("thinktalk_private_rooms", JSON.stringify(saved)); }
+        function getPath(id, type) { 
+            const targetId = id || current.id;
+            const targetType = type || current.type;
+            return targetType === 'room' ? `messages/public/${targetId}` : `messages/dm/${[user, targetId].sort().join("__")}`; 
         }
 
-        function getPath() { return current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`; }
-
-        function uiCreateRoom() {
-            openModal("Créer un salon", `<input id="nr-name" class="metro-input" placeholder="Nom du salon"><input id="nr-code" class="metro-input" placeholder="Code (vide = public)">`, async () => {
-                const name = document.getElementById('nr-name').value.trim().toLowerCase();
-                const code = document.getElementById('nr-code').value.trim();
-                if(!name) return;
-                await db.ref('rooms/'+name).set({ code: code || null });
-                if(code) savePrivateRoom(name);
-                closeModal();
+        // Système Live Tile
+        function bindLiveTile(id, type, element) {
+            db.ref(targetPath = (type === 'room' ? `messages/public/${id}` : `messages/dm/${[user, id].sort().join("__")}`))
+              .limitToLast(1).on('child_added', snap => {
+                const m = snap.val();
+                if(!m) return;
+                const prev = element.querySelector('.live-preview');
+                if(prev) prev.remove();
+                
+                const preview = document.createElement('div');
+                preview.className = 'live-preview';
+                preview.innerHTML = `<div class="live-author">${m.pseudo}</div><div class="live-text">${m.text}</div>`;
+                element.appendChild(preview);
+                
+                // Effet Metro : La preview disparaît après 5s pour remontrer le nom du salon, puis revient
+                setTimeout(() => { if(preview) preview.style.opacity = "0"; }, 5000);
+                setTimeout(() => { if(preview) preview.style.opacity = "1"; }, 8000);
             });
-        }
-
-        function uiJoinPrivate() {
-            openModal("Rejoindre un salon privé", `<input id="jr-name" class="metro-input" placeholder="Nom du salon"><input id="jr-code" class="metro-input" placeholder="Code secret">`, async () => {
-                const name = document.getElementById('jr-name').value.trim().toLowerCase();
-                const code = document.getElementById('jr-code').value.trim();
-                const s = await db.ref('rooms/'+name).get();
-                if(s.exists() && s.val().code === code) { savePrivateRoom(name); enterChatMobile(name, 'room'); closeModal(); }
-                else alert("Accès refusé");
-            });
-        }
-
-        async function tryEnterRoom(id) {
-            const s = await db.ref('rooms/'+id).get();
-            if(s.exists() && s.val().code) {
-                let saved = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]");
-                if(saved.includes(id)) enterChatMobile(id, 'room');
-                else {
-                    openModal("Salon Privé", `<input id="lock-code" class="metro-input" type="password" placeholder="Code pour #${id}">`, () => {
-                        if(document.getElementById('lock-code').value === s.val().code) { savePrivateRoom(id); enterChatMobile(id, 'room'); closeModal(); }
-                        else alert("Code erroné");
-                    });
-                }
-            } else enterChatMobile(id, 'room');
-        }
-
-        function enterChatMobile(id, type) {
-            const cv = (type === 'room') ? document.getElementById('view-0') : document.getElementById('view-2');
-            cv.classList.add('view-exit');
-            setTimeout(() => { setChat(id, type); goTo(1); setTimeout(() => cv.classList.remove('view-exit'), 800); }, 300);
         }
 
         function setChat(id, type) {
             current = { id, type };
-            const cp = getPath();
-            document.getElementById('chat-title-pc').textContent = (type==='room'?'#':'@')+id;
-            document.getElementById('chat-title-mob').textContent = (type==='room'?'#':'@')+id;
-            db.ref(cp).off();
-            db.ref(cp).limitToLast(30).on('value', s => {
+            document.getElementById('chat-title-pc').textContent = (type==='room'?'#':'@') + id;
+            document.getElementById('chat-title-mob').textContent = (type==='room'?'#':'@') + id;
+            const path = getPath();
+            db.ref(path).off();
+            db.ref(path).on('value', s => {
                 const pc = document.getElementById('msg-pc'), mb = document.getElementById('msg-mob');
                 pc.innerHTML = ""; mb.innerHTML = "";
-                s.forEach(c => {
-                    const m = c.val(), isMine = m.pseudo === user;
-                    const div = document.createElement('div');
-                    div.className = 'msg' + (isMine ? ' mine' : '');
-                    div.innerHTML = `<div style="color:var(--accent); font-size:10px; font-weight:bold; margin-bottom:4px;">${m.pseudo}</div><div>${m.text}</div>`;
-                    mb.appendChild(div); pc.appendChild(div.cloneNode(true));
+                s.forEach(snap => {
+                    const m = snap.val();
+                    const mid = snap.key;
+                    const isMine = m.pseudo === user;
+                    const html = `
+                        <div class="msg ${isMine?'mine':''}">
+                            <div class="msg-header"><span>${m.pseudo}</span><span class="msg-time">${m.time || ''}</span></div>
+                            <div class="msg-text">${m.text}</div>
+                            ${isMine ? `<div class="msg-actions"><span onclick="editMsg('${mid}','${m.text.replace(/'/g, "\\'")}')">Modifier</span><span onclick="deleteMsg('${mid}')">Supprimer</span></div>` : ''}
+                        </div>`;
+                    pc.innerHTML += html; mb.innerHTML += html;
                 });
                 pc.scrollTop = pc.scrollHeight; mb.scrollTop = mb.scrollHeight;
             });
         }
 
         function loadLists() {
+            // Salons
             db.ref("rooms").on('value', s => {
                 const mb = document.getElementById('mob-rooms'), pc = document.getElementById('pc-content-list');
-                if(!mb || !pc) return;
-                let savedPrivate = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]");
-                mb.innerHTML = `<div class="tile" onclick="tryEnterRoom('general')">#general</div>`;
-                if(activePcTab==='rooms') pc.innerHTML = `<div class="pc-item" onclick="tryEnterRoom('general')">#general</div>`;
+                let saved = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]");
+                mb.innerHTML = ""; pc.innerHTML = "";
                 
+                // On ajoute manuellement général
+                const genTile = createTile('general', 'room', false);
+                mb.appendChild(genTile);
+                pc.innerHTML += `<div class="btn-action-metro" onclick="setChat('general','room')">#general</div>`;
+                bindLiveTile('general', 'room', genTile);
+
                 s.forEach(r => {
-                    const roomData = r.val();
-                    const isPrivate = roomData && roomData.code;
-                    const isKnown = savedPrivate.includes(r.key);
-                    // On affiche si c'est public OU si c'est un privé déjà rejoint
-                    if(r.key !== 'general' && (!isPrivate || isKnown)) {
-                        let classList = isPrivate ? "tile private" : "tile";
-                        mb.innerHTML += `<div class="${classList}" onclick="tryEnterRoom('${r.key}')">${isPrivate ? '🔑 ' : '#'} ${r.key}</div>`;
-                        if(activePcTab==='rooms') pc.innerHTML += `<div class="pc-item" onclick="tryEnterRoom('${r.key}')">${isPrivate ? '🔑 ' : '#'} ${r.key}</div>`;
+                    const isPriv = r.val().code;
+                    if(r.key !== 'general' && (!isPriv || saved.includes(r.key))) {
+                        const tile = createTile(r.key, 'room', isPriv);
+                        mb.appendChild(tile);
+                        pc.innerHTML += `<div class="btn-action-metro" onclick="setChat('${r.key}','room')">${isPriv?'🔑':'#'} ${r.key}</div>`;
+                        bindLiveTile(r.key, 'room', tile);
                     }
                 });
             });
+
+            // Contacts
             db.ref("contacts/"+user).on('value', s => {
-                const mc = document.getElementById('mob-contacts'), pc = document.getElementById('pc-content-list');
-                if(mc) mc.innerHTML = "";
+                const mc = document.getElementById('mob-contacts');
+                mc.innerHTML = "";
                 s.forEach(c => {
-                    if(mc) mc.innerHTML += `<div class="tile" style="background:#222" onclick="enterChatMobile('${c.key}','dm')">@${c.key}</div>`;
-                    if(activePcTab === 'contacts' && pc) pc.innerHTML += `<div class="pc-item" onclick="setChat('${c.key}','dm')">@${c.key}</div>`;
+                    const tile = createTile(c.key, 'contact', false);
+                    tile.style.background = "rgba(100,100,100,0.5)";
+                    mc.appendChild(tile);
+                    bindLiveTile(c.key, 'contact', tile);
                 });
             });
         }
 
-        function switchPcTab(t) { 
-            activePcTab = t; 
-            document.getElementById('tab-rooms-pc').classList.toggle('active', t==='rooms');
-            document.getElementById('tab-contacts-pc').classList.toggle('active', t==='contacts');
-            document.getElementById('pc-room-actions').style.display = (t==='rooms'?'flex':'none'); 
-            loadLists(); 
+        function createTile(id, type, isPriv) {
+            const div = document.createElement('div');
+            div.className = `tile ${isPriv?'private':''}`;
+            div.innerHTML = `<div class="tile-label">${isPriv?'🔑':(type==='room'?'#':'@')} ${id}</div>`;
+            div.onclick = () => { setChat(id, type); goTo(1); };
+            return div;
         }
 
-        function filterPcList(v) { Array.from(document.getElementById('pc-content-list').children).forEach(i => i.style.display = i.textContent.toLowerCase().includes(v.toLowerCase()) ? "block" : "none"); }
-        function filterTiles(id, v) { Array.from(document.getElementById(id).getElementsByClassName('tile')).forEach(t => { t.style.display = t.textContent.toLowerCase().includes(v.toLowerCase()) ? "flex" : "none"; }); }
-        
-        function send(m) { const i = document.getElementById(m==='pc'?'in-pc':'in-mob'); const v = i.value.trim(); if(v && user) db.ref(getPath()).push({ pseudo: user, text: v, timestamp: Date.now() }).then(()=> i.value=""); }
-        function goTo(x) { document.getElementById('panorama').style.transform = `translateX(-${x*100}vw)`; document.querySelectorAll('.nav-btn').forEach((b, i) => b.classList.toggle('active', i === x)); document.getElementById('mob-bar').style.display = (x === 1) ? 'flex' : 'none'; }
-        
-        function openModal(t, h, c) { document.getElementById('modal-title').textContent = t; document.getElementById('modal-content').innerHTML = h; document.getElementById('metro-modal-overlay').style.display = 'flex'; const b = document.getElementById('modal-confirm'); b.style.display = c ? 'block' : 'none'; b.onclick = c; }
-        function closeModal() { document.getElementById('metro-modal-overlay').style.display = 'none'; }
-        function logout() { localStorage.clear(); location.reload(); }
+        function send(m) {
+            const i = document.getElementById(m==='pc'?'in-pc':'in-mob');
+            const v = i.value.trim();
+            if(v && user) {
+                db.ref(getPath()).push({
+                    pseudo: user, text: v,
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    timestamp: Date.now()
+                });
+                i.value = "";
+            }
+        }
 
-        window.onload = () => { 
-            if(!user) openModal("Connexion", `<input id="ap" class="metro-input" placeholder="Pseudo">`, async () => {
-                user = document.getElementById('ap').value.trim(); if(user) { localStorage.setItem("thinktalk_pseudo", user); loginSuccess(); }
-            }); else loginSuccess();
-        };
-        function loginSuccess() { closeModal(); loadLists(); setChat('general', 'room'); }
+        function editMsg(mid, oldText) {
+            const n = prompt("Modifier :", oldText);
+            if(n && n !== oldText) db.ref(getPath() + "/" + mid).update({ text: n + " (modifié)" });
+        }
+
+        function deleteMsg(mid) {
+            if(confirm("Supprimer ?")) db.ref(getPath() + "/" + mid).remove();
+        }
+
+        function uiCreateRoom() {
+            const n = prompt("Nom du salon :"), c = prompt("Code (vide = public) :");
+            if(n) {
+                db.ref('rooms/'+n.toLowerCase()).set({ code: c || null });
+                if(c) {
+                    let s = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]");
+                    s.push(n.toLowerCase()); localStorage.setItem("thinktalk_private_rooms", JSON.stringify(s));
+                }
+            }
+        }
+
+        function uiJoinPrivate() {
+            const n = prompt("Nom :").toLowerCase(), c = prompt("Code :");
+            db.ref('rooms/'+n).get().then(s => {
+                if(s.exists() && s.val().code === c) {
+                    let saved = JSON.parse(localStorage.getItem("thinktalk_private_rooms") || "[]");
+                    if(!saved.includes(n)) saved.push(n);
+                    localStorage.setItem("thinktalk_private_rooms", JSON.stringify(saved));
+                    setChat(n, 'room'); goTo(1);
+                } else alert("Erreur");
+            });
+        }
+
+        function goTo(x) {
+            document.getElementById('panorama').style.transform = `translateX(-${x*100}vw)`;
+            document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i===x));
+            document.getElementById('mob-bar').style.display = (x===1) ? 'flex' : 'none';
+        }
+
+        window.onload = () => {
+            if(!user) { user = prompt("Pseudo :"); localStorage.setItem("thinktalk_pseudo", user); }
+            loadLists(); setChat('general', 'room');
+        }
+        function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
 </html>
