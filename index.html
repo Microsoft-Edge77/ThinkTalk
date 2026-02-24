@@ -19,6 +19,7 @@
         .metro-btn { padding: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 10px; }
         .btn-blue { background: var(--accent); color: #fff; }
         .btn-gray { background: #333; color: #fff; }
+        .btn-red { background: #cc0000; color: #fff; }
         .search-box { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #333; color: #fff; margin-bottom: 15px; font-size: 14px; outline: none; }
         .msg-actions-pc { display: none; gap: 5px; margin-top: 5px; }
         .msg:hover .msg-actions-pc { display: flex; }
@@ -198,8 +199,26 @@
             });
         }
 
-        function applyBg(u) { document.body.style.backgroundImage = `url('${u}')`; }
-        function uiChangeBg() { openModal("Fond", `<button class="metro-btn btn-blue" onclick="document.getElementById('bgInput').click()">FICHIER</button><input id="bgurl" class="metro-input" placeholder="URL">`, () => { const u = document.getElementById('bgurl').value.trim(); if(u){ applyBg(u); localStorage.setItem("thinktalk_bg", u); } closeModal(); }); }
+        function applyBg(u) { document.body.style.backgroundImage = u ? `url('${u}')` : "none"; }
+        
+        function resetBg() {
+            localStorage.removeItem("thinktalk_bg");
+            applyBg(null);
+            closeModal();
+        }
+
+        function uiChangeBg() { 
+            openModal("Fond d'écran", `
+                <button class="metro-btn btn-blue" onclick="document.getElementById('bgInput').click()">CHOISIR UN FICHIER</button>
+                <input id="bgurl" class="metro-input" placeholder="OU COLLER UNE URL" style="margin-top:10px;">
+                <button class="metro-btn btn-red" onclick="resetBg()" style="margin-top:20px;">RÉINITIALISER (DÉFAUT)</button>
+            `, () => { 
+                const u = document.getElementById('bgurl').value.trim(); 
+                if(u){ applyBg(u); localStorage.setItem("thinktalk_bg", u); } 
+                closeModal(); 
+            }); 
+        }
+
         function handleBgUpload(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload=(e)=>{ applyBg(e.target.result); localStorage.setItem("thinktalk_bg", e.target.result); closeModal(); }; r.readAsDataURL(f); }
         function triggerFile() { document.getElementById('fileInput').click(); }
         function handleFileUpload(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload=(e)=>{ db.ref(getPath()).push({ pseudo: user, url: e.target.result, type: 'image', timestamp: Date.now() }); }; r.readAsDataURL(f); }
