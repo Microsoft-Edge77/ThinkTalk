@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ThinkTalk Mobile v3.0 - Metro Sync</title>
+<title>ThinkTalk Mobile v3.1 - Metro Sync Fixed</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -44,12 +44,12 @@ html, body {
 .tiles-grid { 
     display: grid; 
     grid-template-columns: repeat(4, 1fr); 
-    grid-auto-rows: 80px; 
-    gap: 10px; 
+    grid-auto-rows: 85px; 
+    gap: 12px; 
 }
 .tile { 
     background: var(--accent); 
-    padding: 12px; 
+    padding: 15px; 
     display: flex; 
     flex-direction: column; 
     justify-content: flex-end; 
@@ -59,24 +59,21 @@ html, body {
     position: relative;
     overflow: hidden;
 }
-.tile:active { transform: scale(0.95); }
-.tile.large { grid-column: span 4; } /* Toute la largeur */
-.tile.medium { grid-column: span 2; grid-row: span 2; } /* Carré moyen */
-.tile.wide { grid-column: span 2; } /* Rectangle horizontal */
-.tile.tall { grid-row: span 2; } /* Rectangle vertical */
-.tile.contact { background: #333; }
-.tile.danger { background: #e81123; }
-.private-icon { position: absolute; top: 8px; right: 8px; font-size: 12px; }
+.tile:active { transform: scale(0.96); opacity: 0.8; }
+.tile.medium { grid-column: span 2; grid-row: span 2; font-size: 20px; }
+.tile.wide { grid-column: span 4; }
+.tile.contact { background: #1a1a1a; border: 1px solid #333; }
+.private-icon { position: absolute; top: 10px; right: 10px; font-size: 14px; }
 
 /* PROFIL OVERLAY */
 #profile-menu {
     position: fixed; top: 0; left: 0; width: 85%; height: 100%;
     background: #051933; z-index: 2000;
     transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 40px 25px; border-right: 2px solid var(--accent);
+    padding: 50px 30px; border-right: 3px solid var(--accent);
 }
 #profile-menu.open { transform: translateX(0); }
-.profile-link { display: block; padding: 15px 0; font-size: 20px; color: #fff; text-decoration: none; border-bottom: 1px solid #1a3a5f; }
+.profile-link { display: block; padding: 20px 0; font-size: 22px; color: #fff; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .profile-link.delete { color: #ff5050; margin-top: 40px; border-bottom: none; }
 
 /* CHAT AREA */
@@ -101,32 +98,31 @@ html, body {
     padding: 10px; background: #111; display: none; align-items: center; gap: 8px;
     z-index: 95; border-top: 1px solid #222;
 }
-#chat-bar input { flex: 1; height: 42px; padding: 0 12px; border-radius: 6px; border: none; background: #fff; color: #000; }
-#chat-bar button { height: 42px; padding: 0 15px; background: var(--accent); border: none; border-radius: 6px; color: #fff; font-weight: bold; }
+#chat-bar input { flex: 1; height: 45px; padding: 0 15px; border-radius: 8px; border: none; background: #fff; color: #000; font-size: 16px;}
+#chat-bar button { height: 45px; padding: 0 20px; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-weight: bold; }
 
 /* AUTH */
-#auth { position: fixed; inset: 0; background: #000; z-index: 3000; padding: 40px 20px; }
+#auth { position: fixed; inset: 0; background: #000; z-index: 3000; padding: 60px 25px; }
 .hidden { display: none !important; }
 </style>
 </head>
 <body>
 
 <div id="profile-menu">
-    <div style="font-size: 12px; opacity: 0.5; margin-bottom: 5px;">CONNECTÉ EN TANT QUE</div>
-    <h2 id="me-pseudo" style="margin-top:0; color:var(--accent); margin-bottom:30px;">PSEUDO</h2>
+    <div style="font-size: 11px; opacity: 0.5; letter-spacing: 1px;">SESSION ACTIVE</div>
+    <h2 id="me-pseudo" style="margin:5px 0 40px 0; color:var(--accent); font-size: 32px; font-weight: 100;">PSEUDO</h2>
     <a href="#" class="profile-link" onclick="changeCode()">Changer mon code</a>
-    <a href="#" class="profile-link" onclick="logout()">Se déconnecter</a>
+    <a href="#" class="profile-link" onclick="logout()">Déconnexion</a>
     <a href="#" class="profile-link delete" onclick="deleteMyAccount()">Supprimer le compte</a>
-    <button onclick="toggleMenu()" style="margin-top:50px; background:none; border:1px solid #fff; color:#fff; padding:10px 20px;">FERMER</button>
+    <button onclick="toggleMenu()" style="margin-top:60px; background:none; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:12px 25px; width: 100%;">RETOUR</button>
 </div>
 
 <div id="auth">
-    <div class="page-title">THINKTALK</div>
-    <h1 class="section-header">identification</h1>
-    <input id="authPseudo" type="text" placeholder="pseudo" style="width:100%; padding:15px; margin-bottom:10px; border:none; background:#222; color:#fff;">
-    <input id="authCode" type="password" placeholder="code" style="width:100%; padding:15px; margin-bottom:20px; border:none; background:#222; color:#fff;">
-    <button onclick="handleAuth('login')" style="width:100%; padding:18px; background:var(--accent); color:#fff; border:none; font-weight:bold; letter-spacing:2px;">CONNEXION</button>
-    <button onclick="handleAuth('register')" style="width:100%; padding:15px; background:none; color:#888; border:none; margin-top:10px;">créer un compte</button>
+    <h1 class="section-header" style="font-size: 55px; margin-bottom: 40px;">salut.</h1>
+    <input id="authPseudo" type="text" placeholder="pseudo" style="width:100%; padding:18px; margin-bottom:12px; border:none; background:#1a1a1a; color:#fff; border-radius: 8px;">
+    <input id="authCode" type="password" placeholder="code" style="width:100%; padding:18px; margin-bottom:30px; border:none; background:#1a1a1a; color:#fff; border-radius: 8px;">
+    <button onclick="handleAuth('login')" style="width:100%; padding:20px; background:var(--accent); color:#fff; border:none; font-weight:bold; letter-spacing:2px; border-radius: 8px;">CONNEXION</button>
+    <button onclick="handleAuth('register')" style="width:100%; padding:15px; background:none; color:#555; border:none; margin-top:15px; font-size: 14px;">créer un nouveau compte</button>
 </div>
 
 <div id="panorama">
@@ -136,23 +132,21 @@ html, body {
             <div class="page-title">THINKTALK</div>
         </div>
         <h1 class="section-header">accueil</h1>
-        <div id="rooms-grid" class="tiles-grid">
-            </div>
-        <button onclick="createRoomPrompt()" style="margin-top:15px; width:100%; padding:12px; background:none; border:1px solid #555; color:#fff;">+ CRÉER UN SALON</button>
+        <div id="rooms-grid" class="tiles-grid"></div>
+        <button onclick="createRoomPrompt()" style="margin-top:20px; width:100%; padding:15px; background:none; border:1px solid #333; color:#888; border-radius: 8px; font-weight: bold; font-size: 12px;">+ NOUVEAU SALON</button>
     </section>
 
     <section class="view">
         <div class="page-title">DISCUTER</div>
-        <h1 class="section-header" id="chat-title">salon</h1>
+        <h1 class="section-header" id="chat-title" style="font-size: 38px;">salon</h1>
         <div id="message-container" class="scroll-area"></div>
     </section>
 
     <section class="view">
         <div class="page-title">PERSONNES</div>
         <h1 class="section-header">contacts</h1>
-        <div id="contacts-grid" class="tiles-grid">
-            </div>
-        <button onclick="addContactPrompt()" style="margin-top:15px; width:100%; padding:12px; background:none; border:1px solid #555; color:#fff;">+ AJOUTER UN AMI</button>
+        <div id="contacts-grid" class="tiles-grid"></div>
+        <button onclick="addContactPrompt()" style="margin-top:20px; width:100%; padding:15px; background:none; border:1px solid #333; color:#888; border-radius: 8px; font-weight: bold; font-size: 12px;">+ AJOUTER UN AMI</button>
     </section>
 </div>
 
@@ -168,7 +162,6 @@ html, body {
 </nav>
 
 <script>
-/* FIREBASE CONFIG */
 const firebaseConfig = {
     apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
     authDomain: "chat-github-6abb5.firebaseapp.com",
@@ -184,7 +177,6 @@ const db = firebase.database();
 let user = localStorage.getItem('tt_user');
 let currentCtx = null;
 
-/* UI & NAV */
 function toggleMenu() { document.getElementById('profile-menu').classList.toggle('open'); }
 function goTo(index) {
     document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
@@ -192,7 +184,17 @@ function goTo(index) {
     document.getElementById('chat-bar').style.display = (index === 1) ? 'flex' : 'none';
 }
 
-/* AUTH DYNAMIQUE */
+// FIX : Assurer que les salons par défaut existent
+async function ensureDefaultRooms() {
+    const snap = await db.ref("rooms/general").get();
+    if(!snap.exists()) {
+        const defaults = ["general", "gaming", "music"];
+        for(let r of defaults) {
+            await db.ref("rooms/"+r).set({ name: r, private: false, code: "", creator: "system" });
+        }
+    }
+}
+
 async function handleAuth(type) {
     const p = document.getElementById('authPseudo').value.trim();
     const c = document.getElementById('authCode').value.trim();
@@ -213,15 +215,15 @@ async function handleAuth(type) {
     }
 }
 
-function startApp() {
+async function startApp() {
     document.getElementById('auth').classList.add('hidden');
     document.getElementById('me-pseudo').textContent = user;
+    await ensureDefaultRooms(); // On s'assure que les salons sont là avant de charger
     loadRooms();
     loadContacts();
     openRoom('general', 'room');
 }
 
-/* SYNC SALONS (STYLE ASYMÉTRIQUE) */
 function loadRooms() {
     const grid = document.getElementById('rooms-grid');
     db.ref("rooms").on('value', snap => {
@@ -232,9 +234,9 @@ function loadRooms() {
             const tile = document.createElement('div');
             tile.className = 'tile';
             
-            // Logique de taille alternée pour le style Metro
-            if(i % 5 === 0) tile.classList.add('medium'); // 1ère, 6ème... sont grandes
-            else if(i % 3 === 0) tile.classList.add('wide'); // Rectangle large
+            // Design Metro Asymétrique
+            if(i % 5 === 0) tile.classList.add('medium');
+            else if(i % 3 === 0) tile.classList.add('wide');
             
             tile.innerHTML = `<span>#${r.name}</span> ${r.private ? '<span class="private-icon">🔒</span>' : ''}`;
             tile.onclick = () => selectRoom(r);
@@ -246,7 +248,7 @@ function loadRooms() {
 
 async function selectRoom(room) {
     if(room.private && room.creator !== user) {
-        const pass = prompt("Salon privé. Code :");
+        const pass = prompt("Code d'accès :");
         if(pass !== room.code) return alert("Code erroné");
     }
     openRoom(room.name, 'room');
@@ -259,7 +261,6 @@ function openRoom(id, type) {
     goTo(1);
 }
 
-/* CHAT SYNC (CORRIGÉ V2.9) */
 function listenMessages() {
     const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
     const ref = db.ref(path);
@@ -283,48 +284,47 @@ function listenMessages() {
 
 function sendMessage() {
     const input = document.getElementById('msgInput');
-    if(!input.value.trim()) return;
+    const txt = input.value.trim();
+    if(!txt) return;
     const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
-    db.ref(path).push({ pseudo: user, text: input.value.trim(), timestamp: Date.now() });
+    db.ref(path).push({ pseudo: user, text: txt, timestamp: Date.now() });
     input.value = "";
 }
 
-/* FONCTIONS PROFIL (SYNC PC) */
 async function changeCode() {
-    const n = prompt("Nouveau code (4 chiffres min) :");
+    const n = prompt("Nouveau code secret :");
     if(n && n.length >= 4) {
         await db.ref(`users/${user}`).update({code: n});
-        alert("Code modifié !");
+        alert("Code mis à jour !");
         toggleMenu();
     }
 }
 
 async function deleteMyAccount() {
-    if(confirm("Supprimer définitivement votre compte ?")) {
+    const confirmName = prompt("Tapez votre pseudo pour confirmer :");
+    if(confirmName === user) {
         await db.ref(`users/${user}`).remove();
         logout();
     }
 }
 
 async function createRoomPrompt() {
-    const name = prompt("Nom du salon :")?.trim().toLowerCase();
+    const name = prompt("Nom du salon :")?.trim().toLowerCase().replace(/\s+/g, '-');
     if(!name) return;
-    const isPriv = confirm("Privé ?");
+    const isPriv = confirm("Rendre ce salon privé ?");
     let code = isPriv ? prompt("Code du salon :") : "";
     await db.ref("rooms/"+name).set({ name, private: isPriv, code, creator: user });
 }
 
-/* CONTACTS & DM */
 function loadContacts() {
     const grid = document.getElementById('contacts-grid');
     db.ref("contacts/"+user).on('value', snap => {
         grid.innerHTML = "";
         snap.forEach(child => {
-            const name = child.key;
             const tile = document.createElement('div');
             tile.className = 'tile contact wide';
-            tile.innerHTML = `<span>@${name}</span>`;
-            tile.onclick = () => openRoom(name, 'dm');
+            tile.innerHTML = `<span>@${child.key}</span>`;
+            tile.onclick = () => openRoom(child.key, 'dm');
             grid.appendChild(tile);
         });
     });
@@ -334,7 +334,7 @@ async function addContactPrompt() {
     const p = prompt("Pseudo de l'ami :");
     if(!p || p === user) return;
     const check = await db.ref("users/"+p).get();
-    if(!check.exists()) return alert("Utilisateur inconnu");
+    if(!check.exists()) return alert("Inconnu");
     await db.ref(`contacts/${user}/${p}`).set(true);
     await db.ref(`contacts/${p}/${user}`).set(true);
 }
