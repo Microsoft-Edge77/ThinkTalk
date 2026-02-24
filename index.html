@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk Mobile v8.2</title>
+    <title>ThinkTalk Mobile v8.3</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;600&display=swap" rel="stylesheet">
     
@@ -10,20 +10,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { 
-            --accent: #00a2e8; 
-            --bg: #000; 
-            --nav-h: 75px; 
-            --chat-bar-h: 70px;
-        }
+        :root { --accent: #00a2e8; --bg: #000; --nav-h: 75px; --chat-bar-h: 70px; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         html, body { 
-            margin: 0; padding: 0; 
-            background: var(--bg); color: #fff; 
-            font-family: 'Inter', sans-serif; 
-            height: 100%; width: 100%;
-            overflow: hidden; 
+            margin: 0; padding: 0; background: var(--bg); color: #fff; 
+            font-family: 'Inter', sans-serif; height: 100%; width: 100%; overflow: hidden; 
         }
 
         #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); }
@@ -31,6 +23,17 @@
         .view { width: 100vw; height: 100%; display: flex; flex-direction: column; padding: 20px 20px 0 20px; position: relative; overflow: hidden; }
 
         .scroll-container { flex: 1; overflow-y: auto; padding-bottom: 140px; -webkit-overflow-scrolling: touch; }
+
+        /* RECHERCHE ET BOUTON HAUT */
+        .search-wrapper { margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .search-input { 
+            width: 100%; padding: 12px; background: #111; border: 1px solid #333; 
+            color: #fff; font-family: 'Inter'; font-size: 14px; border-radius: 2px;
+        }
+        .btn-top-action { 
+            width: 100%; padding: 15px; background: none; border: 1px dashed var(--accent); 
+            color: var(--accent); font-weight: 600; font-size: 12px; letter-spacing: 1px; cursor: pointer;
+        }
 
         /* TILES */
         .tiles-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 85px; gap: 12px; grid-auto-flow: dense; }
@@ -41,7 +44,7 @@
         .tile.contact { background: #1a1a1a; border: 1px solid #333; }
 
         /* TYPO */
-        .section-header { font-size: 42px; font-weight: 100; margin-bottom: 20px; color: var(--accent); letter-spacing: -1px; }
+        .section-header { font-size: 42px; font-weight: 100; margin-bottom: 15px; color: var(--accent); letter-spacing: -1px; }
         .page-title { font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 3px; opacity: 0.6; }
 
         /* MODAL & MENU CONTEXTUEL */
@@ -50,29 +53,14 @@
         .modal-input { width: 100%; padding: 18px; margin-bottom: 15px; border: none; background: #1a1a1a; color: #fff; font-size: 18px; border-radius: 4px; }
         .modal-btn { width: 100%; padding: 18px; background: var(--accent); color: #fff; border: none; font-weight: bold; border-radius: 4px; }
 
-        /* NOUVEAU : MENU CONTEXTUEL MESSAGE */
-        #msg-menu { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
-            z-index: 4500; display: none; align-items: center; justify-content: center; 
-        }
-        .menu-square { 
-            background: #111; border: 1px solid var(--accent); width: 200px; 
-            padding: 10px; display: flex; flex-direction: column; gap: 5px;
-        }
-        .menu-item { 
-            padding: 15px; text-align: center; font-weight: bold; cursor: pointer; border-bottom: 1px solid #222;
-        }
-        .menu-item:last-child { border: none; }
+        #msg-menu { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 4500; display: none; align-items: center; justify-content: center; }
+        .menu-square { background: #111; border: 1px solid var(--accent); width: 220px; padding: 10px; }
+        .menu-item { padding: 15px; text-align: center; font-weight: bold; cursor: pointer; border-bottom: 1px solid #222; }
         .menu-item.delete { color: #ff5050; }
 
         /* CHAT */
         .scroll-area { flex: 1; overflow-y: auto; padding-bottom: calc(var(--chat-bar-h) + var(--nav-h) + 20px); -webkit-overflow-scrolling: touch; }
-        .msg-bubble { 
-            margin-bottom: 15px; border-left: 3px solid var(--accent); padding: 5px 12px; 
-            word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;
-            user-select: none; /* Empêche la sélection native pour le long press */
-        }
-        .msg-bubble:active { background: rgba(255,255,255,0.05); }
+        .msg-bubble { margin-bottom: 15px; border-left: 3px solid var(--accent); padding: 5px 12px; word-wrap: break-word; overflow-wrap: break-word; }
         .msg-pseudo { color: var(--accent); font-size: 12px; font-weight: 600; }
         .msg-text { font-size: 18px; font-weight: 300; }
 
@@ -96,7 +84,7 @@
     <div class="menu-square" onclick="event.stopPropagation()">
         <div class="menu-item" id="btn-edit">MODIFIER</div>
         <div class="menu-item delete" id="btn-delete">SUPPRIMER</div>
-        <div class="menu-item" style="color:#666" onclick="closeMsgMenu()">RETOUR</div>
+        <div class="menu-item" onclick="closeMsgMenu()">RETOUR</div>
     </div>
 </div>
 
@@ -129,8 +117,13 @@
                 <div class="page-title">ACCUEIL</div>
             </div>
             <h1 class="section-header">salons</h1>
+            
+            <div class="search-wrapper">
+                <button onclick="uiCreateRoom()" class="btn-top-action">+ NOUVEAU SALON</button>
+                <input type="text" id="roomSearch" class="search-input" placeholder="Rechercher un salon..." oninput="filterRooms()">
+            </div>
+
             <div id="rooms-grid" class="tiles-grid"></div>
-            <button onclick="uiCreateRoom()" style="margin-top:20px; width:100%; padding:15px; background:none; border:1px dashed #444; color:#666;">+ CRÉER UN SALON</button>
         </div>
     </section>
 
@@ -144,8 +137,8 @@
         <div class="scroll-container">
             <div class="page-title">RESEAU</div>
             <h1 class="section-header">contacts</h1>
+            <button onclick="uiAddContact()" class="btn-top-action" style="margin-bottom:20px;">+ AJOUTER AMI</button>
             <div id="contacts-grid" class="tiles-grid"></div>
-            <button onclick="uiAddContact()" style="margin-top:20px; width:100%; padding:15px; background:none; border:1px dashed #444; color:#666;">+ AJOUTER AMI</button>
         </div>
     </section>
 </div>
@@ -179,6 +172,7 @@ const KEY_PSEUDO = "thinktalk_pseudo";
 let user = localStorage.getItem(KEY_PSEUDO);
 let currentCtx = null;
 let longPressTimer;
+let allRooms = []; // Stockage local pour la recherche
 
 function showNotify(msg) {
     const n = document.getElementById('notification');
@@ -195,10 +189,6 @@ function goTo(index) {
     document.getElementById('panorama').style.transform = `translateX(-${index * 100}vw)`;
     document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
     document.getElementById('chat-bar').style.display = (index === 1) ? 'flex' : 'none';
-    if(index === 1) {
-        const c = document.getElementById('message-container');
-        setTimeout(() => { c.scrollTop = c.scrollHeight; }, 100);
-    }
 }
 
 function closeModal() { document.getElementById('modal-mobile').style.display = 'none'; }
@@ -209,41 +199,59 @@ function openModal(title, html, onConfirm) {
     document.getElementById('m-confirm').onclick = onConfirm;
 }
 
-// --- LOGIQUE LONG PRESS (MENU MESSAGE) ---
+// --- RECHERCHE ET FILTRE ---
+function filterRooms() {
+    const query = document.getElementById('roomSearch').value.toLowerCase();
+    const filtered = allRooms.filter(r => r.name.toLowerCase().includes(query));
+    renderRooms(filtered);
+}
+
+function renderRooms(roomsList) {
+    const grid = document.getElementById('rooms-grid');
+    grid.innerHTML = "";
+    roomsList.forEach((r, i) => {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        if (i % 7 === 0) tile.classList.add('medium');
+        else if (i % 4 === 0) tile.classList.add('wide');
+        tile.innerHTML = `<span>#${r.name}</span> ${r.private ? '🔒' : ''}`;
+        tile.onclick = () => selectRoom(r, r.name);
+        grid.appendChild(tile);
+    });
+}
+
+function loadRooms() {
+    db.ref("rooms").on('value', snap => {
+        allRooms = [];
+        snap.forEach(child => {
+            const r = child.val();
+            allRooms.push({ name: r.name || child.key, ...r });
+        });
+        filterRooms(); // Initialise l'affichage
+    });
+}
+
+// --- LOGIQUE LONG PRESS ---
 function closeMsgMenu() { document.getElementById('msg-menu').style.display = 'none'; }
-
 function openMsgMenu(msgId, oldText, msgAuthor) {
-    if(msgAuthor !== user) return; // On ne peut éditer que ses propres messages
-    
-    const menu = document.getElementById('msg-menu');
-    menu.style.display = 'flex';
-    
+    if(msgAuthor !== user) return;
+    document.getElementById('msg-menu').style.display = 'flex';
     const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}/${msgId}` : `messages/dm/${getConvId(user, currentCtx.id)}/${msgId}`;
-
-    document.getElementById('btn-delete').onclick = () => {
-        if(confirm("Supprimer ce message ?")) {
-            db.ref(path).remove();
-            closeMsgMenu();
-        }
-    };
-
+    document.getElementById('btn-delete').onclick = () => { db.ref(path).remove(); closeMsgMenu(); };
     document.getElementById('btn-edit').onclick = () => {
         closeMsgMenu();
         openModal("Modifier", `<input id="edit-msg-input" class="modal-input" value="${oldText}">`, () => {
-            const newTxt = document.getElementById('edit-msg-input').value.trim();
-            if(newTxt) db.ref(path).update({ text: newTxt + " (modifié)" });
+            const nt = document.getElementById('edit-msg-input').value.trim();
+            if(nt) db.ref(path).update({ text: nt + " (modifié)" });
             closeModal();
         });
     };
 }
 
-// --- GESTION MESSAGES ---
 function listenMessages() {
     const path = currentCtx.type === 'room' ? `messages/public/${currentCtx.id}` : `messages/dm/${getConvId(user, currentCtx.id)}`;
     const ref = db.ref(path);
     const container = document.getElementById('message-container');
-    ref.off(); container.innerHTML = "";
-    
     ref.on('value', snap => {
         container.innerHTML = "";
         snap.forEach(child => {
@@ -251,13 +259,8 @@ function listenMessages() {
             const div = document.createElement('div');
             div.className = 'msg-bubble';
             div.innerHTML = `<div class="msg-pseudo">${m.pseudo}</div><div class="msg-text">${m.text}</div>`;
-            
-            // Événements pour le long press (appui long 600ms)
-            div.ontouchstart = () => {
-                longPressTimer = setTimeout(() => openMsgMenu(child.key, m.text, m.pseudo), 600);
-            };
+            div.ontouchstart = () => { longPressTimer = setTimeout(() => openMsgMenu(child.key, m.text, m.pseudo), 600); };
             div.ontouchend = () => clearTimeout(longPressTimer);
-            
             container.appendChild(div);
         });
         container.scrollTop = container.scrollHeight;
@@ -273,38 +276,7 @@ function sendMessage() {
     input.value = "";
 }
 
-// --- FIREBASE ET AUTH (Inchangé) ---
-function loadRooms() {
-    db.ref("rooms").on('value', snap => {
-        const grid = document.getElementById('rooms-grid');
-        grid.innerHTML = "";
-        let i = 0;
-        snap.forEach(child => {
-            const r = child.val();
-            const rName = r.name || child.key;
-            const tile = document.createElement('div');
-            tile.className = 'tile';
-            if (i % 7 === 0) tile.classList.add('medium');
-            else if (i % 4 === 0) tile.classList.add('wide');
-            tile.innerHTML = `<span>#${rName}</span> ${r.private ? '🔒' : ''}`;
-            tile.onclick = () => selectRoom(r, rName);
-            grid.appendChild(tile);
-            i++;
-        });
-    });
-}
-
-function uiCreateRoom() {
-    const html = `<input id="nr-name" class="modal-input" placeholder="Nom du salon"><input id="nr-code" class="modal-input" type="password" placeholder="Code">`;
-    openModal("Nouveau Salon", html, () => {
-        const name = document.getElementById('nr-name').value.trim().toLowerCase();
-        const code = document.getElementById('nr-code').value.trim();
-        if(!name) return;
-        db.ref('rooms/' + name).set({ name: name, creator: user, private: code !== "", code: code }).then(() => closeModal());
-    });
-}
-
-async function selectRoom(roomData, roomName) {
+function selectRoom(roomData, roomName) {
     if(roomData.private && roomData.creator !== user) {
         openModal("Salon Privé", `<input id="join-room-code" class="modal-input" type="password" placeholder="Code">`, () => {
             if(document.getElementById('join-room-code').value === roomData.code) { openRoom(roomName, 'room'); closeModal(); } 
@@ -316,6 +288,16 @@ function openRoom(id, type) {
     currentCtx = { id, type };
     document.getElementById('chat-title').textContent = (type === 'room' ? '#' : '@') + id;
     listenMessages(); goTo(1);
+}
+
+function uiCreateRoom() {
+    const html = `<input id="nr-name" class="modal-input" placeholder="Nom du salon"><input id="nr-code" class="modal-input" type="password" placeholder="Code">`;
+    openModal("Nouveau Salon", html, () => {
+        const name = document.getElementById('nr-name').value.trim().toLowerCase();
+        const code = document.getElementById('nr-code').value.trim();
+        if(!name) return;
+        db.ref('rooms/' + name).set({ name: name, creator: user, private: code !== "", code: code }).then(() => closeModal());
+    });
 }
 
 function getConvId(a, b) { return [a, b].sort().join("__"); }
