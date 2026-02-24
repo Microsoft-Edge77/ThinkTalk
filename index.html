@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk</title>
+    <title>ThinkTalk Metro Pro</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -11,147 +11,165 @@
     <style>
         :root { --accent: #00a2e8; --bg: #000; --nav-h: 70px; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        
         body { 
             background: var(--bg); 
             background-size: cover;
             background-position: center;
+            background-attachment: fixed;
             color: #fff; 
-            height: 100vh; 
-            overflow: hidden; 
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Empêche le scroll global du body pour garder le panorama propre */
         }
 
-        /* --- MODALES --- */
-        #metro-modal-overlay, #msg-context-menu { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
-            z-index: 10000; display: none; align-items: center; justify-content: center; padding: 15px;
+        /* --- TRANSPARENCE & GLASS --- */
+        #pc-layout, #mobile-layout, #panorama, .view { background: transparent !important; }
+        #sidebar, .mobile-header, .nav-bottom, .input-area, #mobile-menu, .metro-modal { 
+            background: rgba(0, 0, 0, 0.85) !important; 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
         }
-        .metro-modal { background: #000; border: 2px solid var(--accent); width: 100%; max-width: 380px; padding: 25px; }
-        .metro-input { width: 100%; padding: 12px; background: #111; border: 2px solid #333; color: #fff; margin-bottom: 10px; outline: none; }
-        .metro-btn { padding: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 10px; }
+
+        /* --- MODALES & OVERLAYS --- */
+        #metro-modal-overlay, #msg-context-menu { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+            z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px;
+            cursor: pointer;
+        }
+        .metro-modal { 
+            border: 2px solid var(--accent); width: 100%; max-width: 400px; padding: 30px; 
+            cursor: default;
+        }
+        .metro-input { width: 100%; padding: 15px; background: #111; border: 2px solid #333; color: #fff; margin-bottom: 10px; outline: none; }
+        .metro-btn { padding: 15px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 10px; transition: 0.2s; }
         .btn-blue { background: var(--accent); color: #fff; }
         .btn-gray { background: #333; color: #fff; }
-        .search-box { width: 100%; padding: 10px; background: #111; border: 1px solid #333; color: #fff; margin-bottom: 10px; font-size: 13px; }
+        .metro-btn:active { transform: scale(0.98); }
 
-        /* --- SIDEBAR MOBILE (HAMBURGER MENU) --- */
-        #mobile-menu {
-            position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
-            background: #000; border-left: 2px solid var(--accent); z-index: 11000;
-            transition: 0.3s; padding: 20px; display: flex; flex-direction: column;
-        }
-        #mobile-menu.open { right: 0; }
-        .menu-overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7); 
-            display: none; z-index: 10500; 
-        }
-
-        /* --- HEADER MOBILE --- */
+        /* --- MOBILE HEADER & MENU --- */
         .mobile-header {
             display: none; position: fixed; top: 0; left: 0; width: 100%;
-            height: 60px; padding: 0 20px; align-items: center; justify-content: space-between;
-            z-index: 900; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+            height: 60px; padding: 0 20px; align-items: center; justify-content: space-between; z-index: 900;
         }
-        .hamburger { font-size: 30px; cursor: pointer; color: var(--accent); }
+        #mobile-menu {
+            position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
+            border-left: 2px solid var(--accent); z-index: 11000;
+            transition: 0.3s cubic-bezier(0.1, 0.7, 0.1, 1); padding: 30px; display: flex; flex-direction: column;
+        }
+        #mobile-menu.open { right: 0; }
 
-        /* --- LAYOUTS --- */
-        #pc-layout { display: none; height: 100vh; }
-        #mobile-layout { display: none; height: 100vh; position: relative; padding-top: 60px; }
+        /* --- PANORAMA & VIEWS (SCROLL CORRIGÉ) --- */
+        #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); }
+        .view { 
+            width: 100vw; height: 100%; 
+            padding: 80px 20px 150px 20px; /* Espace pour header et nav */
+            overflow-y: auto; /* Le scroll se fait ici, sur toute la vue */
+            -webkit-overflow-scrolling: touch;
+        }
 
-        /* --- SIDEBAR PC --- */
-        #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0; background: rgba(0,0,0,0.8); }
-        .pc-item { padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 4px; cursor: pointer; border-left: 0 solid var(--accent); transition: 0.1s; }
-        .pc-item:hover { background: rgba(255,255,255,0.1); border-left-width: 4px; }
+        /* --- GRILLE DE TUILES (SALONS) --- */
+        .tiles-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; 
+            width: 100%;
+            padding-bottom: 20px;
+        }
+        .tile { 
+            background: var(--accent); 
+            padding: 20px; 
+            aspect-ratio: 1 / 1; 
+            display: flex; 
+            align-items: flex-end; 
+            font-weight: bold; 
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tile:active { opacity: 0.7; transform: scale(0.95); }
 
         /* --- MESSAGES --- */
-        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; }
-        .msg { background: rgba(17,17,17,0.85); padding: 12px; border-left: 4px solid #333; max-width: 85%; align-self: flex-start; cursor: pointer; word-wrap: break-word; backdrop-filter: blur(5px); }
-        .msg.mine { border-left-color: var(--accent); }
-        .msg-u { color: var(--accent); font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px; }
-        .media-content { max-width: 100%; max-height: 250px; margin-top: 5px; display: block; }
-
-        /* --- PANORAMA MOBILE --- */
-        #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); }
-        .view { width: 100vw; height: 100%; padding: 15px 15px 145px 15px; display: flex; flex-direction: column; }
-        .tiles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; overflow-y: auto; }
-        .tile { background: var(--accent); padding: 15px; height: 100px; display: flex; align-items: flex-end; font-weight: bold; cursor: pointer; }
-
-        /* --- CHAT BAR --- */
-        .input-area { display: flex; align-items: center; gap: 8px; background: #000; padding: 10px; border-top: 1px solid #222; width: 100%; }
-        .input-area input[type="text"] { flex: 1; min-width: 50px; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
-        .btn-action { flex-shrink: 0; padding: 12px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-file { width: 45px; background: #222; color: #fff; }
-        .btn-send { min-width: 70px; background: var(--accent); color: #fff; }
-
-        /* --- NAV --- */
-        .nav-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-h); background: #000; border-top: 1px solid #222; display: flex; z-index: 1000; }
-        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #444; }
-        .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
-
-        @media (min-width: 851px) { #pc-layout { display: flex; } }
-        @media (max-width: 850px) { 
-            #mobile-layout { display: block; } 
-            .mobile-header { display: flex; }
+        .msg-list { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
+        .msg { 
+            background: rgba(255,255,255,0.1); padding: 12px; border-left: 4px solid #333; 
+            max-width: 85%; align-self: flex-start; word-wrap: break-word; 
         }
+        .msg.mine { border-left-color: var(--accent); align-self: flex-end; background: rgba(0, 162, 232, 0.2); }
+        .media-content { max-width: 100%; border-radius: 4px; margin-top: 8px; display: block; }
+
+        /* --- BARRES FIXES --- */
+        .input-area { 
+            position: fixed; bottom: 70px; left: 0; width: 100%; 
+            display: flex; align-items: center; gap: 8px; padding: 12px; z-index: 900;
+        }
+        .input-area input { flex: 1; padding: 15px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
+        .nav-bottom { 
+            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-h); 
+            display: flex; z-index: 1000; border-top: 1px solid #222;
+        }
+        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: #666; cursor: pointer; }
+        .nav-btn.active { color: #fff; border-top: 4px solid var(--accent); }
+
+        /* --- PC LAYOUT --- */
+        #pc-layout { display: none; height: 100vh; }
+        #sidebar { width: 300px; border-right: 1px solid #222; padding: 25px; display: flex; flex-direction: column; }
+        .pc-item { padding: 12px; background: rgba(255,255,255,0.05); margin-bottom: 6px; cursor: pointer; transition: 0.2s; }
+        .pc-item:hover { background: var(--accent); }
+
+        @media (min-width: 851px) { #pc-layout { display: flex; } body { overflow: auto; } }
+        @media (max-width: 850px) { #mobile-layout { display: block; } .mobile-header { display: flex; } }
     </style>
 </head>
 <body>
 
     <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(this)">
+    <input type="file" id="bgInput" style="display: none;" accept="image/*" onchange="handleBgUpload(this)">
 
-    <div id="menu-overlay" class="menu-overlay" onclick="toggleMenu()"></div>
+    <div id="metro-modal-overlay">
+        <div class="metro-modal" onclick="event.stopPropagation()">
+            <h3 id="modal-title" style="font-weight:100; margin-bottom:20px;">Titre</h3>
+            <div id="modal-content"></div>
+            <button class="metro-btn btn-blue" id="modal-confirm">Valider</button>
+            <button class="metro-btn btn-gray" onclick="closeModal()">Annuler</button>
+        </div>
+    </div>
+
     <div id="mobile-menu">
-        <h2 style="font-weight:100; margin-bottom:20px; color:var(--accent);">Options</h2>
-        <p id="user-tag" style="font-size:12px; color:#888; margin-bottom:20px;">Utilisateur: ...</p>
-        
-        <button class="metro-btn btn-gray" onclick="uiChangeBg()">Fond d'écran (URL)</button>
+        <h2 style="font-weight:100; margin-bottom:30px;">Options</h2>
+        <button class="metro-btn btn-blue" onclick="uiChangeBg()">Changer Fond</button>
+        <button class="metro-btn btn-gray" onclick="uiCreateRoom()">Créer Salon</button>
+        <button class="metro-btn btn-gray" onclick="uiAddContact()">Ajouter Ami</button>
         <div style="flex:1;"></div>
         <button class="metro-btn btn-gray" onclick="logout()" style="color:#ff5050;">Déconnexion</button>
-        <button class="metro-btn btn-blue" onclick="toggleMenu()">Retour</button>
+        <button class="metro-btn btn-blue" onclick="toggleMenu()" style="margin-top:20px;">Fermer</button>
     </div>
 
     <div class="mobile-header">
-        <span style="font-weight: 100; letter-spacing: 2px;">THINKTALK</span>
-        <div class="hamburger" onclick="toggleMenu()">≡</div>
-    </div>
-
-    <div id="msg-context-menu" onclick="closeCtx()">
-        <div class="metro-modal" onclick="event.stopPropagation()">
-            <h3 style="font-weight:100; margin-bottom:15px;">Options Message</h3>
-            <button class="metro-btn btn-blue" id="ctx-edit">MODIFIER</button>
-            <button class="metro-btn btn-gray" id="ctx-delete" style="color:#ff5050;">SUPPRIMER</button>
-            <button class="metro-btn btn-gray" onclick="closeCtx()">ANNULER</button>
-        </div>
-    </div>
-
-    <div id="metro-modal-overlay">
-        <div class="metro-modal">
-            <h3 id="modal-title" style="font-weight:100; margin-bottom:15px;">titre</h3>
-            <div id="modal-content"></div>
-            <button class="metro-btn btn-blue" id="modal-confirm">Valider</button>
-            <button class="metro-btn btn-gray" id="modal-cancel-btn" onclick="closeModal()">Annuler</button>
-        </div>
+        <span style="font-weight: 100; letter-spacing: 3px; font-size: 20px;">THINKTALK</span>
+        <div style="font-size:32px; cursor:pointer;" onclick="toggleMenu()">≡</div>
     </div>
 
     <div id="pc-layout">
         <aside id="sidebar">
-            <h1 style="font-weight:100; color:var(--accent); margin-bottom:15px;">thinktalk</h1>
+            <h1 style="font-weight:100; color:var(--accent); margin-bottom:30px;">thinktalk</h1>
             <div style="flex:1; overflow-y:auto;">
-                <input type="text" class="search-box" placeholder="Filtrer..." oninput="filterList('pc-rooms', this.value)">
-                <button class="metro-btn btn-blue" onclick="uiCreateRoom()" style="margin-bottom:15px; font-size:11px;">+ NOUVEAU SALON</button>
+                <p style="font-size:11px; color:#555; margin-bottom:10px;">SALONS</p>
                 <div id="pc-rooms"></div>
-                <div style="height:20px;"></div>
-                <input type="text" class="search-box" placeholder="Filtrer..." oninput="filterList('pc-contacts', this.value)">
-                <button class="metro-btn btn-gray" onclick="uiAddContact()" style="margin-bottom:15px; font-size:11px;">+ AJOUTER AMI</button>
+                <button class="metro-btn btn-blue" onclick="uiCreateRoom()" style="font-size:11px;">+ SALON</button>
+                <p style="font-size:11px; color:#555; margin:25px 0 10px 0;">CONTACTS</p>
                 <div id="pc-contacts"></div>
+                <button class="metro-btn btn-gray" onclick="uiAddContact()" style="font-size:11px;">+ AMI</button>
             </div>
-            <button class="metro-btn btn-gray" onclick="uiChangeBg()" style="font-size:11px; margin-bottom:5px;">🖼 FOND D'ÉCRAN</button>
-            <button onclick="logout()" style="color:#ff5050; border:none; background:none; cursor:pointer; text-align:left; font-weight:bold; padding:10px 0;">DÉCONNEXION</button>
+            <button class="metro-btn btn-gray" onclick="uiChangeBg()" style="font-size:11px;">🖼 FOND D'ÉCRAN</button>
+            <button onclick="logout()" style="color:#ff5050; border:none; background:none; cursor:pointer; font-weight:bold; padding-top:20px; text-align:left;">DÉCONNEXION</button>
         </aside>
-        <main style="flex:1; display:flex; flex-direction:column;">
-            <div style="padding:15px; border-bottom:1px solid #111;"><h2 id="chat-title-pc" style="font-weight:100; font-size:28px;">#accueil</h2></div>
-            <div id="msg-pc" class="msg-list"></div>
-            <div class="input-area">
+        <main style="flex:1; display:flex; flex-direction:column; background: rgba(0,0,0,0.2);">
+            <div style="padding:20px; border-bottom:1px solid #222;"><h2 id="chat-title-pc" style="font-weight:100; font-size:32px;">#accueil</h2></div>
+            <div id="msg-pc" class="msg-list" style="overflow-y:auto; padding:20px;"></div>
+            <div class="input-area" style="position:relative; bottom:0; background:rgba(0,0,0,0.5);">
                 <button class="btn-action btn-file" onclick="triggerFile()">📁</button>
-                <input type="text" id="in-pc" placeholder="Écrire..." onkeypress="if(event.key==='Enter') send('pc')">
+                <input type="text" id="in-pc" placeholder="Message..." onkeypress="if(event.key==='Enter') send('pc')">
                 <button class="btn-action btn-send" onclick="send('pc')">ENVOYER</button>
             </div>
         </main>
@@ -160,31 +178,31 @@
     <div id="mobile-layout">
         <div id="panorama">
             <section class="view">
-                <h1 style="font-weight:100; font-size:38px; color:var(--accent); margin-bottom:10px;">salons</h1>
-                <input type="text" class="search-box" placeholder="Rechercher..." oninput="filterTiles('mob-rooms', this.value)">
-                <button class="metro-btn btn-blue" onclick="uiCreateRoom()" style="margin-bottom:10px;">+ SALON</button>
+                <h1 style="font-weight:100; font-size:42px; color:var(--accent); margin-bottom:20px;">salons</h1>
                 <div id="mob-rooms" class="tiles-grid"></div>
             </section>
+
             <section class="view">
-                <h1 id="chat-title-mob" style="font-weight:100; font-size:28px; margin-bottom:10px;">Chat</h1>
+                <h1 id="chat-title-mob" style="font-weight:100; font-size:28px; margin-bottom:15px;">#accueil</h1>
                 <div id="msg-mob" class="msg-list"></div>
             </section>
+
             <section class="view">
-                <h1 style="font-weight:100; font-size:38px; color:var(--accent); margin-bottom:10px;">contacts</h1>
-                <input type="text" class="search-box" placeholder="Rechercher..." oninput="filterTiles('mob-contacts', this.value)">
-                <button class="metro-btn btn-gray" onclick="uiAddContact()" style="margin-bottom:10px;">+ AMI</button>
+                <h1 style="font-weight:100; font-size:42px; color:var(--accent); margin-bottom:20px;">contacts</h1>
                 <div id="mob-contacts" class="tiles-grid"></div>
             </section>
         </div>
-        <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:70px; left:0;">
+
+        <div class="input-area" id="mob-bar" style="display:none;">
             <button class="btn-action btn-file" onclick="triggerFile()">📁</button>
-            <input type="text" id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
+            <input type="text" id="in-mob" placeholder="Écrire..." onkeypress="if(event.key==='Enter') send('mob')">
             <button class="btn-action btn-send" onclick="send('mob')">OK</button>
         </div>
+
         <nav class="nav-bottom">
-            <div class="nav-btn active" onclick="goTo(0)">ACCUEIL</div>
+            <div class="nav-btn active" onclick="goTo(0)">SALONS</div>
             <div class="nav-btn" onclick="goTo(1)">CHAT</div>
-            <div class="nav-btn" onclick="goTo(2)">CONTACTS</div>
+            <div class="nav-btn" onclick="goTo(2)">AMIS</div>
         </nav>
     </div>
 
@@ -197,73 +215,39 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
         let user = localStorage.getItem("thinktalk_pseudo");
         let current = { id: 'general', type: 'room' };
 
         // --- AUTH & INIT ---
         async function init() {
-            // Appliquer le fond d'écran sauvegardé
             const savedBg = localStorage.getItem("thinktalk_bg");
             if(savedBg) document.body.style.backgroundImage = `url('${savedBg}')`;
 
             if(!user) {
-                document.getElementById('modal-cancel-btn').style.display = 'none';
-                openModal("Bienvenue", `
+                openModal("Connexion / Inscription", `
                     <input id="ap" class="metro-input" placeholder="Pseudo">
-                    <input id="ac" type="password" class="metro-input" placeholder="Code secret">
+                    <input id="ac" type="password" class="metro-input" placeholder="Code Secret">
                 `, async () => {
                     const p = document.getElementById('ap').value.trim();
                     const c = document.getElementById('ac').value.trim();
-                    if(!p || !c) return;
-                    const snap = await db.ref('users/'+p).get();
-                    if(snap.exists()) {
-                        if(snap.val().code === c) loginSuccess(p);
-                        else alert("Code incorrect");
-                    } else {
-                        await db.ref('users/'+p).set({ code: c, created: Date.now() });
-                        loginSuccess(p);
-                    }
+                    if(!p || !c) return location.reload();
+                    const s = await db.ref('users/'+p).get();
+                    if(s.exists() && s.val().code !== c) return alert("Mauvais code");
+                    if(!s.exists()) await db.ref('users/'+p).set({code:c});
+                    user = p; localStorage.setItem("thinktalk_pseudo", p);
+                    location.reload();
                 });
-                return;
+            } else {
+                loadData();
+                setChat('general', 'room');
             }
-            loginSuccess(user);
         }
 
-        function loginSuccess(pseudo) {
-            user = pseudo;
-            localStorage.setItem("thinktalk_pseudo", user);
-            document.getElementById('user-tag').textContent = "Connecté en tant que: " + user;
-            closeModal();
-            loadLists();
-            setChat('general', 'room');
-        }
-
-        function toggleMenu() {
-            const menu = document.getElementById('mobile-menu');
-            const overlay = document.getElementById('menu-overlay');
-            const isOpen = menu.classList.toggle('open');
-            overlay.style.display = isOpen ? 'block' : 'none';
-        }
-
-        function uiChangeBg() {
-            openModal("Fond d'écran", `<input id="bgurl" class="metro-input" placeholder="Lien direct vers image (https://...)">`, () => {
-                const url = document.getElementById('bgurl').value;
-                if(url) {
-                    document.body.style.backgroundImage = `url('${url}')`;
-                    localStorage.setItem("thinktalk_bg", url);
-                }
-                closeModal();
-                if(window.innerWidth <= 850) toggleMenu();
-            });
-        }
-
-        // --- RESTE DU CODE (SALONS, MESSAGES, ETC) ---
-        function loadLists() {
+        function loadData() {
             db.ref("rooms").on('value', s => {
                 const pc = document.getElementById('pc-rooms'); const mb = document.getElementById('mob-rooms');
                 pc.innerHTML = ""; mb.innerHTML = "";
-                if(!s.exists()) { db.ref('rooms/general').set({c:'system'}); return; }
+                if(!s.exists()) db.ref('rooms/general').set({owner:'system'});
                 s.forEach(r => {
                     pc.innerHTML += `<div class="pc-item" onclick="setChat('${r.key}','room')">#${r.key}</div>`;
                     mb.innerHTML += `<div class="tile" onclick="setChat('${r.key}','room'); goTo(1);">#${r.key}</div>`;
@@ -282,10 +266,9 @@
         function setChat(id, type) {
             current = { id, type };
             const path = type === 'room' ? `messages/public/${id}` : `messages/dm/${[user, id].sort().join("__")}`;
-            const title = (type === 'room' ? '#' : '@') + id;
-            document.getElementById('chat-title-pc').textContent = title;
-            document.getElementById('chat-title-mob').textContent = title;
-
+            document.getElementById('chat-title-pc').textContent = (type==='room'?'#':'@')+id;
+            document.getElementById('chat-title-mob').textContent = (type==='room'?'#':'@')+id;
+            
             db.ref(path).off();
             db.ref(path).limitToLast(50).on('value', snap => {
                 const pc = document.getElementById('msg-pc'); const mob = document.getElementById('msg-mob');
@@ -294,31 +277,63 @@
                     const m = c.val();
                     const div = document.createElement('div');
                     div.className = 'msg' + (m.pseudo === user ? ' mine' : '');
-                    let content = `<div>${m.text || ''}</div>`;
-                    if(m.type === 'image') content = `<img src="${m.url}" class="media-content">`;
-                    if(m.type === 'video') content = `<video src="${m.url}" class="media-content" controls></video>`;
-                    div.innerHTML = `<span class="msg-u">${m.pseudo}</span>${content}`;
-                    div.onclick = () => openOptions(c.key, m, path);
-                    
+                    let body = `<span style="font-size:10px; font-weight:bold; color:var(--accent);">${m.pseudo}</span>`;
+                    if(m.type === 'image') body += `<img src="${m.url}" class="media-content">`;
+                    else if(m.type === 'video') body += `<video src="${m.url}" class="media-content" controls></video>`;
+                    else body += `<div>${m.text}</div>`;
+                    div.innerHTML = body;
                     mob.appendChild(div);
-                    pc.appendChild(div.cloneNode(true)).onclick = div.onclick;
+                    pc.appendChild(div.cloneNode(true));
                 });
-                pc.scrollTop = pc.scrollHeight; mob.scrollTop = mob.scrollHeight;
+                pc.scrollTop = pc.scrollHeight;
+                // Scroll fluide pour le mobile
+                const view = mob.closest('.view');
+                view.scrollTo({ top: view.scrollHeight, behavior: 'smooth' });
             });
         }
 
-        function openOptions(id, m, path) {
-            if(m.pseudo !== user) return;
-            document.getElementById('msg-context-menu').style.display = 'flex';
-            document.getElementById('ctx-delete').onclick = () => { if(confirm("Supprimer ?")) db.ref(path+'/'+id).remove(); closeCtx(); };
-            document.getElementById('ctx-edit').onclick = () => {
-                closeCtx();
-                openModal("Modifier", `<input id="newTxt" class="metro-input" value="${m.text || ''}">`, () => {
-                    const nt = document.getElementById('newTxt').value;
-                    if(nt) db.ref(path+'/'+id).update({ text: nt });
-                    closeModal();
-                });
+        // --- UI & ACTIONS ---
+        function goTo(idx) {
+            document.getElementById('panorama').style.transform = `translateX(-${idx * 100}vw)`;
+            document.querySelectorAll('.nav-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+            document.getElementById('mob-bar').style.display = (idx === 1) ? 'flex' : 'none';
+        }
+
+        function toggleMenu() {
+            const m = document.getElementById('mobile-menu');
+            const isOpen = m.classList.toggle('open');
+            if(isOpen) {
+                const ov = document.createElement('div');
+                ov.id = "ov-tmp"; ov.style = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10500;";
+                ov.onclick = toggleMenu; document.body.appendChild(ov);
+            } else { document.getElementById('ov-tmp')?.remove(); }
+        }
+
+        function uiChangeBg() {
+            openModal("Fond d'écran", `<button class="metro-btn btn-blue" onclick="document.getElementById('bgInput').click()">CHOISIR IMAGE LOCALE</button>`, () => {});
+        }
+
+        function handleBgUpload(input) {
+            const f = input.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = (e) => { 
+                document.body.style.backgroundImage = `url('${e.target.result}')`;
+                localStorage.setItem("thinktalk_bg", e.target.result);
+                closeModal(); toggleMenu();
             };
+            r.readAsDataURL(f);
+        }
+
+        function triggerFile() { document.getElementById('fileInput').click(); }
+        function handleFileUpload(input) {
+            const f = input.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = (e) => {
+                const t = f.type.startsWith('image/') ? 'image' : (f.type.startsWith('video/') ? 'video' : 'file');
+                const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`;
+                db.ref(path).push({ pseudo: user, url: e.target.result, type: t });
+            };
+            r.readAsDataURL(f);
         }
 
         function send(m) {
@@ -329,37 +344,15 @@
             i.value = "";
         }
 
-        function triggerFile() { document.getElementById('fileInput').click(); }
-        function handleFileUpload(input) {
-            const file = input.files[0]; if(!file) return;
-            if(file.size > 1024 * 1024) { alert("Trop lourd (>1Mo)"); return; }
-            const r = new FileReader();
-            r.onload = (e) => {
-                const type = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : 'file');
-                const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`;
-                db.ref(path).push({ pseudo: user, url: e.target.result, text: file.name, type: type, timestamp: Date.now() });
-            };
-            r.readAsDataURL(file);
-        }
-
-        function openModal(title, html, confirmFn) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-content').innerHTML = html;
-            document.getElementById('metro-modal-overlay').style.display = 'flex';
-            document.getElementById('modal-confirm').onclick = confirmFn;
-        }
+        function uiCreateRoom() { openModal("Nouveau Salon", `<input id="rn" class="metro-input" placeholder="nom">`, () => { db.ref('rooms/'+document.getElementById('rn').value.toLowerCase()).set({owner:user}); }); }
+        function uiAddContact() { openModal("Ajouter Ami", `<input id="an" class="metro-input" placeholder="pseudo">`, () => { const n=document.getElementById('an').value; db.ref(`contacts/${user}/${n}`).set(true); db.ref(`contacts/${n}/${user}`).set(true); }); }
         function closeModal() { document.getElementById('metro-modal-overlay').style.display = 'none'; }
-        function closeCtx() { document.getElementById('msg-context-menu').style.display = 'none'; }
-        function goTo(idx) {
-            document.getElementById('panorama').style.transform = `translateX(-${idx * 100}vw)`;
-            document.querySelectorAll('.nav-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
-            document.getElementById('mob-bar').style.display = (idx === 1) ? 'flex' : 'none';
-        }
-        function filterList(id, v) { Array.from(document.getElementById(id).children).forEach(i => i.style.display = i.textContent.toLowerCase().includes(v.toLowerCase()) ? "block" : "none"); }
-        function filterTiles(id, v) { Array.from(document.getElementById(id).children).forEach(i => i.style.display = i.textContent.toLowerCase().includes(v.toLowerCase()) ? "flex" : "none"); }
-        function uiCreateRoom() { openModal("Nouveau Salon", `<input id="rn" class="metro-input" placeholder="nom du salon">`, () => { db.ref('rooms/'+document.getElementById('rn').value.toLowerCase()).set({owner:user}); closeModal(); }); }
-        function uiAddContact() { openModal("Ajouter Ami", `<input id="an" class="metro-input" placeholder="pseudo">`, () => { const n=document.getElementById('an').value; db.ref(`contacts/${user}/${n}`).set(true); db.ref(`contacts/${n}/${user}`).set(true); closeModal(); }); }
+        function openModal(t, h, c) { document.getElementById('modal-title').textContent = t; document.getElementById('modal-content').innerHTML = h; document.getElementById('metro-modal-overlay').style.display = 'flex'; document.getElementById('modal-confirm').onclick = () => { c(); closeModal(); }; }
         function logout() { localStorage.clear(); location.reload(); }
+
+        // Fermeture modale PC
+        document.getElementById('metro-modal-overlay').onclick = closeModal;
+        document.onkeydown = (e) => { if(e.key === "Escape") closeModal(); };
 
         window.onload = init;
     </script>
