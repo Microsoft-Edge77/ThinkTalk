@@ -8,83 +8,74 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         :root { --accent: #00a2e8; --bg: #000; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI Light', 'Segoe UI', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI Light', 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body { 
             background: var(--bg) no-repeat center center fixed; 
             background-size: cover; color: #fff; height: 100vh; overflow: hidden; 
         }
 
-        /* ANIMATIONS CASCADE */
-        @keyframes slideIn { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .animate { animation: slideIn 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; opacity: 0; }
+        /* ANIMATIONS */
+        @keyframes metroIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate { animation: metroIn 0.3s ease-out forwards; }
 
-        /* TUILES & EFFETS */
+        /* TUILES ET ÉCARTEMENT */
         .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
         .tile { 
             background: var(--accent); padding: 15px; height: 120px; 
             display: flex; flex-direction: column; justify-content: flex-end; 
             font-weight: bold; position: relative; cursor: pointer;
-            transition: transform 0.2s, filter 0.2s; overflow: hidden;
+            transition: transform 0.15s; overflow: hidden;
         }
-        .tile:hover { transform: scale(1.08); z-index: 10; filter: brightness(1.1); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .tile:hover { transform: scale(1.05); z-index: 5; }
         .tile:active { transform: scale(0.95); }
-        
-        /* LIVE TILE CONTENT */
-        .live-preview { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            padding: 10px; font-size: 11px; font-weight: normal; 
-            background: rgba(0,0,0,0.2); pointer-events: none;
-        }
+        .live-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 10px; font-size: 11px; font-weight: 300; background: rgba(0,0,0,0.15); pointer-events: none; }
 
-        /* BOUTON ÉPINGLE */
+        /* BOUTON ÉPINGLE (BLEU SUR NOIR) */
         .btn-attach { 
-            width: 45px; height: 45px; border-radius: 50%; background: #000; 
+            width: 48px; height: 48px; border-radius: 50%; background: #000; 
             border: 2px solid var(--accent); display: flex; align-items: center; 
-            justify-content: center; flex-shrink: 0; cursor: pointer; transition: 0.2s;
+            justify-content: center; flex-shrink: 0; cursor: pointer;
         }
         .btn-attach svg { width: 24px; height: 24px; fill: var(--accent); }
-        .btn-attach:hover { transform: scale(1.1); background: #111; }
 
-        /* METRO DIALOG */
-        #metro-dialog { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .dialog-box { background: #000; border: 2px solid var(--accent); width: 90%; max-width: 400px; padding: 30px; }
-        .dialog-box h2 { font-weight: 100; font-size: 30px; margin-bottom: 20px; text-transform: lowercase; }
-        .dialog-box input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; margin-bottom: 20px; outline: none; }
-        .btn-metro { padding: 10px 20px; border: 2px solid #fff; background: none; color: #fff; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 11px; }
+        /* MESSAGES ET CONTEXT MENU */
+        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 20px; }
+        .msg { 
+            background: rgba(255,255,255,0.08); padding: 12px; border-left: 4px solid #333; 
+            width: fit-content; max-width: 85%; position: relative; cursor: pointer;
+            user-select: none; /* Empêche la sélection de texte pendant le hold */
+        }
+        .msg.mine { border-left-color: var(--accent); background: rgba(255,255,255,0.15); }
+
+        /* DIALOGUES ET POPUPS */
+        #metro-dialog { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .dialog-box { background: #000; border: 2px solid var(--accent); width: 90%; max-width: 380px; padding: 30px; }
+        .dialog-box h2 { font-weight: 100; font-size: 32px; margin-bottom: 20px; }
+        .dialog-box input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; margin-bottom: 20px; outline: none; border-radius: 0; }
+        .btn-metro { padding: 12px 24px; border: 2px solid #fff; background: none; color: #fff; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 11px; }
         .btn-metro.primary { border-color: var(--accent); background: var(--accent); }
+        .btn-metro.danger { border-color: #e51400; background: #e51400; }
 
         /* LAYOUTS */
-        #pc-layout { display: none; height: 100vh; background: rgba(0,0,0,0.5); }
-        #sidebar { width: 320px; border-right: 1px solid #222; padding: 25px; display: flex; flex-direction: column; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); }
-        .search-box { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid #333; color: #fff; margin-bottom: 20px; outline: none; transition: 0.3s; }
-        .search-box:focus { border-color: var(--accent); background: rgba(255,255,255,0.15); }
+        #pc-layout { display: none; height: 100vh; }
+        #sidebar { width: 320px; border-right: 1px solid #222; padding: 25px; display: flex; flex-direction: column; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); }
+        .search-box { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid #333; color: #fff; margin-bottom: 15px; outline: none; }
 
-        /* MESSAGES */
-        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 25px; }
-        .msg { background: rgba(255,255,255,0.07); padding: 12px; border-left: 4px solid #333; position: relative; width: fit-content; max-width: 85%; }
-        .msg:hover .msg-actions { opacity: 1; }
-        .msg.mine { border-left-color: var(--accent); background: rgba(255,255,255,0.12); }
-        .msg-actions { opacity: 0; font-size: 9px; color: var(--accent); position: absolute; top: 5px; right: 10px; cursor: pointer; text-transform: uppercase; }
-        
-        .input-area { display: flex; align-items: center; gap: 15px; padding: 15px 25px; background: #000; border-top: 1px solid #222; }
-        .input-area input[type="text"] { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; }
-
-        /* MOBILE */
+        /* PANORAMA */
         #mobile-layout { display: none; height: 100vh; padding-top: 60px; }
         .mobile-header { position: fixed; top: 0; width: 100%; height: 60px; background: #000; display: flex; align-items: center; padding: 0 20px; z-index: 900; border-bottom: 1px solid #222; }
-        #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.6s cubic-bezier(0.1, 0.8, 0.2, 1); }
-        .view { width: 100vw; height: 100%; padding: 25px; overflow-y: auto; padding-bottom: 150px; }
+        #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); }
+        .view { width: 100vw; height: 100%; padding: 20px; overflow-y: auto; padding-bottom: 150px; }
 
-        /* NAV & SIDE MENU */
+        /* MENU HAMBURGER */
         #side-menu { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #000; z-index: 1000; padding: 30px; border-right: 1px solid var(--accent); transition: 0.3s; }
         #side-menu.open { left: 0; }
         #menu-overlay { position: fixed; display: none; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
-        .btn-logout { background: #e51400; color: #fff; border: none; padding: 15px; width: 100%; font-weight: bold; margin-top: 40px; cursor: pointer; text-transform: uppercase; }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: #000; display: flex; border-top: 1px solid #222; }
-        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #555; font-weight: bold; cursor: pointer; }
+        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #555; font-weight: bold; }
         .nav-btn.active { color: #fff; border-bottom: 4px solid var(--accent); }
-
+        
         @media (min-width: 851px) { #pc-layout { display: flex; } }
         @media (max-width: 850px) { #mobile-layout { display: block; } }
     </style>
@@ -95,7 +86,7 @@
         <div class="dialog-box">
             <h2 id="dialog-title">titre</h2>
             <div id="dialog-body"></div>
-            <div class="dialog-buttons">
+            <div class="dialog-buttons" id="dialog-actions">
                 <button class="btn-metro" onclick="closeDialog()">annuler</button>
                 <button class="btn-metro primary" id="dialog-confirm">ok</button>
             </div>
@@ -104,15 +95,13 @@
 
     <div id="menu-overlay" onclick="toggleMenu()"></div>
     <div id="side-menu">
-        <h1 style="font-weight:100; font-size:35px; margin-bottom:30px;">paramètres</h1>
-        <button class="btn-metro primary" style="width:100%; margin-bottom:10px;" onclick="openCreateRoom()">+ nouveau salon</button>
-        <button class="btn-metro primary" style="width:100%; margin-bottom:20px;" onclick="joinPrivateRoom()">🔑 rejoindre privé</button>
-        
-        <p style="font-size:10px; color:var(--accent); text-transform:uppercase; margin-bottom:10px;">couleur d'accent</p>
-        <div id="accent-selector-menu" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
-        
-        <button class="btn-metro" style="width:100%;" onclick="openBgDialog()">changer le fond</button>
-        <button class="btn-logout" onclick="logout()">déconnexion</button>
+        <h1 style="font-weight:100; font-size:35px; margin-bottom:30px;">réglages</h1>
+        <button class="btn-metro primary" style="width:100%; margin-bottom:10px;" onclick="openCreateRoom()">+ salon public</button>
+        <button class="btn-metro primary" style="width:100%; margin-bottom:25px;" onclick="joinPrivateRoom()">🔑 salon privé</button>
+        <p style="font-size:10px; color:var(--accent); text-transform:uppercase; margin-bottom:10px;">couleurs</p>
+        <div id="accent-selector-menu" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:30px;"></div>
+        <button class="btn-metro" style="width:100%;" onclick="openBgDialog()">fond d'écran</button>
+        <button class="btn-metro danger" style="width:100%; margin-top:40px;" onclick="logout()">déconnexion</button>
     </div>
 
     <div id="pc-layout">
@@ -124,14 +113,12 @@
             <input type="text" class="search-box" placeholder="rechercher..." oninput="filterLists(this.value)">
             <div id="pc-content-list" style="flex:1; overflow-y:auto;"></div>
         </aside>
-        <main style="flex:1; display:flex; flex-direction:column;">
+        <main style="flex:1; display:flex; flex-direction:column; background: rgba(0,0,0,0.3);">
             <div style="padding:25px; border-bottom:1px solid #222;"><h2 id="chat-title-pc" style="font-weight:100; font-size:40px;">#accueil</h2></div>
             <div id="msg-pc" class="msg-list"></div>
-            <div class="input-area" id="input-pc">
-                <input type="file" id="file-pc" style="display:none" onchange="handleFile(this)" accept="image/*">
-                <button class="btn-attach" onclick="document.getElementById('file-pc').click()">
-                    <svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>
-                </button>
+            <div class="input-area">
+                <input type="file" id="file-pc" style="display:none" onchange="handleFile(this)">
+                <button class="btn-attach" onclick="document.getElementById('file-pc').click()"><svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg></button>
                 <input type="text" id="in-pc" placeholder="répondre..." onkeypress="if(event.key==='Enter') send('pc')">
                 <button class="btn-metro primary" onclick="send('pc')">envoyer</button>
             </div>
@@ -145,26 +132,24 @@
         </div>
         <div id="panorama">
             <section class="view">
-                <h1 style="font-size:50px; font-weight:100; color:var(--accent); margin-bottom:25px;">salons</h1>
+                <h1 style="font-size:50px; font-weight:100; color:var(--accent); margin-bottom:20px;">salons</h1>
                 <input type="text" class="search-box" placeholder="rechercher..." oninput="filterLists(this.value)">
                 <div id="mob-rooms" class="tiles-grid"></div>
             </section>
             <section class="view">
-                <h2 id="chat-title-mob" style="font-weight:100; font-size:35px; margin-bottom:20px;">chat</h2>
+                <h2 id="chat-title-mob" style="font-weight:100; font-size:35px; margin-bottom:15px;">chat</h2>
                 <div id="msg-mob" class="msg-list"></div>
             </section>
             <section class="view">
-                <h1 style="font-size:50px; font-weight:100; color:var(--accent); margin-bottom:25px;">contacts</h1>
+                <h1 style="font-size:50px; font-weight:100; color:var(--accent); margin-bottom:20px;">contacts</h1>
                 <input type="text" class="search-box" placeholder="rechercher..." oninput="filterLists(this.value)">
                 <div id="mob-contacts" class="tiles-grid"></div>
             </section>
         </div>
         <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:75px; width:100%;">
-            <input type="file" id="file-mob" style="display:none" onchange="handleFile(this)" accept="image/*">
-            <button class="btn-attach" onclick="document.getElementById('file-mob').click()">
-                <svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>
-            </button>
-            <input type="text" id="in-mob" placeholder="message..." onkeypress="if(event.key==='Enter') send('mob')">
+            <input type="file" id="file-mob" style="display:none" onchange="handleFile(this)">
+            <button class="btn-attach" onclick="document.getElementById('file-mob').click()"><svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg></button>
+            <input type="text" id="in-mob" placeholder="message...">
             <button class="btn-metro primary" onclick="send('mob')">ok</button>
         </div>
         <nav class="nav-bottom">
@@ -180,147 +165,114 @@
         const db = firebase.database();
         let user = localStorage.getItem("thinktalk_pseudo"), current = { id: 'general', type: 'room' };
 
-        // SYSTEME DIALOGUE
+        // HOLD SYSTEM (LONG PRESS)
+        let holdTimer;
+        function setupHold(el, key, text, isMine) {
+            if(!isMine) return;
+            const start = () => holdTimer = setTimeout(() => openContext(key, text), 600);
+            const cancel = () => clearTimeout(holdTimer);
+            el.onmousedown = start; el.ontouchstart = start;
+            el.onmouseup = cancel; el.ontouchend = cancel;
+            el.oncontextmenu = (e) => { e.preventDefault(); openContext(key, text); };
+        }
+
+        function openContext(key, text) {
+            openDialog("options", `<p style="margin-bottom:20px">Que voulez-vous faire avec ce message ?</p>`, null);
+            document.getElementById('dialog-actions').innerHTML = `
+                <button class="btn-metro" onclick="closeDialog()">annuler</button>
+                <button class="btn-metro primary" onclick="editMsg('${key}','${text}')">éditer</button>
+                <button class="btn-metro danger" onclick="delMsg('${key}')">supprimer</button>
+            `;
+        }
+
         function openDialog(title, body, confirm) {
             const d = document.getElementById('metro-dialog');
             document.getElementById('dialog-title').textContent = title;
             document.getElementById('dialog-body').innerHTML = body;
-            document.getElementById('dialog-confirm').onclick = () => { confirm(); d.style.display='none'; };
+            const actions = document.getElementById('dialog-actions');
+            actions.innerHTML = `<button class="btn-metro" onclick="closeDialog()">annuler</button><button class="btn-metro primary" id="dialog-confirm">ok</button>`;
+            if(confirm) document.getElementById('dialog-confirm').onclick = () => { confirm(); d.style.display='none'; };
             d.style.display = 'flex';
         }
         function closeDialog() { document.getElementById('metro-dialog').style.display = 'none'; }
         function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('menu-overlay').style.display = document.getElementById('side-menu').classList.contains('open') ? 'block' : 'none'; }
 
-        // NETTOYAGE AUTO 7 JOURS
-        function cleanOld(path) {
-            const week = 7 * 24 * 60 * 60 * 1000;
-            db.ref(path).once('value', s => s.forEach(snap => { if(snap.val().timestamp && (Date.now() - snap.val().timestamp > week)) snap.ref.remove(); }));
-        }
-
-        // LIVE TILES
-        function bindLiveTile(id, type, el) {
-            const path = type==='room' ? `messages/public/${id}` : `messages/dm/${[user,id].sort().join("__")}`;
-            db.ref(path).limitToLast(1).on('child_added', snap => {
-                const m = snap.val();
-                let p = el.querySelector('.live-preview');
-                if(!p) { p = document.createElement('div'); p.className='live-preview'; el.appendChild(p); }
-                p.innerHTML = `<div style="font-weight:bold;color:var(--accent)">${m.pseudo}</div><div>${m.text.startsWith('[img]')?'📷 image':m.text.substring(0,30)}</div>`;
-            });
-        }
-
-        // CHAT ENGINE
+        // CORE CHAT
         function setChat(id, type) {
             current = { id, type };
-            const title = (type==='room'?'#':'@') + id;
-            document.getElementById('chat-title-pc').textContent = title;
-            document.getElementById('chat-title-mob').textContent = title;
             const path = type==='room' ? `messages/public/${id}` : `messages/dm/${[user,id].sort().join("__")}`;
-            cleanOld(path);
             db.ref(path).off();
             db.ref(path).on('value', s => {
                 const pc = document.getElementById('msg-pc'), mb = document.getElementById('msg-mob');
                 pc.innerHTML = ""; mb.innerHTML = "";
                 s.forEach(snap => {
                     const m = snap.val(), isMine = m.pseudo === user;
-                    const html = `<div class="msg animate ${isMine?'mine':''}">
-                        ${isMine ? `<div class="msg-actions"><span onclick="editMsg('${snap.key}','${m.text}')">édit</span> | <span onclick="delMsg('${snap.key}')">suppr</span></div>` : ''}
-                        <div style="font-size:10px; color:var(--accent); font-weight:bold;">${m.pseudo}</div>
-                        <div>${m.text.startsWith('[img]') ? `<img src="${m.text.replace('[img]','')}" style="max-width:100%">` : m.text}</div>
-                    </div>`;
-                    pc.insertAdjacentHTML('beforeend', html); mb.insertAdjacentHTML('beforeend', html);
+                    const el = document.createElement('div');
+                    el.className = `msg animate ${isMine?'mine':''}`;
+                    el.innerHTML = `<div style="font-size:10px; color:var(--accent); font-weight:bold; margin-bottom:4px;">${m.pseudo}</div>
+                                   <div>${m.text.startsWith('[img]') ? `<img src="${m.text.replace('[img]','')}" style="max-width:100%">`: m.text}</div>`;
+                    setupHold(el, snap.key, m.text, isMine);
+                    pc.appendChild(el.cloneNode(true)); mb.appendChild(el);
                 });
                 pc.scrollTop = pc.scrollHeight; mb.scrollTop = mb.scrollHeight;
             });
+            document.getElementById('chat-title-pc').textContent = (type==='room'?'#':'@')+id;
+            document.getElementById('chat-title-mob').textContent = (type==='room'?'#':'@')+id;
         }
 
         function send(m) {
             const i = document.getElementById(m==='pc'?'in-pc':'in-mob');
-            const v = i.value.trim();
-            if(v) {
-                const path = current.type==='room' ? `messages/public/${current.id}` : `messages/dm/${[user,current.id].sort().join("__")}`;
-                db.ref(path).push({ pseudo: user, text: v, timestamp: Date.now() });
-                i.value = "";
-            }
+            if(!i.value.trim()) return;
+            const path = current.type==='room' ? `messages/public/${current.id}` : `messages/dm/${[user,current.id].sort().join("__")}`;
+            db.ref(path).push({ pseudo: user, text: i.value.trim(), timestamp: Date.now() });
+            i.value = "";
         }
 
-        function delMsg(key) { if(confirm("Supprimer ?")) db.ref(current.type==='room'?`messages/public/${current.id}/${key}`:`messages/dm/${[user,current.id].sort().join("__")}/${key}`).remove(); }
-        
+        function delMsg(key) { 
+            db.ref(current.type==='room'?`messages/public/${current.id}/${key}`:`messages/dm/${[user,current.id].sort().join("__")}/${key}`).remove(); 
+            closeDialog();
+        }
+
         function editMsg(key, old) {
-            openDialog("éditer", `<input type="text" id="edit-val" value="${old}">`, () => {
-                const n = document.getElementById('edit-val').value;
+            closeDialog();
+            openDialog("éditer", `<input type="text" id="edit-v" value="${old}">`, () => {
+                const n = document.getElementById('edit-v').value;
                 db.ref(current.type==='room'?`messages/public/${current.id}/${key}`:`messages/dm/${[user,current.id].sort().join("__")}/${key}`).update({ text: n });
             });
         }
 
-        // SALONS PRIVÉS
-        function openCreateRoom() {
-            openDialog("nouveau salon", `<input type="text" id="nr-n" placeholder="nom"><input type="text" id="nr-c" placeholder="code (optionnel)">`, () => {
-                const n = document.getElementById('nr-n').value.toLowerCase().trim();
-                const c = document.getElementById('nr-c').value.trim();
-                if(n) db.ref('rooms/'+n).set({ code: c || null });
-            });
-        }
-
-        function joinPrivateRoom() {
-            openDialog("rejoindre", `<input type="text" id="jr-n" placeholder="nom"><input type="text" id="jr-c" placeholder="code">`, () => {
-                const n = document.getElementById('jr-n').value.toLowerCase().trim();
-                const c = document.getElementById('jr-c').value.trim();
-                db.ref('rooms/'+n).once('value', s => {
-                    if(s.exists() && s.val().code === c) {
-                        let saved = JSON.parse(localStorage.getItem("tt_p") || "[]");
-                        if(!saved.includes(n)) saved.push(n);
-                        localStorage.setItem("tt_p", JSON.stringify(saved));
-                        setChat(n, 'room'); goTo(1);
-                    } else alert("Erreur");
-                });
-            });
-        }
-
+        // LIVE TILES ET LISTES
         function loadLists() {
             db.ref("rooms").on('value', s => {
                 const mb = document.getElementById('mob-rooms'), pc = document.getElementById('pc-content-list');
                 mb.innerHTML = ""; pc.innerHTML = "";
-                const saved = JSON.parse(localStorage.getItem("tt_p") || "[]");
+                const saved = JSON.parse(localStorage.getItem("tt_saved_p") || "[]");
                 const add = (id, priv) => {
                     const t = document.createElement('div'); t.className="tile animate"; t.innerHTML = (priv?'🔑 ':'# ')+id;
                     t.onclick = () => { setChat(id, 'room'); goTo(1); }; mb.appendChild(t.cloneNode(true));
                     t.onclick = () => setChat(id, 'room'); pc.appendChild(t);
-                    bindLiveTile(id, 'room', t);
+                    // Live Tile logic
+                    db.ref(`messages/public/${id}`).limitToLast(1).on('child_added', snap => {
+                        let p = t.querySelector('.live-preview') || document.createElement('div');
+                        p.className='live-preview'; p.innerHTML=`<b style="color:#fff">${snap.val().pseudo}</b><br>${snap.val().text.substring(0,20)}`;
+                        t.appendChild(p);
+                    });
                 };
                 add('general', false);
                 s.forEach(r => { if(r.key!=='general' && (!r.val().code || saved.includes(r.key))) add(r.key, r.val().code); });
             });
             db.ref("users").on('value', s => {
-                const mc = document.getElementById('mob-contacts');
-                mc.innerHTML = "";
+                const mc = document.getElementById('mob-contacts'); mc.innerHTML = "";
                 s.forEach(u => {
                     if(u.key === user) return;
                     const t = document.createElement('div'); t.className="tile animate"; t.style.background="rgba(255,255,255,0.1)"; t.innerHTML = "@ "+u.key;
                     t.onclick = () => { setChat(u.key, 'dm'); goTo(1); }; mc.appendChild(t);
-                    bindLiveTile(u.key, 'dm', t);
                 });
             });
         }
 
-        function handleFile(input) {
-            const f = input.files[0]; if(!f) return;
-            const r = new FileReader();
-            r.onload = e => {
-                const img = new Image();
-                img.onload = () => {
-                    const cv = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if(w>800) { h *= (800/w); w = 800; }
-                    cv.width=w; cv.height=h;
-                    cv.getContext('2d').drawImage(img, 0, 0, w, h);
-                    const path = current.type==='room' ? `messages/public/${current.id}` : `messages/dm/${[user,current.id].sort().join("__")}`;
-                    db.ref(path).push({ pseudo: user, text: '[img]'+cv.toDataURL('image/jpeg', 0.6), timestamp: Date.now() });
-                };
-                img.src = e.target.result;
-            };
-            r.readAsDataURL(f);
-        }
-
+        function openCreateRoom() { openDialog("nouveau salon", `<input type="text" id="rn" placeholder="nom"><input type="text" id="rc" placeholder="code (optionnel)">`, () => { const n = document.getElementById('rn').value.toLowerCase().trim(); const c = document.getElementById('rc').value.trim(); if(n) db.ref('rooms/'+n).set({code:c||null}); }); }
+        function joinPrivateRoom() { openDialog("rejoindre", `<input type="text" id="jn" placeholder="nom"><input type="text" id="jc" placeholder="code">`, () => { const n = document.getElementById('jn').value.toLowerCase().trim(); const c = document.getElementById('jc').value.trim(); db.ref('rooms/'+n).once('value', s => { if(s.exists() && s.val().code === c) { let sv = JSON.parse(localStorage.getItem("tt_saved_p")||"[]"); if(!sv.includes(n)) sv.push(n); localStorage.setItem("tt_saved_p", JSON.stringify(sv)); setChat(n, 'room'); goTo(1); } }); }); }
         function initColors() {
             const cols = ["#00a2e8", "#a200ff", "#99b433", "#ff0097", "#e3a21a", "#da532c", "#00aba9"];
             const saved = localStorage.getItem("tt_accent") || "#00a2e8";
@@ -332,14 +284,13 @@
             });
             if(localStorage.getItem("tt_bg")) document.body.style.backgroundImage = `url('${localStorage.getItem("tt_bg")}')`;
         }
-
-        function openBgDialog() { openDialog("fond", `<input type="text" id="bg-u" placeholder="url">`, () => { const u = document.getElementById('bg-u').value; document.body.style.backgroundImage=`url('${u}')`; localStorage.setItem("tt_bg", u); }); }
+        function openBgDialog() { openDialog("fond", `<input type="text" id="bgu" placeholder="url image">`, () => { const u = document.getElementById('bgu').value; document.body.style.backgroundImage=`url('${u}')`; localStorage.setItem("tt_bg", u); }); }
         function filterLists(v) { document.querySelectorAll('.tile').forEach(t => t.style.display = t.textContent.toLowerCase().includes(v.toLowerCase()) ? 'flex' : 'none'); }
         function goTo(x) { document.getElementById('panorama').style.transform = `translateX(-${x*100}vw)`; document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i===x)); document.getElementById('mob-bar').style.display = (x===1) ? 'flex' : 'none'; }
         function logout() { localStorage.clear(); location.reload(); }
 
         window.onload = () => {
-            if(!user) { openDialog("pseudo", `<input type="text" id="diag-p">`, () => { const p = document.getElementById('diag-p').value.trim(); if(p) { localStorage.setItem("thinktalk_pseudo", p); db.ref('users/'+p).set(true); location.reload(); } }); }
+            if(!user) { openDialog("bienvenue", `<input type="text" id="dp" placeholder="ton pseudo">`, () => { const p = document.getElementById('dp').value.trim(); if(p) { localStorage.setItem("thinktalk_pseudo", p); db.ref('users/'+p).set(true); location.reload(); } }); }
             else { db.ref('users/'+user).set(true); initColors(); loadLists(); setChat('general', 'room'); }
         };
     </script>
