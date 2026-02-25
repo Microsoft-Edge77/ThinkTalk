@@ -1,866 +1,172 @@
-========================
-= index.html
-========================
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk</title>
+    <title>ThinkTalk Premium</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Typo Metro/Fluent -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap">
-
-    <!-- Styles Metro/Fluent -->
-    <link rel="stylesheet" href="ui.css">
-
-    <!-- JS modules -->
-    <script type="module" src="main.js"></script>
+    <style>
+        /* === LE CSS DE COPILOT (Fusionné) === */
+        :root {
+            --bg: #05060a;
+            --accent: #00a2e8;
+            --text: #f5f5f5;
+            --border-soft: rgba(255, 255, 255, 0.08);
+            --blur: 20px;
+        }
+        body {
+            background: radial-gradient(circle at top left, #101322, #05060a 70%);
+            color: var(--text);
+            font-family: "Segoe UI", sans-serif;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #app-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            height: 100vh;
+        }
+        #metro-sidebar {
+            background: rgba(10, 12, 20, 0.95);
+            border-right: 1px solid var(--border-soft);
+            padding: 20px;
+            backdrop-filter: blur(var(--blur));
+        }
+        .user-profile-tile {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-soft);
+            margin-bottom: 20px;
+        }
+        #main-view {
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        #chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-soft);
+            background: rgba(5, 6, 10, 0.5);
+        }
+        #messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .message {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--accent);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #input-zone {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+            background: #05060a;
+        }
+        input {
+            flex: 1;
+            background: #1a1c25;
+            border: 1px solid var(--border-soft);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            outline: none;
+        }
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
 </head>
-
 <body>
-<div id="acrylic-overlay"></div>
 
 <div id="app-container">
-
-    <!-- SIDEBAR METRO -->
     <nav id="metro-sidebar">
         <div class="user-profile-tile">
-            <div class="avatar"></div>
-            <div class="username"></div>
+            <div class="username" id="display-pseudo">Chargement...</div>
         </div>
-
         <div class="nav-items">
-            <button class="nav-btn active" data-view="rooms">Salons</button>
-            <button class="nav-btn" data-view="dm">Messages privés</button>
-            <button class="nav-btn" data-view="settings">Paramètres</button>
+            <div style="color: var(--accent); font-weight: bold; margin-bottom: 10px;"># Salons</div>
+            <div id="rooms-list">#general</div>
         </div>
     </nav>
 
-    <!-- MAIN VIEW -->
     <main id="main-view">
         <header id="chat-header">
             <h2 id="chat-title">#general</h2>
         </header>
-
-        <div id="messages-container" class="fluent-scrollbar">
-            <!-- Messages -->
-        </div>
-
-        <footer id="input-zone">
-            <input type="text" id="chat-input" placeholder="Écrire un message…">
+        <div id="messages-container"></div>
+        <div id="input-zone">
+            <input type="text" id="chat-input" placeholder="Écrire un message...">
             <button id="send-btn">Envoyer</button>
-            <button id="file-btn">📎</button>
-            <input type="file" id="file-input" hidden>
-        </footer>
+        </div>
     </main>
-
 </div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<script>
+    // CONFIGURATION DE ZAO
+    const firebaseConfig = {
+        apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
+        authDomain: "chat-github-6abb5.firebaseapp.com",
+        databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "chat-github-6abb5"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const pseudo = localStorage.getItem("thinktalk_pseudo") || prompt("Ton pseudo ?") || "Anonyme";
+    localStorage.setItem("thinktalk_pseudo", pseudo);
+    document.getElementById('display-pseudo').textContent = pseudo;
+
+    const msgContainer = document.getElementById('messages-container');
+    const input = document.getElementById('chat-input');
+    const btn = document.getElementById('send-btn');
+
+    // Écoute des messages
+    db.ref('messages/public/general').limitToLast(20).on('child_added', (snap) => {
+        const m = snap.val();
+        const div = document.createElement('div');
+        div.className = 'message';
+        div.innerHTML = `<strong>${m.pseudo}</strong> : ${m.text}`;
+        msgContainer.appendChild(div);
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+    });
+
+    // Envoi
+    function send() {
+        const text = input.value.trim();
+        if (text) {
+            db.ref('messages/public/general').push({
+                pseudo: pseudo,
+                text: text,
+                timestamp: Date.now()
+            });
+            input.value = "";
+        }
+    }
+
+    btn.onclick = send;
+    input.onkeydown = (e) => { if(e.key === "Enter") send(); };
+</script>
+
 </body>
 </html>
-
-
-========================
-= ui.css
-========================
-:root {
-  --bg: #05060a;
-  --bg-elevated: rgba(15, 17, 25, 0.9);
-  --accent: #00a2e8;
-  --accent-soft: rgba(0, 162, 232, 0.2);
-  --text: #f5f5f5;
-  --text-muted: #9ca3af;
-  --border-soft: rgba(255, 255, 255, 0.06);
-  --blur: 18px;
-}
-
-/* Reset léger */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background: radial-gradient(circle at top left, #101322, #05060a 60%);
-  color: var(--text);
-  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Acrylic overlay */
-#acrylic-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at top left, rgba(255,255,255,0.06), transparent 55%);
-  mix-blend-mode: screen;
-  opacity: 0.4;
-  z-index: 1;
-}
-
-/* Layout global */
-#app-container {
-  position: relative;
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  height: 100vh;
-  z-index: 2;
-}
-
-/* Sidebar Metro */
-#metro-sidebar {
-  background: linear-gradient(180deg, rgba(10,12,20,0.95), rgba(5,6,10,0.98));
-  border-right: 1px solid var(--border-soft);
-  padding: 16px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Tuile profil */
-.user-profile-tile {
-  background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(0,0,0,0.4));
-  border-radius: 14px;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--border-soft);
-  backdrop-filter: blur(var(--blur));
-}
-
-.user-profile-tile .avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: radial-gradient(circle at 30% 20%, var(--accent), #1f2937);
-}
-
-.user-profile-tile .username {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-/* Navigation */
-.nav-items {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.nav-btn {
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: 
-    background 0.18s ease-out,
-    color 0.18s ease-out,
-    border-color 0.18s ease-out,
-    transform 0.12s ease-out;
-}
-
-.nav-btn:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--text);
-  transform: translateY(-1px);
-}
-
-.nav-btn.active {
-  background: rgba(0,0,0,0.6);
-  border-color: var(--accent);
-  color: var(--text);
-}
-
-/* Main view */
-#main-view {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  background: radial-gradient(circle at top, rgba(255,255,255,0.03), transparent 55%);
-}
-
-/* Header */
-#chat-header {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, rgba(10,12,20,0.9), rgba(5,6,10,0.95));
-  backdrop-filter: blur(var(--blur));
-  display: flex;
-  align-items: center;
-}
-
-#chat-title {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* Messages container */
-#messages-container {
-  flex: 1;
-  padding: 12px 18px 8px;
-  overflow-y: auto;
-  position: relative;
-}
-
-/* Fluent scrollbar */
-#messages-container::-webkit-scrollbar {
-  width: 6px;
-}
-#messages-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-#messages-container::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
-  border-radius: 999px;
-}
-#messages-container:hover::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.7);
-}
-
-/* Message bubble */
-.message {
-  margin-bottom: 6px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(15, 23, 42, 0.9);
-  font-size: 13px;
-}
-
-/* Input zone */
-#input-zone {
-  padding: 10px 14px;
-  border-top: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, rgba(5,6,10,0.96), rgba(0,0,0,0.98));
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-#chat-input {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border-soft);
-  background: rgba(15, 23, 42, 0.9);
-  color: var(--text);
-  font-size: 13px;
-  outline: none;
-}
-
-#chat-input:focus {
-  border-color: var(--accent);
-}
-
-#send-btn,
-#file-btn {
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border-soft);
-  background: rgba(15, 23, 42, 0.95);
-  color: var(--text);
-  font-size: 13px;
-  cursor: pointer;
-  transition:
-    background 0.16s ease-out,
-    border-color 0.16s ease-out,
-    transform 0.1s ease-out;
-}
-
-#send-btn:hover,
-#file-btn:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-/* Responsive */
-@media (max-width: 800px) {
-  #app-container {
-    grid-template-columns: 1fr;
-  }
-
-  #metro-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 230px;
-    transform: translateX(-100%);
-    transition: transform 0.2s ease-out;
-    z-index: 10;
-  }
-
-  #metro-sidebar.open {
-    transform: translateX(0);
-  }
-}
-
-/* Animations Metro/Fluent */
-.message.animate-in {
-  opacity: 0;
-  transform: translateY(8px) scale(0.98);
-  animation: msg-in 220ms cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-}
-
-@keyframes msg-in {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.96);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(-2px) scale(1.01);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Hover reveal */
-.nav-btn {
-  position: relative;
-  overflow: hidden;
-}
-
-.nav-btn::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.12), transparent 55%);
-  opacity: 0;
-  transition: opacity 0.18s ease-out;
-  pointer-events: none;
-}
-
-.nav-btn:hover::before {
-  opacity: 1;
-}
-
-/* Poussière numérique */
-#main-view::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle at 10% 20%, rgba(255,255,255,0.06) 0, transparent 55%),
-    radial-gradient(circle at 80% 70%, rgba(0,162,232,0.18) 0, transparent 60%);
-  opacity: 0.18;
-  mix-blend-mode: screen;
-  z-index: 0;
-}
-
-#chat-header,
-#messages-container,
-#input-zone {
-  position: relative;
-  z-index: 1;
-}
-
-
-========================
-= firebase.js
-========================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
-  getDatabase, 
-  ref, 
-  push, 
-  onValue, 
-  onChildAdded, 
-  update, 
-  remove 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { 
-  getStorage, 
-  ref as storageRef, 
-  uploadBytes, 
-  getDownloadURL 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
-  authDomain: "chat-github-6abb5.firebaseapp.com",
-  databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "chat-github-6abb5",
-  storageBucket: "chat-github-6abb5.appspot.com",
-  messagingSenderId: "1038562300660",
-  appId: "1:1038562300660:web:def37e626c74983e6384a1",
-  measurementId: "G-2N92RJXQDT"
-};
-
-const app = initializeApp(firebaseConfig);
-export const db = getDatabase(app);
-export const storage = getStorage(app);
-
-export {
-  ref,
-  push,
-  onValue,
-  onChildAdded,
-  update,
-  remove,
-  storageRef,
-  uploadBytes,
-  getDownloadURL
-};
-
-
-========================
-= chat.js
-========================
-import { 
-  db, 
-  ref, 
-  push, 
-  onChildAdded, 
-  update, 
-  remove 
-} from "./firebase.js";
-
-function getUser() {
-  const pseudo = localStorage.getItem("thinktalk_pseudo");
-  if (!pseudo) throw new Error("Aucun pseudo trouvé dans localStorage.");
-  return pseudo;
-}
-
-function normalizeMessage(id, data) {
-  return {
-    id,
-    pseudo: data.pseudo || "???",
-    text: data.text || null,
-    url: data.url || null,
-    filename: data.filename || null,
-    timestamp: data.timestamp || Date.now()
-  };
-}
-
-export function sendMessage(roomId, text) {
-  const pseudo = getUser();
-  const path = `messages/public/${roomId}`;
-
-  return push(ref(db, path), {
-    pseudo,
-    text,
-    timestamp: Date.now()
-  });
-}
-
-let currentUnsubscribe = null;
-
-export function listenToRoom(roomId, callback) {
-  if (currentUnsubscribe) {
-    currentUnsubscribe();
-    currentUnsubscribe = null;
-  }
-
-  const path = `messages/public/${roomId}`;
-  const roomRef = ref(db, path);
-
-  const unsubscribe = onChildAdded(roomRef, snap => {
-    const msg = normalizeMessage(snap.key, snap.val());
-    callback(msg);
-  });
-
-  currentUnsubscribe = () => unsubscribe();
-}
-
-export function editMessage(roomId, msgId, newText) {
-  const path = `messages/public/${roomId}/${msgId}`;
-  return update(ref(db, path), { text: newText });
-}
-
-export function deleteMessage(roomId, msgId) {
-  const path = `messages/public/${roomId}/${msgId}`;
-  return remove(ref(db, path));
-}
-
-
-========================
-= rooms.js
-========================
-import { 
-  db, 
-  ref, 
-  push, 
-  onValue, 
-  update 
-} from "./firebase.js";
-
-function normalizeRoom(id, data) {
-  return {
-    id,
-    name: data.name || "???",
-    isPrivate: data.isPrivate || false,
-    code: data.code || null,
-    members: data.members || {}
-  };
-}
-
-function getUser() {
-  const pseudo = localStorage.getItem("thinktalk_pseudo");
-  if (!pseudo) throw new Error("Aucun pseudo trouvé.");
-  return pseudo;
-}
-
-let unsubscribeRooms = null;
-
-export function listenToRooms(callback) {
-  if (unsubscribeRooms) {
-    unsubscribeRooms();
-    unsubscribeRooms = null;
-  }
-
-  const roomsRef = ref(db, "rooms");
-
-  const unsubscribe = onValue(roomsRef, snap => {
-    const rooms = [];
-    snap.forEach(child => {
-      const room = normalizeRoom(child.key, child.val());
-      rooms.push(room);
-    });
-    callback(rooms);
-  });
-
-  unsubscribeRooms = () => unsubscribe();
-}
-
-export function createPublicRoom(name) {
-  const roomsRef = ref(db, "rooms");
-  return push(roomsRef, {
-    name,
-    isPrivate: false
-  });
-}
-
-export function createPrivateRoom(name, code) {
-  const pseudo = getUser();
-  const roomsRef = ref(db, "rooms");
-
-  return push(roomsRef, {
-    name,
-    isPrivate: true,
-    code,
-    members: {
-      [pseudo]: true
-    }
-  });
-}
-
-export function joinPrivateRoom(name, code) {
-  const pseudo = getUser();
-
-  return new Promise((resolve, reject) => {
-    const roomsRef = ref(db, "rooms");
-
-    onValue(roomsRef, snap => {
-      let found = null;
-
-      snap.forEach(child => {
-        const data = child.val();
-        if (data.isPrivate && data.name === name && data.code === code) {
-          found = { id: child.key, data };
-        }
-      });
-
-      if (!found) {
-        reject("Salon introuvable ou code incorrect.");
-        return;
-      }
-
-      const memberRef = ref(db, `rooms/${found.id}/members/${pseudo}`);
-      update(memberRef, true)
-        .then(() => resolve(found.id))
-        .catch(reject);
-    }, { onlyOnce: true });
-  });
-}
-
-
-========================
-= dm.js
-========================
-import { 
-  db, 
-  ref, 
-  push, 
-  onChildAdded, 
-  onValue 
-} from "./firebase.js";
-
-function getUser() {
-  const pseudo = localStorage.getItem("thinktalk_pseudo");
-  if (!pseudo) throw new Error("Aucun pseudo trouvé.");
-  return pseudo;
-}
-
-export function convIdFor(a, b) {
-  return [a, b].sort().join("_");
-}
-
-function normalizeDM(id, data) {
-  return {
-    id,
-    pseudo: data.pseudo,
-    text: data.text || null,
-    url: data.url || null,
-    filename: data.filename || null,
-    timestamp: data.timestamp || Date.now()
-  };
-}
-
-export function addContact(otherPseudo) {
-  const me = getUser();
-
-  const myRef = ref(db, `contacts/${me}/${otherPseudo}`);
-  const hisRef = ref(db, `contacts/${otherPseudo}/${me}`);
-
-  return Promise.all([
-    push(myRef, true),
-    push(hisRef, true)
-  ]);
-}
-
-export function listenContacts(callback) {
-  const me = getUser();
-  const contactsRef = ref(db, `contacts/${me}`);
-
-  onValue(contactsRef, snap => {
-    const list = [];
-    snap.forEach(child => {
-      list.push(child.key);
-    });
-    callback(list);
-  });
-}
-
-let unsubscribeDM = null;
-
-export function sendDM(to, text) {
-  const me = getUser();
-  const convId = convIdFor(me, to);
-  const path = `messages/dm/${convId}`;
-
-  return push(ref(db, path), {
-    pseudo: me,
-    text,
-    timestamp: Date.now()
-  });
-}
-
-export function listenToDM(convId, callback) {
-  if (unsubscribeDM) {
-    unsubscribeDM();
-    unsubscribeDM = null;
-  }
-
-  const dmRef = ref(db, `messages/dm/${convId}`);
-
-  const unsub = onChildAdded(dmRef, snap => {
-    const msg = normalizeDM(snap.key, snap.val());
-    callback(msg);
-  });
-
-  unsubscribeDM = () => unsub();
-}
-
-export function listenLastDMMessage(convId, callback) {
-  const dmRef = ref(db, `messages/dm/${convId}`);
-
-  onValue(dmRef, snap => {
-    let last = null;
-    snap.forEach(child => {
-      last = normalizeDM(child.key, child.val());
-    });
-    callback(last);
-  });
-}
-
-
-========================
-= main.js
-========================
-import "./firebase.js";
-import { listenToRoom, sendMessage } from "./chat.js";
-import { listenToRooms } from "./rooms.js";
-import { listenContacts, listenLastDMMessage, convIdFor, sendDM } from "./dm.js";
-
-const pseudo = localStorage.getItem("thinktalk_pseudo") || "Utilisateur";
-document.addEventListener("DOMContentLoaded", () => {
-  const usernameEl = document.querySelector(".username");
-  if (usernameEl) usernameEl.textContent = pseudo;
-});
-
-const navButtons = document.querySelectorAll(".nav-btn");
-const messagesContainer = document.getElementById("messages-container");
-const chatTitle = document.getElementById("chat-title");
-
-let currentView = "rooms";
-let currentRoom = "general";
-let currentDM = null;
-
-function switchView(view) {
-  currentView = view;
-
-  navButtons.forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.view === view);
-  });
-
-  if (view === "rooms") loadRoomsView();
-  if (view === "dm") loadDMView();
-  if (view === "settings") loadSettingsView();
-}
-
-navButtons.forEach(btn => {
-  btn.addEventListener("click", () => switchView(btn.dataset.view));
-});
-
-function addMessageToUI(msg) {
-  const div = document.createElement("div");
-  div.className = "message animate-in";
-  if (msg.text) {
-    div.textContent = `${msg.pseudo} : ${msg.text}`;
-  }
-  messagesContainer.appendChild(div);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-function loadRoomsView() {
-  messagesContainer.innerHTML = "";
-  chatTitle.textContent = `#${currentRoom}`;
-
-  listenToRoom(currentRoom, msg => {
-    addMessageToUI(msg);
-  });
-
-  listenToRooms(rooms => {
-    const nav = document.querySelector(".nav-items");
-    nav.innerHTML = `
-      <button class="nav-btn active" data-view="rooms">Salons</button>
-      <button class="nav-btn" data-view="dm">Messages privés</button>
-      <button class="nav-btn" data-view="settings">Paramètres</button>
-    `;
-
-    nav.querySelectorAll(".nav-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchView(btn.dataset.view));
-    });
-
-    rooms.forEach(room => {
-      const btn = document.createElement("button");
-      btn.className = "nav-btn";
-      btn.textContent = room.isPrivate ? `🔒 ${room.name}` : room.name;
-
-      btn.addEventListener("click", () => {
-        currentRoom = room.id;
-        switchView("rooms");
-      });
-
-      nav.appendChild(btn);
-    });
-  });
-}
-
-function loadDMView() {
-  messagesContainer.innerHTML = "";
-  chatTitle.textContent = "Messages privés";
-
-  listenContacts(list => {
-    const nav = document.querySelector(".nav-items");
-    nav.innerHTML = `
-      <button class="nav-btn" data-view="rooms">Salons</button>
-      <button class="nav-btn active" data-view="dm">Messages privés</button>
-      <button class="nav-btn" data-view="settings">Paramètres</button>
-    `;
-
-    nav.querySelectorAll(".nav-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchView(btn.dataset.view));
-    });
-
-    list.forEach(contact => {
-      const convId = convIdFor(pseudo, contact);
-      const btn = document.createElement("button");
-      btn.className = "nav-btn";
-      btn.textContent = contact;
-
-      listenLastDMMessage(convId, last => {
-        if (last) {
-          btn.textContent = `${contact} — ${last.text || "[Fichier]"}`;
-        }
-      });
-
-      btn.addEventListener("click", () => {
-        currentDM = contact;
-        openDM(contact);
-      });
-
-      nav.appendChild(btn);
-    });
-  });
-}
-
-function openDM(contact) {
-  messagesContainer.innerHTML = "";
-  chatTitle.textContent = contact;
-
-  const convId = convIdFor(pseudo, contact);
-
-  // On réutilise addMessageToUI, mais ici tu pourrais brancher listenToDM
-  // si tu veux séparer public/privé côté moteur.
-  // Pour l’instant, on garde la logique simple.
-  // Exemple si tu veux utiliser listenToDM :
-  // listenToDM(convId, msg => addMessageToUI(msg));
-}
-
-function loadSettingsView() {
-  messagesContainer.innerHTML = "";
-  chatTitle.textContent = "Paramètres";
-
-  messagesContainer.innerHTML = `
-    <div class="message">Thèmes, fond d'écran, déconnexion… bientôt.</div>
-  `;
-}
-
-const input = document.getElementById("chat-input");
-const sendBtn = document.getElementById("send-btn");
-
-function sendCurrentMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  if (currentView === "rooms") {
-    sendMessage(currentRoom, text);
-  } else if (currentView === "dm" && currentDM) {
-    sendDM(currentDM, text);
-  }
-
-  input.value = "";
-}
-
-sendBtn.addEventListener("click", sendCurrentMessage);
-
-input.addEventListener("keydown", e => {
-  if (e.key === "Enter") sendCurrentMessage();
-});
-
-document.querySelectorAll(".nav-btn").forEach(btn => {
-  btn.addEventListener("mousemove", e => {
-    const rect = btn.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    btn.style.setProperty("--mx", `${x}%`);
-    btn.style.setProperty("--my", `${y}%`);
-  });
-});
-
-switchView("rooms");
