@@ -5,7 +5,7 @@
   <title>ThinkTalk</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Firebase -->
+  <!-- Firebase compat (Realtime Database) -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
@@ -292,11 +292,6 @@
       color: var(--text);
     }
 
-    .room-private-label {
-      font-size: 12px;
-      opacity: 0.8;
-    }
-
     .room-item {
       width: 100%;
       text-align: left;
@@ -477,10 +472,14 @@
   <script>
     // === Firebase config ===
     const firebaseConfig = {
-      apiKey: "TA_CLE",
-      authDomain: "TON_DOMAIN",
-      databaseURL: "TA_DB_URL",
-      projectId: "TON_PROJECT_ID",
+      apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
+      authDomain: "chat-github-6abb5.firebaseapp.com",
+      databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "chat-github-6abb5",
+      storageBucket: "chat-github-6abb5.firebasestorage.app",
+      messagingSenderId: "1038562300660",
+      appId: "1:1038562300660:web:def37e626c74983e6384a1",
+      measurementId: "G-2N92RJXQDT"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -564,7 +563,7 @@
     }
 
     // === Messages : helpers ===
-    function buildMessageElement(msgId, data, isPC, isDM) {
+    function buildMessageElement(msgId, data, isPC, isDM, isPrivateRoom) {
       const div = document.createElement("div");
       div.className = "msg";
       div.dataset.msgId = msgId;
@@ -584,7 +583,7 @@
         btnEdit.title = "Modifier";
         btnEdit.addEventListener("click", (e) => {
           e.stopPropagation();
-          editMessage(msgId, data, isDM);
+          editMessage(msgId, data, isDM, isPrivateRoom);
         });
 
         const btnDel = document.createElement("button");
@@ -592,7 +591,7 @@
         btnDel.title = "Supprimer";
         btnDel.addEventListener("click", (e) => {
           e.stopPropagation();
-          deleteMessage(msgId, isDM);
+          deleteMessage(msgId, isDM, isPrivateRoom);
         });
 
         actions.appendChild(btnEdit);
@@ -601,14 +600,13 @@
       }
 
       if (!isPC) {
-        // mobile : appui long
         let pressTimer = null;
         div.addEventListener("touchstart", (e) => {
           pressTimer = setTimeout(() => {
             if (data.pseudo === currentUser.pseudo) {
               const choice = prompt("Tape '1' pour modifier, '2' pour supprimer");
-              if (choice === "1") editMessage(msgId, data, isDM);
-              else if (choice === "2") deleteMessage(msgId, isDM);
+              if (choice === "1") editMessage(msgId, data, isDM, isPrivateRoom);
+              else if (choice === "2") deleteMessage(msgId, isDM, isPrivateRoom);
             }
           }, 500);
         });
@@ -622,7 +620,11 @@
 
     function getCurrentRoomPath() {
       if (!currentChat.roomId) return null;
-      return "messages/public/" + currentChat.roomId;
+      if (currentChat.isPrivateRoom) {
+        return "messages/private_rooms/" + currentChat.roomId;
+      } else {
+        return "messages/public/" + currentChat.roomId;
+      }
     }
 
     function getCurrentDMPath() {
@@ -630,7 +632,7 @@
       return "messages/dm/" + currentChat.convId;
     }
 
-    function deleteMessage(msgId, isDM) {
+    function deleteMessage(msgId, isDM, isPrivateRoom) {
       let path;
       if (isDM) {
         path = getCurrentDMPath();
@@ -641,7 +643,7 @@
       db.ref(path + "/" + msgId).remove();
     }
 
-    function editMessage(msgId, data, isDM) {
+    function editMessage(msgId, data, isDM, isPrivateRoom) {
       const newText = prompt("Modifier le message :", data.text || "");
       if (newText === null) return;
       let path;
@@ -657,15 +659,18 @@
     let currentRoomListener = null;
     let currentDMListener = null;
 
-    function listenRoom(roomId, roomName, targetId) {
+    function listenRoom(roomId, roomName, isPrivateRoom, targetId) {
       currentChat.type = "room";
       currentChat.roomId = roomId;
       currentChat.roomName = roomName;
+      currentChat.isPrivateRoom = isPrivateRoom;
       currentChat.convId = null;
       currentChat.dmWith = null;
 
       const container = document.getElementById(targetId);
-      const path = "messages/public/" + roomId;
+      const path = isPrivateRoom
+        ? "messages/private_rooms/" + roomId
+        : "messages/public/" + roomId;
 
       if (currentRoomListener) currentRoomListener.off();
       if (currentDMListener) currentDMListener.off();
@@ -677,7 +682,13 @@
         snap.forEach(child => {
           const msgId = child.key;
           const data = child.val();
-          const el = buildMessageElement(msgId, data, targetId === "msg-pc", false);
+          const el = buildMessageElement(
+            msgId,
+            data,
+            targetId === "msg-pc",
+            false,
+            isPrivateRoom
+          );
           container.appendChild(el);
         });
         container.scrollTop = container.scrollHeight;
@@ -690,6 +701,7 @@
       currentChat.dmWith = otherPseudo;
       currentChat.roomId = null;
       currentChat.roomName = null;
+      currentChat.isPrivateRoom = false;
 
       const container = document.getElementById(targetId);
       const path = "messages/dm/" + convId;
@@ -704,7 +716,13 @@
         snap.forEach(child => {
           const msgId = child.key;
           const data = child.val();
-          const el = buildMessageElement(msgId, data, targetId === "msg-pc", true);
+          const el = buildMessageElement(
+            msgId,
+            data,
+            targetId === "msg-pc",
+            true,
+            false
+          );
           container.appendChild(el);
         });
         container.scrollTop = container.scrollHeight;
@@ -819,17 +837,17 @@
 
           btn.addEventListener("click", () => {
             document.getElementById("chat-title-pc").textContent = "#" + data.name;
-            listenRoom(id, data.name, "msg-pc");
+            listenRoom(id, data.name, !!data.isPrivate, "msg-pc");
           });
 
           list.appendChild(btn);
 
-          if (!firstSelectable) firstSelectable = { id, name: data.name };
+          if (!firstSelectable) firstSelectable = { id, name: data.name, isPrivate: !!data.isPrivate };
         });
 
         if (!currentChat.roomId && firstSelectable) {
           document.getElementById("chat-title-pc").textContent = "#" + firstSelectable.name;
-          listenRoom(firstSelectable.id, firstSelectable.name, "msg-pc");
+          listenRoom(firstSelectable.id, firstSelectable.name, firstSelectable.isPrivate, "msg-pc");
         }
       });
     }
@@ -861,17 +879,17 @@
             document.getElementById("chat-title-mob").textContent = "#" + data.name;
             document.querySelectorAll(".mob-view").forEach(v => v.classList.remove("active"));
             document.getElementById("mob-chat").classList.add("active");
-            listenRoom(id, data.name, "msg-mob");
+            listenRoom(id, data.name, !!data.isPrivate, "msg-mob");
           });
 
           list.appendChild(btn);
 
-          if (!firstSelectable) firstSelectable = { id, name: data.name };
+          if (!firstSelectable) firstSelectable = { id, name: data.name, isPrivate: !!data.isPrivate };
         });
 
         if (!currentChat.roomId && firstSelectable) {
           document.getElementById("chat-title-mob").textContent = "#" + firstSelectable.name;
-          listenRoom(firstSelectable.id, firstSelectable.name, "msg-mob");
+          listenRoom(firstSelectable.id, firstSelectable.name, firstSelectable.isPrivate, "msg-mob");
         }
       });
     }
@@ -947,7 +965,6 @@
           tile.appendChild(nameDiv);
           tile.appendChild(lastDiv);
 
-          // écouter le dernier message
           db.ref("messages/dm/" + convId).orderByChild("timestamp").limitToLast(1)
             .on("value", s2 => {
               s2.forEach(m => {
@@ -1079,7 +1096,6 @@
       const tabs = document.querySelectorAll(".pc-tab");
       const roomsPanel = document.getElementById("pc-rooms-panel");
       const contactsPanel = document.getElementById("pc-contacts-panel");
-      const list = document.getElementById("pc-list");
 
       function showRooms() {
         document.getElementById("pc-sidebar-title").textContent = "Salons";
@@ -1105,7 +1121,6 @@
         });
       });
 
-      // par défaut : salons
       showRooms();
 
       document.getElementById("btn-send-pc").addEventListener("click", () => {
@@ -1116,7 +1131,6 @@
         input.value = "";
       });
 
-      // création / join salon privé
       document.getElementById("pc-btn-create-private-room").addEventListener("click", () => {
         const name = document.getElementById("pc-new-room-name").value.trim();
         const code = document.getElementById("pc-new-room-code").value.trim();
@@ -1129,7 +1143,6 @@
         joinPrivateRoom(name, code);
       });
 
-      // ajout contact
       document.getElementById("pc-btn-add-contact").addEventListener("click", () => {
         const pseudo = document.getElementById("pc-add-contact-pseudo").value.trim();
         addContact(pseudo);
@@ -1162,7 +1175,6 @@
         input.value = "";
       });
 
-      // création / join salon privé
       document.getElementById("mob-btn-create-private-room").addEventListener("click", () => {
         const name = document.getElementById("mob-new-room-name").value.trim();
         const code = document.getElementById("mob-new-room-code").value.trim();
@@ -1175,7 +1187,6 @@
         joinPrivateRoom(name, code);
       });
 
-      // ajout contact mobile
       const addBtn = document.getElementById("btn-add-contact-mob");
       const form = document.getElementById("mob-add-contact-form");
       const confirmBtn = document.getElementById("mob-btn-add-contact-confirm");
@@ -1198,7 +1209,6 @@
       initMobile();
     }
 
-    // === On load ===
     window.addEventListener("load", () => {
       initAuth();
       if (loadSession()) {
