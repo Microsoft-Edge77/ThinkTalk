@@ -11,7 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; background-position: center; background-size: cover; }
         
-        /* POP-UP ERREUR & PROMPT */
+        /* POP-UP ERREUR */
         #error-popup {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #111; border: 2px solid var(--accent); padding: 20px; z-index: 10000; width: 280px; text-align: center;
@@ -23,10 +23,9 @@
             background: var(--accent); padding: 15px; aspect-ratio: 1/1; display: flex; flex-direction: column; 
             justify-content: flex-end; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
         }
-        .tile:active { transform: scale(0.95); }
         .tile-name { font-weight: bold; text-transform: uppercase; font-size: 14px; z-index: 2; }
         .tile-last-msg { font-size: 10px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; }
-        .tile.private { background: #444; border: 1px solid var(--accent); }
+        .btn-del-tile { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); border: none; color: white; padding: 2px 8px; font-size: 12px; z-index: 10; cursor: pointer; }
 
         /* TROMBONE */
         .attach-btn {
@@ -43,7 +42,7 @@
         .auth-btn { width: 100%; padding: 12px; background: var(--accent); border: none; color: #fff; font-weight: bold; cursor: pointer; text-transform: uppercase; }
 
         /* PARAMETRES */
-        #settings-trigger { font-size: 30px; padding: 10px; cursor: pointer; line-height: 1; }
+        #settings-trigger { font-size: 32px; padding: 10px; cursor: pointer; line-height: 1; color: var(--accent); }
         .settings-group { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #222; }
         .settings-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 8px; display: block; }
         .accent-picker { width: 100%; height: 35px; border: 1px solid #333; background: none; cursor: pointer; }
@@ -55,21 +54,20 @@
         .pc-tab { font-size: 11px; font-weight: bold; cursor: pointer; color: #555; text-transform: uppercase; }
         .pc-tab.active { color: #fff; border-bottom: 2px solid var(--accent); }
 
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #222; background: rgba(0,0,0,0.5); }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #222; background: rgba(0,0,0,0.3); }
         .chat-header h2 { color: var(--accent); font-weight: 100; font-size: 18px; }
         
         /* MESSAGES CORRIGÉS */
-        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; padding-bottom: 30px; scroll-behavior: smooth; }
+        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; padding-bottom: 50px; }
         .msg { background: rgba(255,255,255,0.07); padding: 10px; border-left: 3px solid #333; max-width: 85%; width: fit-content; align-self: flex-start; }
         .msg.mine { border-left-color: var(--accent); }
         .msg-header { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px; color: var(--accent); font-weight: bold; gap: 15px; }
 
-        .input-area { display: flex; padding: 10px; background: #000; border-top: 1px solid #222; align-items: center; z-index: 100; }
+        .input-area { display: flex; padding: 10px; background: #000; border-top: 1px solid #222; align-items: center; }
         .input-area input { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; height: 45px; }
         .btn-send { background: var(--accent); border: none; color: #fff; padding: 0 20px; height: 45px; cursor: pointer; font-weight: bold; margin-left: 5px; }
         .btn-action-metro { padding: 12px; font-size: 11px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #333; cursor: pointer; text-align: left; text-transform: uppercase; margin-bottom: 5px; width: 100%; }
 
-        /* SEARCH BAR CONTACT */
         .search-bar { width: 100%; padding: 10px; background: #111; border: 1px solid #333; color: #fff; margin-bottom: 10px; font-size: 12px; }
 
         /* MOBILE MENU */
@@ -82,10 +80,10 @@
         .menu-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1500; }
 
         /* MOBILE LAYOUT */
-        #mobile-layout { display: none; height: 100vh; position: relative; }
+        #mobile-layout { display: none; height: 100vh; }
         .mobile-header { position: fixed; top: 0; width: 100%; height: 60px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 900; border-bottom: 1px solid #222; }
         #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.5s ease; padding-top: 60px; }
-        .view { width: 100vw; height: 100%; padding: 15px; overflow-y: auto; padding-bottom: 80px; }
+        .view { width: 100vw; height: 100%; padding: 15px; overflow-y: auto; padding-bottom: 150px; }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 65px; background: #000; border-top: 1px solid #222; display: flex; z-index: 1000; }
         .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #555; }
         .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
@@ -105,21 +103,18 @@
     <div id="mobile-menu">
         <h2 style="font-weight:100; color:var(--accent); margin-bottom:25px;">PARAMÈTRES</h2>
         <div class="settings-group">
-            <span class="settings-label">Apparence</span>
-            <input type="color" class="accent-picker" onchange="updateAccent(this.value)">
-        </div>
-        <div class="settings-group">
-            <span class="settings-label">Actions Salons</span>
+            <span class="settings-label">Gestion Salons</span>
             <button class="btn-action-metro" onclick="createRoom(false)">+ CRÉER SALON PUBLIC</button>
             <button class="btn-action-metro" onclick="createRoom(true)">+ CRÉER SALON PRIVÉ</button>
             <button class="btn-action-metro" onclick="joinPrivateRoom()">REJOINDRE PRIVÉ</button>
         </div>
         <div class="settings-group">
-            <span class="settings-label">Arrière-plan</span>
-            <button class="btn-action-metro" onclick="triggerFile()">CHANGER LE FOND</button>
+            <span class="settings-label">Apparence</span>
+            <input type="color" class="accent-picker" onchange="updateAccent(this.value)">
+            <button class="btn-action-metro" onclick="triggerFile()" style="margin-top:10px">CHANGER LE FOND</button>
             <button class="btn-action-metro" onclick="resetBg()" style="color:#ff4d4d;">RESET FOND</button>
         </div>
-        <button class="btn-action-metro" onclick="logout()" style="border-color: red; color: red; margin-top: 20px;">SE DÉCONNECTER</button>
+        <button class="btn-action-metro" onclick="logout()" style="border-color: red; color: red;">SE DÉCONNECTER</button>
     </div>
 
     <div id="auth-screen">
@@ -140,21 +135,17 @@
                 <div class="pc-tab active" id="tab-pc-rooms" onclick="switchPcTab('rooms')">Salons</div>
                 <div class="pc-tab" id="tab-pc-contacts" onclick="switchPcTab('contacts')">Contacts</div>
             </div>
-            
             <div id="pc-search-container"></div>
             <div id="pc-content-list" style="flex:1; overflow-y:auto; margin-bottom: 10px;"></div>
-
             <div class="settings-group">
-                <button class="btn-action-metro" onclick="createRoom(false)">+ Public</button>
-                <button class="btn-action-metro" onclick="createRoom(true)">+ Privé</button>
-                <button class="btn-action-metro" onclick="joinPrivateRoom()">Rejoindre Privé</button>
-                <input type="color" class="accent-picker" onchange="updateAccent(this.value)" style="margin-top:10px">
+                <button class="btn-action-metro" onclick="createRoom(false)">+ PUBLIC</button>
+                <button class="btn-action-metro" onclick="createRoom(true)">+ PRIVÉ</button>
+                <button class="btn-action-metro" onclick="joinPrivateRoom()">REJOINDRE</button>
             </div>
-
-            <button class="btn-action-metro" onclick="logout()" style="border-color: red; color: red;">SE DÉCONNECTER</button>
+            <button class="btn-action-metro" onclick="logout()" style="border-color: red; color: red;">DÉCONNEXION</button>
         </aside>
 
-        <main style="flex:1; display:flex; flex-direction:column; position: relative;">
+        <main style="flex:1; display:flex; flex-direction:column;">
             <div class="chat-header"><h2 id="chat-title-pc"># accueil</h2></div>
             <div id="msg-pc" class="msg-list"></div>
             <div class="input-area">
@@ -183,15 +174,12 @@
             </section>
             <section class="view">
                 <h1 style="font-size:32px; font-weight:100; color:var(--accent); margin-bottom:20px;">contacts</h1>
-                <input type="text" class="search-bar" placeholder="Rechercher un contact..." oninput="filterContacts(this.value)">
+                <input type="text" class="search-bar" placeholder="Chercher un pseudo..." oninput="filterContacts(this.value)">
                 <div id="mob-contacts" class="tiles-grid"></div>
-                <button class="btn-action-metro" style="margin-top:20px; background:var(--accent)" onclick="showPopup('Utilisez la barre de recherche pour trouver un membre')">AJOUTER UN CONTACT</button>
+                <button class="btn-action-metro" style="margin-top:15px; background:var(--accent)" onclick="showPopup('Recherchez un utilisateur pour lui parler')">AJOUTER CONTACT</button>
             </section>
         </div>
         <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:65px; width:100%;">
-            <div class="attach-btn" onclick="triggerFile()">
-                <svg viewBox="0 0 24 24"><path d="M6 7.91V16a6 6 0 0 0 6 6 6 6 0 0 0 6-6V6a4 4 0 0 0-4-4 4 4 0 0 0-4 4v10a2 2 0 0 0 2 2 2 2 0 0 0 2-2V7.91"></path></svg>
-            </div>
             <input type="text" id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
             <button class="btn-send" onclick="send('mob')">OK</button>
         </div>
@@ -239,7 +227,7 @@
                     else showPopup("Identifiants incorrects");
                 } else {
                     if(s.exists()) showPopup("Pseudo déjà pris");
-                    else db.ref('users/' + pseudo).set({ code: code, joinedRooms: { general: true } }).then(() => loginSuccess(pseudo));
+                    else db.ref('users/' + pseudo).set({ code: code }).then(() => loginSuccess(pseudo));
                 }
             });
         }
@@ -262,46 +250,57 @@
         }
         function resetBg() { localStorage.removeItem("thinktalk_bg"); document.body.style.backgroundImage = "none"; }
 
-        // GESTION DES SALONS ET CONTACTS
+        // GESTION DES LISTES (CORRIGÉ)
         function loadLists() {
-            // Liste des Salons
             db.ref("rooms").on('value', s => {
                 const mb = document.getElementById('mob-rooms'), pc = document.getElementById('pc-content-list');
                 if(mb) mb.innerHTML = ""; if(pc && activePcTab==='rooms') pc.innerHTML = "";
                 
-                const processRoom = (roomId, data) => {
+                const addR = (id, data) => {
                     const isPrivate = data && data.private;
-                    // Vérifier si accès autorisé
-                    if(isPrivate) {
-                        if(!data.members || !data.members[user]) return;
-                    }
+                    const creator = data ? data.creator : null;
+                    if(isPrivate && id !== 'general' && creator !== user && !data.code) return; 
 
                     // Mobile Tile
                     const t = document.createElement('div');
-                    t.className = "tile" + (isPrivate ? " private" : "");
-                    db.ref(`messages/public/${roomId}`).limitToLast(1).once('value', snap => {
-                        let lastMsg = "...";
-                        snap.forEach(m => { lastMsg = m.val().text });
-                        t.innerHTML = `<span class="tile-name">${isPrivate ? '🔒 ' : '# '}${roomId}</span><span class="tile-last-msg">${lastMsg}</span>`;
+                    t.className = "tile";
+                    if(isPrivate) t.style.background = "#222";
+                    db.ref(`messages/public/${id}`).limitToLast(1).once('value', msgSnap => {
+                        let last = "Aucun message";
+                        msgSnap.forEach(m => last = m.val().text);
+                        t.innerHTML = `<span class="tile-name">${isPrivate ? '🔒' : '#'} ${id}</span><span class="tile-last-msg">${last}</span>`;
+                        if(creator === user && id !== 'general') {
+                            const del = document.createElement('button');
+                            del.className = "btn-del-tile"; del.textContent = "X";
+                            del.onclick = (e) => deleteRoom(e, id);
+                            t.appendChild(del);
+                        }
                     });
-                    t.onclick = () => { setChat(roomId, 'room'); goTo(1); };
+                    t.onclick = () => { setChat(id, 'room'); goTo(1); };
                     if(mb) mb.appendChild(t);
 
                     // PC List
                     if(pc && activePcTab==='rooms'){
+                        const container = document.createElement('div');
+                        container.style.display="flex"; container.style.gap="5px";
                         const b=document.createElement('button');
-                        b.className="btn-action-metro";
-                        b.textContent= (isPrivate ? "🔒 " : "# ") + roomId;
-                        b.onclick=()=>setChat(roomId,'room');
-                        pc.appendChild(b);
+                        b.className="btn-action-metro"; b.style.flex="1";
+                        b.textContent=(isPrivate ? "🔒 " : "# ") + id;
+                        b.onclick=()=>setChat(id,'room');
+                        container.appendChild(b);
+                        if(creator === user && id !== 'general') {
+                            const delBtn = document.createElement('button');
+                            delBtn.textContent="X"; delBtn.style.cssText="background:red; color:white; border:none; margin-bottom:5px; padding:0 12px; cursor:pointer;";
+                            delBtn.onclick = (e) => deleteRoom(e, id);
+                            container.appendChild(delBtn);
+                        }
+                        pc.appendChild(container);
                     }
                 };
-
-                processRoom('general', null);
-                s.forEach(r => { if(r.key!=='general') processRoom(r.key, r.val()); });
+                addR('general', {name:'general', private:false, creator:'admin'});
+                s.forEach(r => { if(r.key !== 'general') addR(r.key, r.val()); });
             });
 
-            // Liste des Contacts
             db.ref("users").on('value', s => {
                 allContacts = [];
                 s.forEach(c => { if(c.key !== user) allContacts.push(c.key); });
@@ -309,72 +308,68 @@
             });
         }
 
-        function renderContacts(filter = "") {
+        function renderContacts(f = "") {
             const mc = document.getElementById('mob-contacts'), pc = document.getElementById('pc-content-list');
-            if(mc) mc.innerHTML = ""; 
+            if(mc) mc.innerHTML = "";
             if(pc && activePcTab==='contacts') {
                 pc.innerHTML = "";
-                document.getElementById('pc-search-container').innerHTML = `<input type="text" class="search-bar" placeholder="Chercher contact..." oninput="filterContacts(this.value)">`;
+                document.getElementById('pc-search-container').innerHTML = `<input type="text" class="search-bar" placeholder="Filtrer..." oninput="filterContacts(this.value)">`;
             }
-
-            allContacts.filter(c => c.includes(filter.toLowerCase())).forEach(c => {
-                // Mobile Tile
-                const t = document.createElement('div');
-                t.className="tile";
-                t.style.background = "#222";
+            allContacts.filter(c => c.includes(f.toLowerCase())).forEach(c => {
+                const t = document.createElement('div'); t.className="tile"; t.style.background="#111";
                 t.innerHTML = `<span class="tile-name">@${c}</span>`;
                 t.onclick=()=>{ setChat(c,'dm'); goTo(1); };
                 if(mc) mc.appendChild(t);
 
-                // PC List
                 if(pc && activePcTab==='contacts'){
-                    const b=document.createElement('button');
-                    b.className="btn-action-metro";
-                    b.textContent="@ "+c;
-                    b.onclick=()=>setChat(c,'dm');
-                    pc.appendChild(b);
+                    const b=document.createElement('button'); b.className="btn-action-metro";
+                    b.textContent="@ "+c; b.onclick=()=>setChat(c,'dm'); pc.appendChild(b);
                 }
             });
         }
 
-        function filterContacts(val) { renderContacts(val); }
+        function filterContacts(v) { renderContacts(v); }
 
-        function createRoom(isPrivate) {
-            const name = prompt("Nom du salon ?").trim().toLowerCase();
-            if(!name) return;
-            const ref = db.ref('rooms/' + name);
-            ref.once('value').then(s => {
-                if(s.exists()) return showPopup("Ce nom existe déjà");
-                let data = { private: isPrivate };
-                if(isPrivate) {
-                    data.members = {};
-                    data.members[user] = true;
-                }
-                ref.set(data).then(() => {
-                    setChat(name, 'room');
-                    if(window.innerWidth <= 850) goTo(1);
-                });
+        // CREATION ET SUPPRESSION (STRUCTURE RÉELLE)
+        function createRoom(p) {
+            const n = prompt("Nom du salon ?").trim().toLowerCase();
+            if(!n) return;
+            let code = "";
+            if(p) {
+                code = prompt("Code secret pour ce salon privé ?");
+                if(!code) return;
+            }
+            db.ref('rooms/'+n).set({ name: n, private: p, creator: user, code: code }).then(() => {
+                setChat(n, 'room');
+                if(window.innerWidth <= 850) goTo(1);
             });
         }
 
         function joinPrivateRoom() {
-            const name = prompt("Nom du salon privé ?").trim().toLowerCase();
-            if(!name) return;
-            db.ref('rooms/'+name).once('value').then(s => {
-                if(!s.exists() || !s.val().private) return showPopup("Salon introuvable");
-                db.ref(`rooms/${name}/members/${user}`).set(true).then(() => {
-                    setChat(name, 'room');
+            const n = prompt("Nom du salon privé ?").trim().toLowerCase();
+            const c = prompt("Entrez le code secret :");
+            db.ref('rooms/'+n).once('value').then(s => {
+                if(s.exists() && s.val().code === c) {
+                    setChat(n, 'room');
                     if(window.innerWidth <= 850) goTo(1);
-                });
+                } else showPopup("Accès refusé ou salon inexistant");
             });
         }
 
+        function deleteRoom(e, id) {
+            e.stopPropagation();
+            if(!confirm("Supprimer ce salon définitivement ?")) return;
+            db.ref('rooms/'+id).remove();
+            db.ref('messages/public/'+id).remove();
+            if(current.id === id) setChat('general', 'room');
+        }
+
+        // CHAT LOGIC (CORRIGÉ)
         function setChat(id, type) {
             current = { id, type };
-            const title = (type === 'room' ? '# ' : '@ ') + id;
-            document.getElementById('chat-title-pc').textContent = title;
-            document.getElementById('chat-title-mob').textContent = title;
-
+            const label = (type==='room'?'# ':'@ ')+id;
+            document.getElementById('chat-title-pc').textContent = label;
+            document.getElementById('chat-title-mob').textContent = label;
             const path = type === 'room' ? `messages/public/${id}` : `messages/dm/${[user, id].sort().join("__")}`;
             db.ref(path).off();
             db.ref(path).on('value', s => {
@@ -382,8 +377,7 @@
                 pc.innerHTML = ""; mb.innerHTML = "";
                 s.forEach(snap => {
                     const m = snap.val();
-                    const isMine = m.pseudo === user;
-                    const html = `<div class="msg ${isMine?'mine':''}">
+                    const html = `<div class="msg ${m.pseudo===user?'mine':''}">
                         <div class="msg-header"><span>${m.pseudo}</span><span>${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>
                         <div class="msg-text">${m.text || ''}</div>
                     </div>`;
@@ -395,18 +389,13 @@
 
         function send(m) {
             const i = document.getElementById(m==='pc'?'in-pc':'in-mob');
-            const v = i.value.trim(); if(!v) return;
+            if(!i.value.trim()) return;
             const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`;
-            db.ref(path).push({ pseudo: user, text: v, timestamp: firebase.database.ServerValue.TIMESTAMP });
+            db.ref(path).push({ pseudo: user, text: i.value, timestamp: firebase.database.ServerValue.TIMESTAMP });
             i.value = "";
         }
 
-        function switchPcTab(t) { 
-            activePcTab = t; 
-            if(t !== 'contacts') document.getElementById('pc-search-container').innerHTML = "";
-            loadLists(); 
-        }
-
+        function switchPcTab(t) { activePcTab = t; if(t!=='contacts') document.getElementById('pc-search-container').innerHTML=""; loadLists(); }
         function goTo(x) { 
             document.getElementById('panorama').style.transform = `translateX(-${x*100}vw)`; 
             document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i===x)); 
