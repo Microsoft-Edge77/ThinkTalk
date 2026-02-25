@@ -1,409 +1,1211 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>ThinkTalk</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <style>
-        :root { --accent: #00a2e8; --bg: #000; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; background-position: center; background-size: cover; }
-        
-        /* POP-UP ERREUR */
-        #error-popup {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #111; border: 2px solid var(--accent); padding: 20px; z-index: 10000; width: 280px; text-align: center;
-        }
+  <meta charset="UTF-8">
+  <title>ThinkTalk</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        /* TILES SYSTEM (MOBILE) */
-        .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 5px; }
-        .tile { 
-            background: var(--accent); padding: 15px; aspect-ratio: 1/1; display: flex; flex-direction: column; 
-            justify-content: flex-end; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
-        }
-        .tile-name { font-weight: bold; text-transform: uppercase; font-size: 14px; z-index: 2; }
-        .tile-last-msg { font-size: 10px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; }
-        .btn-del-tile { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); border: none; color: white; padding: 2px 8px; font-size: 12px; z-index: 10; cursor: pointer; }
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-        /* TROMBONE */
-        .attach-btn {
-            width: 45px; height: 45px; background: #000; border: 2px solid var(--accent);
-            display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 8px; flex-shrink: 0;
-        }
-        .attach-btn svg { width: 24px; height: 24px; stroke: var(--accent); fill: none; stroke-width: 2; }
+  <style>
+    :root {
+      --accent: #00a2e8;
+      --bg: #000000;
+      --text: #ffffff;
+    }
 
-        /* AUTH */
-        #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .auth-container { width: 90%; max-width: 320px; padding: 30px; background: rgba(0,0,0,0.8); border: 1px solid #222; }
-        .auth-container h1 { font-weight: 100; font-size: 32px; color: var(--accent); margin-bottom: 25px; text-transform: uppercase; text-align: center; }
-        .auth-container input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; margin-bottom: 10px; outline: none; }
-        .auth-btn { width: 100%; padding: 12px; background: var(--accent); border: none; color: #fff; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+    * { box-sizing: border-box; }
 
-        /* PARAMETRES */
-        #settings-trigger { font-size: 32px; padding: 10px; cursor: pointer; line-height: 1; color: var(--accent); }
-        .settings-group { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #222; }
-        .settings-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 8px; display: block; }
-        .accent-picker { width: 100%; height: 35px; border: 1px solid #333; background: none; cursor: pointer; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+    }
 
-        /* LAYOUT PC */
-        #pc-layout { display: none; height: 100vh; }
-        #sidebar { width: 280px; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); }
-        .pc-tabs { display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 5px; }
-        .pc-tab { font-size: 11px; font-weight: bold; cursor: pointer; color: #555; text-transform: uppercase; }
-        .pc-tab.active { color: #fff; border-bottom: 2px solid var(--accent); }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      font: inherit;
+    }
 
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #222; background: rgba(0,0,0,0.3); }
-        .chat-header h2 { color: var(--accent); font-weight: 100; font-size: 18px; }
-        
-        /* MESSAGES CORRIGÉS */
-        .msg-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; padding-bottom: 50px; }
-        .msg { background: rgba(255,255,255,0.07); padding: 10px; border-left: 3px solid #333; max-width: 85%; width: fit-content; align-self: flex-start; }
-        .msg.mine { border-left-color: var(--accent); }
-        .msg-header { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px; color: var(--accent); font-weight: bold; gap: 15px; }
+    button:disabled { opacity: 0.6; cursor: default; }
+    input { font: inherit; }
 
-        .input-area { display: flex; padding: 10px; background: #000; border-top: 1px solid #222; align-items: center; }
-        .input-area input { flex: 1; padding: 12px; background: #111; border: 1px solid #333; color: #fff; outline: none; height: 45px; }
-        .btn-send { background: var(--accent); border: none; color: #fff; padding: 0 20px; height: 45px; cursor: pointer; font-weight: bold; margin-left: 5px; }
-        .btn-action-metro { padding: 12px; font-size: 11px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #333; cursor: pointer; text-align: left; text-transform: uppercase; margin-bottom: 5px; width: 100%; }
+    /* Auth overlay */
+    #auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
 
-        .search-bar { width: 100%; padding: 10px; background: #111; border: 1px solid #333; color: #fff; margin-bottom: 10px; font-size: 12px; }
+    #auth-popup {
+      background: #111;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 320px;
+    }
 
-        /* MOBILE MENU */
-        #mobile-menu {
-            position: fixed; top: 0; right: -100%; width: 85%; height: 100%;
-            background: #000; z-index: 2000; transition: 0.3s; padding: 25px;
-            border-left: 2px solid var(--accent); overflow-y: auto;
-        }
-        #mobile-menu.open { right: 0; }
-        .menu-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1500; }
+    #auth-popup h2 { margin: 0 0 10px 0; }
+    #auth-popup input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      border: 1px solid #333;
+      background: #000;
+      color: var(--text);
+    }
 
-        /* MOBILE LAYOUT */
-        #mobile-layout { display: none; height: 100vh; }
-        .mobile-header { position: fixed; top: 0; width: 100%; height: 60px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 900; border-bottom: 1px solid #222; }
-        #panorama { display: flex; width: 300vw; height: 100%; transition: transform 0.5s ease; padding-top: 60px; }
-        .view { width: 100vw; height: 100%; padding: 15px; overflow-y: auto; padding-bottom: 150px; }
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 65px; background: #000; border-top: 1px solid #222; display: flex; z-index: 1000; }
-        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #555; }
-        .nav-btn.active { color: #fff; border-bottom: 3px solid var(--accent); }
+    .auth-buttons {
+      display: flex;
+      gap: 10px;
+    }
 
-        @media (min-width: 851px) { #pc-layout { display: flex; } }
-        @media (max-width: 850px) { #mobile-layout { display: block; } }
-    </style>
+    .auth-buttons button { flex: 1; }
+
+    /* Popup custom */
+    #popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+    }
+
+    #popup-box {
+      background: #111;
+      padding: 16px;
+      border-radius: 8px;
+      max-width: 320px;
+      width: 90%;
+    }
+
+    #popup-box p { margin: 0 0 12px 0; }
+
+    /* Settings panel */
+    #settings-panel {
+      position: fixed;
+      top: 0;
+      left: -260px;
+      width: 260px;
+      height: 100%;
+      background: #111;
+      padding: 16px;
+      z-index: 900;
+      transition: left 0.2s;
+    }
+
+    #settings-panel h3 { margin: 0 0 12px 0; }
+    #settings-panel button {
+      display: block;
+      width: 100%;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    /* PC layout */
+    #pc-layout {
+      display: none;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    #pc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid #222;
+    }
+
+    #pc-header h1 { margin: 0; font-size: 20px; }
+    #pc-header nav button { margin-left: 8px; }
+
+    #pc-main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+
+    #pc-sidebar {
+      width: 260px;
+      border-right: 1px solid #222;
+      padding: 8px;
+      overflow-y: auto;
+    }
+
+    #pc-sidebar h2 { margin: 0 0 8px 0; }
+
+    #pc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #pc-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+    }
+
+    .msg-list {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #222;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .msg {
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .msg-text {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .msg-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .msg-actions button {
+      padding: 2px 6px;
+      font-size: 11px;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 6px;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #333;
+      background: #000;
+      color: var(--text);
+    }
+
+    /* Mobile layout */
+    #mobile-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #mob-header {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid #222;
+    }
+
+    #mob-header h1 {
+      margin: 0 auto 0 8px;
+      font-size: 18px;
+    }
+
+    #mob-main {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mob-view {
+      display: none;
+      padding: 8px;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .mob-view.active { display: block; }
+
+    #mob-bottom-bar {
+      display: flex;
+      border-top: 1px solid #222;
+    }
+
+    #mob-bottom-bar button {
+      flex: 1;
+      border-radius: 0;
+    }
+
+    .mob-tab.active { background: #111; }
+
+    /* Contacts tiles */
+    .mob-contacts-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    #mob-contacts-tiles {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .contact-tile {
+      background: #222;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .contact-name { font-weight: 600; }
+    .contact-last { font-size: 12px; opacity: 0.8; }
+
+    /* Forms salons privés */
+    .small-form {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .small-form input {
+      padding: 6px;
+      border: 1px solid #333;
+      background: #000;
+      color: var(--text);
+    }
+
+    .room-private-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .room-item {
+      width: 100%;
+      text-align: left;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #222;
+      background: #111;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .room-name { font-weight: 600; }
+    .room-tag {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    /* Responsive */
+    @media (min-width: 800px) {
+      #pc-layout { display: flex; }
+      #mobile-layout { display: none; }
+    }
+  </style>
 </head>
 <body>
 
-    <div id="error-popup">
-        <p id="error-msg"></p>
-        <button class="auth-btn" style="margin-top:15px" onclick="closePopup()">OK</button>
+  <!-- Auth -->
+  <div id="auth-overlay">
+    <div id="auth-popup">
+      <h2>Connexion</h2>
+      <input type="text" id="auth-pseudo" placeholder="Pseudo">
+      <input type="text" id="auth-code" placeholder="Code">
+      <div class="auth-buttons">
+        <button id="btn-login">Se connecter</button>
+        <button id="btn-register">Créer un compte</button>
+      </div>
     </div>
+  </div>
 
-    <div class="menu-overlay" id="overlay" onclick="toggleMenu(false)"></div>
-    <div id="mobile-menu">
-        <h2 style="font-weight:100; color:var(--accent); margin-bottom:25px;">PARAMÈTRES</h2>
-        <div class="settings-group">
-            <span class="settings-label">Gestion Salons</span>
-            <button class="btn-action-metro" onclick="createRoom(false)">+ CRÉER SALON PUBLIC</button>
-            <button class="btn-action-metro" onclick="createRoom(true)">+ CRÉER SALON PRIVÉ</button>
-            <button class="btn-action-metro" onclick="joinPrivateRoom()">REJOINDRE PRIVÉ</button>
-        </div>
-        <div class="settings-group">
-            <span class="settings-label">Apparence</span>
-            <input type="color" class="accent-picker" onchange="updateAccent(this.value)">
-            <button class="btn-action-metro" onclick="triggerFile()" style="margin-top:10px">CHANGER LE FOND</button>
-            <button class="btn-action-metro" onclick="resetBg()" style="color:#ff4d4d;">RESET FOND</button>
-        </div>
-        <button class="btn-action-metro" onclick="logout()" style="border-color: red; color: red;">SE DÉCONNECTER</button>
+  <!-- Popup -->
+  <div id="popup-overlay">
+    <div id="popup-box">
+      <p id="popup-message"></p>
+      <button id="popup-ok">OK</button>
     </div>
+  </div>
 
-    <div id="auth-screen">
-        <div class="auth-container">
-            <h1>ThinkTalk</h1>
-            <input type="text" id="auth-pseudo" placeholder="Pseudo">
-            <input type="password" id="auth-code" placeholder="Code secret">
-            <button class="auth-btn" onclick="handleAuth('login')">Se connecter</button>
-            <button class="auth-btn" style="background:transparent; border:1px solid #444; margin-top:10px;" onclick="handleAuth('signup')">Créer un compte</button>
+  <!-- Settings -->
+  <div id="settings-panel">
+    <h3>Paramètres</h3>
+    <button id="btn-change-color">Couleur (placeholder)</button>
+    <button id="btn-change-bg">Changer le fond</button>
+    <button id="btn-reset-bg">Réinitialiser le fond</button>
+    <button id="btn-logout">Déconnexion</button>
+  </div>
+
+  <!-- Input fichier fond -->
+  <input type="file" id="bg-file-input" accept="image/*" style="display:none;">
+
+  <!-- PC layout -->
+  <div id="pc-layout">
+    <header id="pc-header">
+      <h1>ThinkTalk</h1>
+      <nav>
+        <button class="pc-tab" data-tab="rooms">Salons</button>
+        <button class="pc-tab" data-tab="contacts">Contacts</button>
+        <button class="pc-tab" data-tab="settings" id="pc-settings-btn">Paramètres</button>
+      </nav>
+    </header>
+
+    <div id="pc-main">
+      <aside id="pc-sidebar">
+        <h2 id="pc-sidebar-title">Salons</h2>
+
+        <div id="pc-rooms-panel">
+          <div class="small-form">
+            <strong>Créer un salon privé</strong>
+            <input type="text" id="pc-new-room-name" placeholder="Nom du salon">
+            <input type="text" id="pc-new-room-code" placeholder="Code du salon">
+            <button id="pc-btn-create-private-room">Créer</button>
+          </div>
+
+          <div class="small-form">
+            <strong>Rejoindre un salon privé</strong>
+            <input type="text" id="pc-join-room-name" placeholder="Nom du salon">
+            <input type="text" id="pc-join-room-code" placeholder="Code du salon">
+            <button id="pc-btn-join-private-room">Rejoindre</button>
+          </div>
         </div>
+
+        <div id="pc-contacts-panel" style="display:none;">
+          <div class="small-form">
+            <strong>Ajouter un contact</strong>
+            <input type="text" id="pc-add-contact-pseudo" placeholder="Pseudo du contact">
+            <button id="pc-btn-add-contact">Ajouter</button>
+          </div>
+        </div>
+
+        <div id="pc-list"></div>
+      </aside>
+
+      <main id="pc-chat">
+        <h2 id="chat-title-pc">Aucun salon</h2>
+        <div id="msg-pc" class="msg-list"></div>
+        <div class="input-area">
+          <input type="text" id="in-pc" placeholder="Écrire...">
+          <button id="btn-send-pc">Envoyer</button>
+        </div>
+      </main>
     </div>
+  </div>
 
-    <input type="file" id="file-selector" style="display:none" accept="image/*" onchange="processLocalFile(this)">
+  <!-- Mobile layout -->
+  <div id="mobile-layout">
+    <header id="mob-header">
+      <button id="mob-hamburger">☰</button>
+      <h1>ThinkTalk</h1>
+    </header>
 
-    <div id="pc-layout">
-        <aside id="sidebar">
-            <div class="pc-tabs">
-                <div class="pc-tab active" id="tab-pc-rooms" onclick="switchPcTab('rooms')">Salons</div>
-                <div class="pc-tab" id="tab-pc-contacts" onclick="switchPcTab('contacts')">Contacts</div>
-            </div>
-            <div id="pc-search-container"></div>
-            <div id="pc-content-list" style="flex:1; overflow-y:auto; margin-bottom: 10px;"></div>
-            <div class="settings-group">
-                <button class="btn-action-metro" onclick="createRoom(false)">+ PUBLIC</button>
-                <button class="btn-action-metro" onclick="createRoom(true)">+ PRIVÉ</button>
-                <button class="btn-action-metro" onclick="joinPrivateRoom()">REJOINDRE</button>
-            </div>
-            <button class="btn-action-metro" onclick="logout()" style="border-color: red; color: red;">DÉCONNEXION</button>
-        </aside>
+    <main id="mob-main">
+      <section id="mob-home" class="mob-view active">
+        <h2>Accueil</h2>
+        <p>Bienvenue sur ThinkTalk.</p>
+      </section>
 
-        <main style="flex:1; display:flex; flex-direction:column;">
-            <div class="chat-header"><h2 id="chat-title-pc"># accueil</h2></div>
-            <div id="msg-pc" class="msg-list"></div>
-            <div class="input-area">
-                <div class="attach-btn" onclick="triggerFile()">
-                    <svg viewBox="0 0 24 24"><path d="M6 7.91V16a6 6 0 0 0 6 6 6 6 0 0 0 6-6V6a4 4 0 0 0-4-4 4 4 0 0 0-4 4v10a2 2 0 0 0 2 2 2 2 0 0 0 2-2V7.91"></path></svg>
-                </div>
-                <input type="text" id="in-pc" placeholder="Message..." onkeypress="if(event.key==='Enter') send('pc')">
-                <button class="btn-send" onclick="send('pc')">ENVOYER</button>
-            </div>
-        </main>
-    </div>
+      <section id="mob-rooms" class="mob-view">
+        <h2>Salons</h2>
 
-    <div id="mobile-layout">
-        <div class="mobile-header">
-            <span style="font-weight:bold; letter-spacing:1px; color:var(--accent);">THINKTALK</span>
-            <span id="settings-trigger" onclick="toggleMenu(true)">⚙</span>
+        <div class="small-form">
+          <strong>Créer un salon privé</strong>
+          <input type="text" id="mob-new-room-name" placeholder="Nom du salon">
+          <input type="text" id="mob-new-room-code" placeholder="Code du salon">
+          <button id="mob-btn-create-private-room">Créer</button>
         </div>
-        <div id="panorama">
-            <section class="view">
-                <h1 style="font-size:32px; font-weight:100; color:var(--accent); margin-bottom:20px;">salons</h1>
-                <div id="mob-rooms" class="tiles-grid"></div>
-            </section>
-            <section class="view" style="padding:0; display:flex; flex-direction:column;">
-                <div class="chat-header"><h2 id="chat-title-mob">chat</h2></div>
-                <div id="msg-mob" class="msg-list"></div>
-            </section>
-            <section class="view">
-                <h1 style="font-size:32px; font-weight:100; color:var(--accent); margin-bottom:20px;">contacts</h1>
-                <input type="text" class="search-bar" placeholder="Chercher un pseudo..." oninput="filterContacts(this.value)">
-                <div id="mob-contacts" class="tiles-grid"></div>
-                <button class="btn-action-metro" style="margin-top:15px; background:var(--accent)" onclick="showPopup('Recherchez un utilisateur pour lui parler')">AJOUTER CONTACT</button>
-            </section>
-        </div>
-        <div class="input-area" id="mob-bar" style="display:none; position:fixed; bottom:65px; width:100%;">
-            <input type="text" id="in-mob" placeholder="Message..." onkeypress="if(event.key==='Enter') send('mob')">
-            <button class="btn-send" onclick="send('mob')">OK</button>
-        </div>
-        <nav class="nav-bottom">
-            <div class="nav-btn active" onclick="goTo(0)">ACCUEIL</div>
-            <div class="nav-btn" onclick="goTo(1)">CHAT</div>
-            <div class="nav-btn" onclick="goTo(2)">CONTACTS</div>
-        </nav>
-    </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCrgPMXzSyS6NXNajPxr0x_J-CTESOtp5w",
-            authDomain: "chat-github-6abb5.firebaseapp.com",
-            databaseURL: "https://chat-github-6abb5-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "chat-github-6abb5",
+        <div class="small-form">
+          <strong>Rejoindre un salon privé</strong>
+          <input type="text" id="mob-join-room-name" placeholder="Nom du salon">
+          <input type="text" id="mob-join-room-code" placeholder="Code du salon">
+          <button id="mob-btn-join-private-room">Rejoindre</button>
+        </div>
+
+        <div id="mob-rooms-list"></div>
+      </section>
+
+      <section id="mob-contacts" class="mob-view">
+        <h2>Contacts</h2>
+        <div class="mob-contacts-actions">
+          <button id="btn-search-contact">Rechercher un contact (placeholder)</button>
+          <button id="btn-add-contact-mob">Ajouter un contact</button>
+        </div>
+        <div class="small-form" id="mob-add-contact-form" style="display:none;">
+          <input type="text" id="mob-add-contact-pseudo" placeholder="Pseudo du contact">
+          <button id="mob-btn-add-contact-confirm">Ajouter</button>
+        </div>
+        <div id="mob-contacts-tiles"></div>
+      </section>
+
+      <section id="mob-chat" class="mob-view">
+        <h2 id="chat-title-mob">Aucun salon</h2>
+        <div id="msg-mob" class="msg-list"></div>
+        <div class="input-area">
+          <input type="text" id="in-mob" placeholder="Écrire...">
+          <button id="btn-send-mob">Envoyer</button>
+        </div>
+      </section>
+    </main>
+
+    <nav id="mob-bottom-bar">
+      <button class="mob-tab active" data-view="mob-home">Accueil</button>
+      <button class="mob-tab" data-view="mob-rooms">Salons</button>
+      <button class="mob-tab" data-view="mob-contacts">Contacts</button>
+    </nav>
+  </div>
+
+  <script>
+    // === Firebase config ===
+    const firebaseConfig = {
+      apiKey: "TA_CLE",
+      authDomain: "TON_DOMAIN",
+      databaseURL: "TA_DB_URL",
+      projectId: "TON_PROJECT_ID",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // === État global ===
+    let currentUser = { pseudo: null, code: null };
+    let currentChat = {
+      type: null,      // "room" ou "dm"
+      roomId: null,    // pour salons
+      roomName: null,
+      isPrivateRoom: false,
+      convId: null,    // pour DM
+      dmWith: null     // pseudo du contact
+    };
+
+    // === Popup ===
+    function showPopup(msg) {
+      document.getElementById("popup-message").textContent = msg;
+      document.getElementById("popup-overlay").style.display = "flex";
+    }
+    function hidePopup() {
+      document.getElementById("popup-overlay").style.display = "none";
+    }
+
+    // === Session ===
+    function saveSession(pseudo, code) {
+      localStorage.setItem("thinktalk_pseudo", pseudo);
+      localStorage.setItem("thinktalk_code", code);
+      currentUser.pseudo = pseudo;
+      currentUser.code = code;
+    }
+
+    function loadSession() {
+      const p = localStorage.getItem("thinktalk_pseudo");
+      const c = localStorage.getItem("thinktalk_code");
+      if (p && c) {
+        currentUser.pseudo = p;
+        currentUser.code = c;
+        return true;
+      }
+      return false;
+    }
+
+    function logout() {
+      localStorage.removeItem("thinktalk_pseudo");
+      localStorage.removeItem("thinktalk_code");
+      currentUser.pseudo = null;
+      currentUser.code = null;
+      document.getElementById("auth-overlay").style.display = "flex";
+    }
+
+    // === Users ===
+    function userRef(pseudo) {
+      return db.ref("users/" + pseudo);
+    }
+
+    function checkUserExists(pseudo) {
+      return userRef(pseudo).once("value").then(s => s.exists());
+    }
+
+    function createUser(pseudo, code) {
+      return userRef(pseudo).set({ code: code });
+    }
+
+    function loadUser(pseudo) {
+      return userRef(pseudo).once("value").then(s => s.val());
+    }
+
+    // === Fond ===
+    function applyBackgroundFromStorage() {
+      const bg = localStorage.getItem("thinktalk_bg");
+      if (bg) {
+        document.body.style.backgroundImage = `url(${bg})`;
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundPosition = "center";
+      } else {
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = "#000000";
+      }
+    }
+
+    // === Messages : helpers ===
+    function buildMessageElement(msgId, data, isPC, isDM) {
+      const div = document.createElement("div");
+      div.className = "msg";
+      div.dataset.msgId = msgId;
+
+      const textDiv = document.createElement("div");
+      textDiv.className = "msg-text";
+      const content = data.text || data.url || "";
+      textDiv.textContent = `${data.pseudo} : ${content}`;
+      div.appendChild(textDiv);
+
+      if (data.pseudo === currentUser.pseudo) {
+        const actions = document.createElement("div");
+        actions.className = "msg-actions";
+
+        const btnEdit = document.createElement("button");
+        btnEdit.textContent = "✏️";
+        btnEdit.title = "Modifier";
+        btnEdit.addEventListener("click", (e) => {
+          e.stopPropagation();
+          editMessage(msgId, data, isDM);
+        });
+
+        const btnDel = document.createElement("button");
+        btnDel.textContent = "🗑️";
+        btnDel.title = "Supprimer";
+        btnDel.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteMessage(msgId, isDM);
+        });
+
+        actions.appendChild(btnEdit);
+        actions.appendChild(btnDel);
+        div.appendChild(actions);
+      }
+
+      if (!isPC) {
+        // mobile : appui long
+        let pressTimer = null;
+        div.addEventListener("touchstart", (e) => {
+          pressTimer = setTimeout(() => {
+            if (data.pseudo === currentUser.pseudo) {
+              const choice = prompt("Tape '1' pour modifier, '2' pour supprimer");
+              if (choice === "1") editMessage(msgId, data, isDM);
+              else if (choice === "2") deleteMessage(msgId, isDM);
+            }
+          }, 500);
+        });
+        div.addEventListener("touchend", () => {
+          clearTimeout(pressTimer);
+        });
+      }
+
+      return div;
+    }
+
+    function getCurrentRoomPath() {
+      if (!currentChat.roomId) return null;
+      return "messages/public/" + currentChat.roomId;
+    }
+
+    function getCurrentDMPath() {
+      if (!currentChat.convId) return null;
+      return "messages/dm/" + currentChat.convId;
+    }
+
+    function deleteMessage(msgId, isDM) {
+      let path;
+      if (isDM) {
+        path = getCurrentDMPath();
+      } else {
+        path = getCurrentRoomPath();
+      }
+      if (!path) return;
+      db.ref(path + "/" + msgId).remove();
+    }
+
+    function editMessage(msgId, data, isDM) {
+      const newText = prompt("Modifier le message :", data.text || "");
+      if (newText === null) return;
+      let path;
+      if (isDM) path = getCurrentDMPath();
+      else path = getCurrentRoomPath();
+      if (!path) return;
+      db.ref(path + "/" + msgId).update({
+        text: newText
+      });
+    }
+
+    // === Chat listeners ===
+    let currentRoomListener = null;
+    let currentDMListener = null;
+
+    function listenRoom(roomId, roomName, targetId) {
+      currentChat.type = "room";
+      currentChat.roomId = roomId;
+      currentChat.roomName = roomName;
+      currentChat.convId = null;
+      currentChat.dmWith = null;
+
+      const container = document.getElementById(targetId);
+      const path = "messages/public/" + roomId;
+
+      if (currentRoomListener) currentRoomListener.off();
+      if (currentDMListener) currentDMListener.off();
+
+      const ref = db.ref(path);
+      currentRoomListener = ref;
+      ref.on("value", snap => {
+        container.innerHTML = "";
+        snap.forEach(child => {
+          const msgId = child.key;
+          const data = child.val();
+          const el = buildMessageElement(msgId, data, targetId === "msg-pc", false);
+          container.appendChild(el);
+        });
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+
+    function listenDM(convId, otherPseudo, targetId) {
+      currentChat.type = "dm";
+      currentChat.convId = convId;
+      currentChat.dmWith = otherPseudo;
+      currentChat.roomId = null;
+      currentChat.roomName = null;
+
+      const container = document.getElementById(targetId);
+      const path = "messages/dm/" + convId;
+
+      if (currentRoomListener) currentRoomListener.off();
+      if (currentDMListener) currentDMListener.off();
+
+      const ref = db.ref(path);
+      currentDMListener = ref;
+      ref.on("value", snap => {
+        container.innerHTML = "";
+        snap.forEach(child => {
+          const msgId = child.key;
+          const data = child.val();
+          const el = buildMessageElement(msgId, data, targetId === "msg-pc", true);
+          container.appendChild(el);
+        });
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+
+    function sendCurrentMessage(text) {
+      if (!text) return;
+      if (currentChat.type === "room") {
+        const path = getCurrentRoomPath();
+        if (!path) return;
+        db.ref(path).push({
+          pseudo: currentUser.pseudo,
+          text: text,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+      } else if (currentChat.type === "dm") {
+        const path = getCurrentDMPath();
+        if (!path) return;
+        db.ref(path).push({
+          pseudo: currentUser.pseudo,
+          text: text,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+    }
+
+    // === Rooms ===
+    function ensureDefaultPublicRooms() {
+      const ref = db.ref("rooms");
+      ref.once("value").then(snap => {
+        if (!snap.exists()) {
+          const defaults = ["general", "random", "dev"];
+          defaults.forEach(name => {
+            ref.push({
+              name: name,
+              isPrivate: false
+            });
+          });
+        }
+      });
+    }
+
+    function createPrivateRoom(name, code) {
+      if (!name || !code) {
+        showPopup("Nom et code obligatoires.");
+        return;
+      }
+      const ref = db.ref("rooms").push();
+      const roomId = ref.key;
+      ref.set({
+        name: name,
+        isPrivate: true,
+        code: code,
+        owner: currentUser.pseudo,
+        members: {
+          [currentUser.pseudo]: true
+        }
+      });
+    }
+
+    function joinPrivateRoom(name, code) {
+      if (!name || !code) {
+        showPopup("Nom et code obligatoires.");
+        return;
+      }
+      db.ref("rooms").once("value").then(snap => {
+        let found = null;
+        snap.forEach(child => {
+          const val = child.val();
+          if (val && val.isPrivate && val.name === name && val.code === code) {
+            found = { id: child.key, data: val };
+          }
+        });
+        if (!found) {
+          showPopup("Aucun salon privé trouvé avec ce nom et ce code.");
+          return;
+        }
+        const membersRef = db.ref("rooms/" + found.id + "/members/" + currentUser.pseudo);
+        membersRef.set(true);
+      });
+    }
+
+    function userIsMemberOfRoom(roomData) {
+      if (!roomData.isPrivate) return true;
+      if (!roomData.members) return false;
+      return !!roomData.members[currentUser.pseudo];
+    }
+
+    function initRoomsPC() {
+      const list = document.getElementById("pc-list");
+      const ref = db.ref("rooms");
+      ref.on("value", snap => {
+        list.innerHTML = "";
+        let firstSelectable = null;
+        snap.forEach(child => {
+          const id = child.key;
+          const data = child.val();
+          if (!data || !data.name) return;
+          if (!userIsMemberOfRoom(data)) return;
+
+          const btn = document.createElement("button");
+          btn.className = "room-item";
+          const left = document.createElement("span");
+          left.className = "room-name";
+          left.textContent = "#" + data.name;
+          const right = document.createElement("span");
+          right.className = "room-tag";
+          right.textContent = data.isPrivate ? "Privé" : "Public";
+          btn.appendChild(left);
+          btn.appendChild(right);
+
+          btn.addEventListener("click", () => {
+            document.getElementById("chat-title-pc").textContent = "#" + data.name;
+            listenRoom(id, data.name, "msg-pc");
+          });
+
+          list.appendChild(btn);
+
+          if (!firstSelectable) firstSelectable = { id, name: data.name };
+        });
+
+        if (!currentChat.roomId && firstSelectable) {
+          document.getElementById("chat-title-pc").textContent = "#" + firstSelectable.name;
+          listenRoom(firstSelectable.id, firstSelectable.name, "msg-pc");
+        }
+      });
+    }
+
+    function initRoomsMobile() {
+      const list = document.getElementById("mob-rooms-list");
+      const ref = db.ref("rooms");
+      ref.on("value", snap => {
+        list.innerHTML = "";
+        let firstSelectable = null;
+        snap.forEach(child => {
+          const id = child.key;
+          const data = child.val();
+          if (!data || !data.name) return;
+          if (!userIsMemberOfRoom(data)) return;
+
+          const btn = document.createElement("button");
+          btn.className = "room-item";
+          const left = document.createElement("span");
+          left.className = "room-name";
+          left.textContent = "#" + data.name;
+          const right = document.createElement("span");
+          right.className = "room-tag";
+          right.textContent = data.isPrivate ? "Privé" : "Public";
+          btn.appendChild(left);
+          btn.appendChild(right);
+
+          btn.addEventListener("click", () => {
+            document.getElementById("chat-title-mob").textContent = "#" + data.name;
+            document.querySelectorAll(".mob-view").forEach(v => v.classList.remove("active"));
+            document.getElementById("mob-chat").classList.add("active");
+            listenRoom(id, data.name, "msg-mob");
+          });
+
+          list.appendChild(btn);
+
+          if (!firstSelectable) firstSelectable = { id, name: data.name };
+        });
+
+        if (!currentChat.roomId && firstSelectable) {
+          document.getElementById("chat-title-mob").textContent = "#" + firstSelectable.name;
+          listenRoom(firstSelectable.id, firstSelectable.name, "msg-mob");
+        }
+      });
+    }
+
+    // === Contacts + DM ===
+    function convIdFor(a, b) {
+      return [a, b].sort().join("_");
+    }
+
+    function addContact(pseudo) {
+      if (!pseudo || pseudo === currentUser.pseudo) {
+        showPopup("Pseudo invalide.");
+        return;
+      }
+      checkUserExists(pseudo).then(exists => {
+        if (!exists) {
+          showPopup("Ce pseudo n'existe pas.");
+          return;
+        }
+        const myRef = db.ref("contacts/" + currentUser.pseudo + "/" + pseudo);
+        const hisRef = db.ref("contacts/" + pseudo + "/" + currentUser.pseudo);
+        myRef.set(true);
+        hisRef.set(true);
+      });
+    }
+
+    function initContactsPC() {
+      const list = document.getElementById("pc-list");
+      const ref = db.ref("contacts/" + currentUser.pseudo);
+      ref.on("value", snap => {
+        list.innerHTML = "";
+        snap.forEach(child => {
+          const other = child.key;
+          const tile = document.createElement("button");
+          tile.className = "room-item";
+          const left = document.createElement("span");
+          left.className = "room-name";
+          left.textContent = other;
+          const right = document.createElement("span");
+          right.className = "room-tag";
+          right.textContent = "DM";
+          tile.appendChild(left);
+          tile.appendChild(right);
+
+          tile.addEventListener("click", () => {
+            const cid = convIdFor(currentUser.pseudo, other);
+            document.getElementById("chat-title-pc").textContent = other;
+            listenDM(cid, other, "msg-pc");
+          });
+
+          list.appendChild(tile);
+        });
+      });
+    }
+
+    function initContactsMobile() {
+      const tiles = document.getElementById("mob-contacts-tiles");
+      const ref = db.ref("contacts/" + currentUser.pseudo);
+      ref.on("value", snap => {
+        tiles.innerHTML = "";
+        snap.forEach(child => {
+          const other = child.key;
+          const convId = convIdFor(currentUser.pseudo, other);
+          const tile = document.createElement("div");
+          tile.className = "contact-tile";
+          const nameDiv = document.createElement("div");
+          nameDiv.className = "contact-name";
+          nameDiv.textContent = other;
+          const lastDiv = document.createElement("div");
+          lastDiv.className = "contact-last";
+          lastDiv.textContent = "Dernier message...";
+
+          tile.appendChild(nameDiv);
+          tile.appendChild(lastDiv);
+
+          // écouter le dernier message
+          db.ref("messages/dm/" + convId).orderByChild("timestamp").limitToLast(1)
+            .on("value", s2 => {
+              s2.forEach(m => {
+                const v = m.val();
+                const txt = v.text || v.url || "";
+                lastDiv.textContent = txt;
+              });
+            });
+
+          tile.addEventListener("click", () => {
+            const cid = convIdFor(currentUser.pseudo, other);
+            document.getElementById("chat-title-mob").textContent = other;
+            document.querySelectorAll(".mob-view").forEach(v => v.classList.remove("active"));
+            document.getElementById("mob-chat").classList.add("active");
+            listenDM(cid, other, "msg-mob");
+          });
+
+          tiles.appendChild(tile);
+        });
+      });
+    }
+
+    // === Auth init ===
+    function initAuth() {
+      document.getElementById("popup-ok").addEventListener("click", hidePopup);
+
+      const overlay = document.getElementById("auth-overlay");
+      const btnLogin = document.getElementById("btn-login");
+      const btnRegister = document.getElementById("btn-register");
+
+      btnLogin.addEventListener("click", () => {
+        const pseudo = document.getElementById("auth-pseudo").value.trim();
+        const code = document.getElementById("auth-code").value.trim();
+        if (!pseudo || !code) {
+          showPopup("Pseudo et code sont obligatoires.");
+          return;
+        }
+        checkUserExists(pseudo).then(exists => {
+          if (!exists) {
+            showPopup("Ce pseudo n'existe pas.");
+            return;
+          }
+          loadUser(pseudo).then(data => {
+            if (!data || data.code !== code) {
+              showPopup("Code incorrect.");
+              return;
+            }
+            saveSession(pseudo, code);
+            overlay.style.display = "none";
+            initAfterAuth();
+          });
+        });
+      });
+
+      btnRegister.addEventListener("click", () => {
+        const pseudo = document.getElementById("auth-pseudo").value.trim();
+        const code = document.getElementById("auth-code").value.trim();
+        if (!pseudo || !code) {
+          showPopup("Pseudo et code sont obligatoires.");
+          return;
+        }
+        checkUserExists(pseudo).then(exists => {
+          if (exists) {
+            showPopup("Ce pseudo est déjà utilisé.");
+            return;
+          }
+          createUser(pseudo, code).then(() => {
+            saveSession(pseudo, code);
+            overlay.style.display = "none";
+            initAfterAuth();
+          });
+        });
+      });
+    }
+
+    // === Settings ===
+    function initSettings() {
+      const panel = document.getElementById("settings-panel");
+      const mobHamburger = document.getElementById("mob-hamburger");
+      const pcSettingsBtn = document.getElementById("pc-settings-btn");
+      const btnLogout = document.getElementById("btn-logout");
+      const btnChangeBg = document.getElementById("btn-change-bg");
+      const btnResetBg = document.getElementById("btn-reset-bg");
+      const fileInput = document.getElementById("bg-file-input");
+
+      function openPanel() { panel.style.left = "0"; }
+      function closePanel() { panel.style.left = "-260px"; }
+
+      mobHamburger.addEventListener("click", () => {
+        if (panel.style.left === "0px") closePanel();
+        else openPanel();
+      });
+
+      pcSettingsBtn.addEventListener("click", () => {
+        if (panel.style.left === "0px") closePanel();
+        else openPanel();
+      });
+
+      btnLogout.addEventListener("click", () => {
+        logout();
+        closePanel();
+      });
+
+      btnChangeBg.addEventListener("click", () => {
+        fileInput.value = "";
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+          const dataUrl = e.target.result;
+          localStorage.setItem("thinktalk_bg", dataUrl);
+          applyBackgroundFromStorage();
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        
-        let user = localStorage.getItem("thinktalk_pseudo");
-        let current = { id: 'general', type: 'room' };
-        let activePcTab = 'rooms';
-        let allContacts = [];
+        reader.readAsDataURL(file);
+      });
 
-        function showPopup(msg) { document.getElementById('error-msg').textContent = msg; document.getElementById('error-popup').style.display = 'block'; }
-        function closePopup() { document.getElementById('error-popup').style.display = 'none'; }
-        function toggleMenu(open) {
-            document.getElementById('mobile-menu').classList.toggle('open', open);
-            document.getElementById('overlay').style.display = open ? 'block' : 'none';
-        }
+      btnResetBg.addEventListener("click", () => {
+        localStorage.removeItem("thinktalk_bg");
+        applyBackgroundFromStorage();
+      });
+    }
 
-        function updateAccent(color) {
-            document.documentElement.style.setProperty('--accent', color);
-            localStorage.setItem("thinktalk_accent", color);
-        }
+    // === PC UI ===
+    function initPC() {
+      const tabs = document.querySelectorAll(".pc-tab");
+      const roomsPanel = document.getElementById("pc-rooms-panel");
+      const contactsPanel = document.getElementById("pc-contacts-panel");
+      const list = document.getElementById("pc-list");
 
-        function handleAuth(type) {
-            const pseudo = document.getElementById('auth-pseudo').value.trim().toLowerCase();
-            const code = document.getElementById('auth-code').value.trim();
-            if(!pseudo || !code) return showPopup("Champs requis");
-            db.ref('users/' + pseudo).once('value').then(s => {
-                if(type === 'login') {
-                    if(s.exists() && String(s.val().code) === String(code)) loginSuccess(pseudo);
-                    else showPopup("Identifiants incorrects");
-                } else {
-                    if(s.exists()) showPopup("Pseudo déjà pris");
-                    else db.ref('users/' + pseudo).set({ code: code }).then(() => loginSuccess(pseudo));
-                }
-            });
-        }
+      function showRooms() {
+        document.getElementById("pc-sidebar-title").textContent = "Salons";
+        roomsPanel.style.display = "block";
+        contactsPanel.style.display = "none";
+        initRoomsPC();
+      }
 
-        function loginSuccess(pseudo) { user = pseudo; localStorage.setItem("thinktalk_pseudo", user); location.reload(); }
+      function showContacts() {
+        document.getElementById("pc-sidebar-title").textContent = "Contacts";
+        roomsPanel.style.display = "none";
+        contactsPanel.style.display = "block";
+        initContactsPC();
+      }
 
-        function startApp() {
-            const savedAccent = localStorage.getItem("thinktalk_accent");
-            if(savedAccent) updateAccent(savedAccent);
-            initBg(); loadLists(); setChat('general', 'room');
-        }
+      tabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+          tabs.forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          const tabName = tab.getAttribute("data-tab");
+          if (tabName === "rooms") showRooms();
+          else if (tabName === "contacts") showContacts();
+        });
+      });
 
-        function initBg() { const bg = localStorage.getItem("thinktalk_bg"); if(bg) document.body.style.backgroundImage = `url('${bg}')`; }
-        function triggerFile() { document.getElementById('file-selector').click(); }
-        function processLocalFile(input) {
-            const file = input.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => { localStorage.setItem("thinktalk_bg", e.target.result); initBg(); };
-            reader.readAsDataURL(file);
-        }
-        function resetBg() { localStorage.removeItem("thinktalk_bg"); document.body.style.backgroundImage = "none"; }
+      // par défaut : salons
+      showRooms();
 
-        // GESTION DES LISTES (CORRIGÉ)
-        function loadLists() {
-            db.ref("rooms").on('value', s => {
-                const mb = document.getElementById('mob-rooms'), pc = document.getElementById('pc-content-list');
-                if(mb) mb.innerHTML = ""; if(pc && activePcTab==='rooms') pc.innerHTML = "";
-                
-                const addR = (id, data) => {
-                    const isPrivate = data && data.private;
-                    const creator = data ? data.creator : null;
-                    if(isPrivate && id !== 'general' && creator !== user && !data.code) return; 
+      document.getElementById("btn-send-pc").addEventListener("click", () => {
+        const input = document.getElementById("in-pc");
+        const value = input.value.trim();
+        if (!value) return;
+        sendCurrentMessage(value);
+        input.value = "";
+      });
 
-                    // Mobile Tile
-                    const t = document.createElement('div');
-                    t.className = "tile";
-                    if(isPrivate) t.style.background = "#222";
-                    db.ref(`messages/public/${id}`).limitToLast(1).once('value', msgSnap => {
-                        let last = "Aucun message";
-                        msgSnap.forEach(m => last = m.val().text);
-                        t.innerHTML = `<span class="tile-name">${isPrivate ? '🔒' : '#'} ${id}</span><span class="tile-last-msg">${last}</span>`;
-                        if(creator === user && id !== 'general') {
-                            const del = document.createElement('button');
-                            del.className = "btn-del-tile"; del.textContent = "X";
-                            del.onclick = (e) => deleteRoom(e, id);
-                            t.appendChild(del);
-                        }
-                    });
-                    t.onclick = () => { setChat(id, 'room'); goTo(1); };
-                    if(mb) mb.appendChild(t);
+      // création / join salon privé
+      document.getElementById("pc-btn-create-private-room").addEventListener("click", () => {
+        const name = document.getElementById("pc-new-room-name").value.trim();
+        const code = document.getElementById("pc-new-room-code").value.trim();
+        createPrivateRoom(name, code);
+      });
 
-                    // PC List
-                    if(pc && activePcTab==='rooms'){
-                        const container = document.createElement('div');
-                        container.style.display="flex"; container.style.gap="5px";
-                        const b=document.createElement('button');
-                        b.className="btn-action-metro"; b.style.flex="1";
-                        b.textContent=(isPrivate ? "🔒 " : "# ") + id;
-                        b.onclick=()=>setChat(id,'room');
-                        container.appendChild(b);
-                        if(creator === user && id !== 'general') {
-                            const delBtn = document.createElement('button');
-                            delBtn.textContent="X"; delBtn.style.cssText="background:red; color:white; border:none; margin-bottom:5px; padding:0 12px; cursor:pointer;";
-                            delBtn.onclick = (e) => deleteRoom(e, id);
-                            container.appendChild(delBtn);
-                        }
-                        pc.appendChild(container);
-                    }
-                };
-                addR('general', {name:'general', private:false, creator:'admin'});
-                s.forEach(r => { if(r.key !== 'general') addR(r.key, r.val()); });
-            });
+      document.getElementById("pc-btn-join-private-room").addEventListener("click", () => {
+        const name = document.getElementById("pc-join-room-name").value.trim();
+        const code = document.getElementById("pc-join-room-code").value.trim();
+        joinPrivateRoom(name, code);
+      });
 
-            db.ref("users").on('value', s => {
-                allContacts = [];
-                s.forEach(c => { if(c.key !== user) allContacts.push(c.key); });
-                renderContacts();
-            });
-        }
+      // ajout contact
+      document.getElementById("pc-btn-add-contact").addEventListener("click", () => {
+        const pseudo = document.getElementById("pc-add-contact-pseudo").value.trim();
+        addContact(pseudo);
+      });
+    }
 
-        function renderContacts(f = "") {
-            const mc = document.getElementById('mob-contacts'), pc = document.getElementById('pc-content-list');
-            if(mc) mc.innerHTML = "";
-            if(pc && activePcTab==='contacts') {
-                pc.innerHTML = "";
-                document.getElementById('pc-search-container').innerHTML = `<input type="text" class="search-bar" placeholder="Filtrer..." oninput="filterContacts(this.value)">`;
-            }
-            allContacts.filter(c => c.includes(f.toLowerCase())).forEach(c => {
-                const t = document.createElement('div'); t.className="tile"; t.style.background="#111";
-                t.innerHTML = `<span class="tile-name">@${c}</span>`;
-                t.onclick=()=>{ setChat(c,'dm'); goTo(1); };
-                if(mc) mc.appendChild(t);
+    // === Mobile UI ===
+    function initMobile() {
+      const tabs = document.querySelectorAll(".mob-tab");
+      const views = document.querySelectorAll(".mob-view");
 
-                if(pc && activePcTab==='contacts'){
-                    const b=document.createElement('button'); b.className="btn-action-metro";
-                    b.textContent="@ "+c; b.onclick=()=>setChat(c,'dm'); pc.appendChild(b);
-                }
-            });
-        }
+      tabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+          tabs.forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          const viewId = tab.getAttribute("data-view");
+          views.forEach(v => v.classList.remove("active"));
+          document.getElementById(viewId).classList.add("active");
+        });
+      });
 
-        function filterContacts(v) { renderContacts(v); }
+      initRoomsMobile();
+      initContactsMobile();
 
-        // CREATION ET SUPPRESSION (STRUCTURE RÉELLE)
-        function createRoom(p) {
-            const n = prompt("Nom du salon ?").trim().toLowerCase();
-            if(!n) return;
-            let code = "";
-            if(p) {
-                code = prompt("Code secret pour ce salon privé ?");
-                if(!code) return;
-            }
-            db.ref('rooms/'+n).set({ name: n, private: p, creator: user, code: code }).then(() => {
-                setChat(n, 'room');
-                if(window.innerWidth <= 850) goTo(1);
-            });
-        }
+      document.getElementById("btn-send-mob").addEventListener("click", () => {
+        const input = document.getElementById("in-mob");
+        const value = input.value.trim();
+        if (!value) return;
+        sendCurrentMessage(value);
+        input.value = "";
+      });
 
-        function joinPrivateRoom() {
-            const n = prompt("Nom du salon privé ?").trim().toLowerCase();
-            const c = prompt("Entrez le code secret :");
-            db.ref('rooms/'+n).once('value').then(s => {
-                if(s.exists() && s.val().code === c) {
-                    setChat(n, 'room');
-                    if(window.innerWidth <= 850) goTo(1);
-                } else showPopup("Accès refusé ou salon inexistant");
-            });
-        }
+      // création / join salon privé
+      document.getElementById("mob-btn-create-private-room").addEventListener("click", () => {
+        const name = document.getElementById("mob-new-room-name").value.trim();
+        const code = document.getElementById("mob-new-room-code").value.trim();
+        createPrivateRoom(name, code);
+      });
 
-        function deleteRoom(e, id) {
-            e.stopPropagation();
-            if(!confirm("Supprimer ce salon définitivement ?")) return;
-            db.ref('rooms/'+id).remove();
-            db.ref('messages/public/'+id).remove();
-            if(current.id === id) setChat('general', 'room');
-        }
+      document.getElementById("mob-btn-join-private-room").addEventListener("click", () => {
+        const name = document.getElementById("mob-join-room-name").value.trim();
+        const code = document.getElementById("mob-join-room-code").value.trim();
+        joinPrivateRoom(name, code);
+      });
 
-        // CHAT LOGIC (CORRIGÉ)
-        function setChat(id, type) {
-            current = { id, type };
-            const label = (type==='room'?'# ':'@ ')+id;
-            document.getElementById('chat-title-pc').textContent = label;
-            document.getElementById('chat-title-mob').textContent = label;
-            const path = type === 'room' ? `messages/public/${id}` : `messages/dm/${[user, id].sort().join("__")}`;
-            db.ref(path).off();
-            db.ref(path).on('value', s => {
-                const pc = document.getElementById('msg-pc'), mb = document.getElementById('msg-mob');
-                pc.innerHTML = ""; mb.innerHTML = "";
-                s.forEach(snap => {
-                    const m = snap.val();
-                    const html = `<div class="msg ${m.pseudo===user?'mine':''}">
-                        <div class="msg-header"><span>${m.pseudo}</span><span>${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>
-                        <div class="msg-text">${m.text || ''}</div>
-                    </div>`;
-                    pc.insertAdjacentHTML('beforeend', html); mb.insertAdjacentHTML('beforeend', html);
-                });
-                pc.scrollTop = pc.scrollHeight; mb.scrollTop = mb.scrollHeight;
-            });
-        }
+      // ajout contact mobile
+      const addBtn = document.getElementById("btn-add-contact-mob");
+      const form = document.getElementById("mob-add-contact-form");
+      const confirmBtn = document.getElementById("mob-btn-add-contact-confirm");
 
-        function send(m) {
-            const i = document.getElementById(m==='pc'?'in-pc':'in-mob');
-            if(!i.value.trim()) return;
-            const path = current.type === 'room' ? `messages/public/${current.id}` : `messages/dm/${[user, current.id].sort().join("__")}`;
-            db.ref(path).push({ pseudo: user, text: i.value, timestamp: firebase.database.ServerValue.TIMESTAMP });
-            i.value = "";
-        }
+      addBtn.addEventListener("click", () => {
+        form.style.display = form.style.display === "none" ? "block" : "none";
+      });
 
-        function switchPcTab(t) { activePcTab = t; if(t!=='contacts') document.getElementById('pc-search-container').innerHTML=""; loadLists(); }
-        function goTo(x) { 
-            document.getElementById('panorama').style.transform = `translateX(-${x*100}vw)`; 
-            document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i===x)); 
-            document.getElementById('mob-bar').style.display = (x===1) ? 'flex' : 'none'; 
-        }
+      confirmBtn.addEventListener("click", () => {
+        const pseudo = document.getElementById("mob-add-contact-pseudo").value.trim();
+        addContact(pseudo);
+      });
+    }
 
-        window.onload = () => { if(user) { document.getElementById('auth-screen').style.display='none'; startApp(); } }
-        function logout() { localStorage.clear(); location.reload(); }
-    </script>
+    function initAfterAuth() {
+      applyBackgroundFromStorage();
+      initSettings();
+      ensureDefaultPublicRooms();
+      initPC();
+      initMobile();
+    }
+
+    // === On load ===
+    window.addEventListener("load", () => {
+      initAuth();
+      if (loadSession()) {
+        document.getElementById("auth-overlay").style.display = "none";
+        initAfterAuth();
+      }
+    });
+  </script>
 </body>
 </html>
