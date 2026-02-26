@@ -10,6 +10,18 @@
         body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; position: fixed; width: 100%; }
         #canvas-dust { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
         
+        /* Popups */
+        #popup-container { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+            z-index: 10000; display: none; align-items: center; justify-content: center; 
+            backdrop-filter: blur(10px); 
+        }
+        .popup-card { 
+            background: #111; border: 1px solid var(--accent); padding: 25px; 
+            width: 90%; max-width: 350px; text-align: center; box-shadow: 0 0 20px rgba(0,120,215,0.3);
+        }
+        .popup-msg { margin-bottom: 20px; font-size: 1.1rem; }
+
         /* Auth Screen */
         #auth-screen { position: fixed; inset: 0; z-index: 5000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
         .auth-logo { font-size: 3.5rem; font-weight: 100; color: var(--accent); margin-bottom: 40px; }
@@ -25,7 +37,8 @@
         
         /* UI Elements */
         .action-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .search-box { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
+        .search-box { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; color: #fff; outline: none; transition: 0.3s; }
+        .search-box:focus { border-color: var(--accent); }
         .btn-add { background: var(--accent); border: none; color: #fff; padding: 0 20px; font-size: 1.5rem; cursor: pointer; }
         
         /* Tiles Grid */
@@ -42,10 +55,6 @@
         .msg-block.own { align-self: flex-end; }
         .msg-block.own .msg-text { border-left: none; border-right: 3px solid #666; background: rgba(0,120,215,0.15); }
 
-        /* Popups */
-        .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 6000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
-        .popup-card { background: #000; border: 1px solid var(--accent); width: 100%; max-width: 300px; padding: 20px; }
-        
         /* Bottom Nav */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 56px; display: flex; background: #000; border-top: 1px solid #222; }
         .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.9rem; cursor: pointer; }
@@ -60,6 +69,16 @@
 <body>
 
 <canvas id="canvas-dust"></canvas>
+
+<div id="popup-container">
+    <div class="popup-card">
+        <div class="popup-msg" id="popup-msg">Message ici</div>
+        <div id="popup-actions">
+            <button class="btn-full" id="popup-ok">D'ACCORD</button>
+            <button class="btn-full" id="popup-cancel" style="background:#333; display:none">ANNULER</button>
+        </div>
+    </div>
+</div>
 
 <div id="auth-screen">
     <div class="auth-logo">thinktalk</div>
@@ -80,7 +99,7 @@
     <div class="view-container">
         <section id="view-home" class="view-section active">
             <div class="action-row">
-                <input type="text" id="new-room-input" class="search-box" placeholder="nom du salon...">
+                <input type="text" id="search-room-input" class="search-box" placeholder="rechercher ou créer...">
                 <button class="btn-add" id="btn-add-room">+</button>
             </div>
             <div class="tiles-grid" id="rooms-grid"></div>
@@ -105,9 +124,9 @@
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-btn active" onclick="switchTab('home')">accueil</div>
-        <div class="nav-btn" onclick="switchTab('chat')">chat</div>
-        <div class="nav-btn" onclick="switchTab('contacts')">contacts</div>
+        <div class="nav-btn active" id="nav-home" onclick="switchTab('home')">accueil</div>
+        <div class="nav-btn" id="nav-chat" onclick="switchTab('chat')">chat</div>
+        <div class="nav-btn" id="nav-contacts" onclick="switchTab('contacts')">contacts</div>
     </nav>
 </div>
 
@@ -129,6 +148,24 @@
     let currentUser = localStorage.getItem('tt_user');
     let curRoom = "général";
     let unsubChat = null;
+    let allRooms = []; // Stockage local pour la recherche
+
+    // --- POPUP SYSTEM ---
+    const showPopup = (msg, isConfirm = false) => {
+        return new Promise((resolve) => {
+            const container = document.getElementById('popup-container');
+            const msgEl = document.getElementById('popup-msg');
+            const okBtn = document.getElementById('popup-ok');
+            const cancelBtn = document.getElementById('popup-cancel');
+            
+            msgEl.innerText = msg;
+            container.style.display = 'flex';
+            cancelBtn.style.display = isConfirm ? 'block' : 'none';
+
+            okBtn.onclick = () => { container.style.display = 'none'; resolve(true); };
+            cancelBtn.onclick = () => { container.style.display = 'none'; resolve(false); };
+        });
+    };
 
     // --- INITIALISATION ---
     window.onload = () => {
@@ -145,9 +182,9 @@
     document.getElementById('btn-register').onclick = async () => {
         const p = document.getElementById('auth-pseudo').value.trim();
         const c = document.getElementById('auth-code').value.trim();
-        if(!p || !c) return alert("Remplis tout !");
+        if(!p || !c) return showPopup("Remplis tous les champs !");
         await addDoc(collection(db, "users"), { pseudo: p, code: c });
-        alert("Compte créé, connecte-toi !");
+        showPopup("Compte créé ! Connecte-toi.");
     };
 
     document.getElementById('btn-login').onclick = async () => {
@@ -158,46 +195,58 @@
         if(!res.empty) {
             localStorage.setItem('tt_user', p);
             location.reload();
-        } else alert("Inconnu...");
+        } else showPopup("Identifiants incorrects...");
     };
 
-    // --- SALONS ---
+    // --- SALONS (Avec Recherche Fonctionnelle) ---
     function initRooms() {
         onSnapshot(collection(db, "rooms"), (snap) => {
-            const grid = document.getElementById('rooms-grid');
-            grid.innerHTML = "";
-            snap.forEach(d => {
-                const r = d.data();
-                const tile = document.createElement('div');
-                tile.className = "tile";
-                tile.innerHTML = `<span># ${r.name}</span>`;
-                tile.onclick = () => { enterRoom(r.name); switchTab('chat'); };
-                grid.appendChild(tile);
-            });
+            allRooms = [];
+            snap.forEach(d => allRooms.push({id: d.id, ...d.data()}));
+            renderRooms(allRooms);
         });
     }
 
+    function renderRooms(rooms) {
+        const grid = document.getElementById('rooms-grid');
+        grid.innerHTML = "";
+        rooms.forEach(r => {
+            const tile = document.createElement('div');
+            tile.className = "tile";
+            tile.innerHTML = `<span># ${r.name}</span>`;
+            tile.onclick = () => { enterRoom(r.name); switchTab('chat'); };
+            grid.appendChild(tile);
+        });
+    }
+
+    // Barre de recherche réelle
+    document.getElementById('search-room-input').oninput = (e) => {
+        const val = e.target.value.toLowerCase();
+        const filtered = allRooms.filter(r => r.name.toLowerCase().includes(val));
+        renderRooms(filtered);
+    };
+
     document.getElementById('btn-add-room').onclick = async () => {
-        const input = document.getElementById('new-room-input');
-        if(input.value.trim()) {
-            await addDoc(collection(db, "rooms"), { name: input.value.trim(), creator: currentUser });
+        const input = document.getElementById('search-room-input');
+        const name = input.value.trim();
+        if(name) {
+            await addDoc(collection(db, "rooms"), { name: name, creator: currentUser });
             input.value = "";
+            showPopup(`Salon #${name} créé !`);
         }
     };
 
-    // --- CONTACTS (FIXÉ SANS ERREUR D'INDEX) ---
+    // --- CONTACTS ---
     function initContacts() {
-        const contactGrid = document.getElementById('contacts-grid');
-        // Requête simplifiée pour éviter l'erreur Firestore Index
         const q = query(collection(db, "contacts"), where("owner", "==", currentUser));
-        
         onSnapshot(q, (snap) => {
+            const contactGrid = document.getElementById('contacts-grid');
             contactGrid.innerHTML = "";
             snap.forEach(d => {
                 const c = d.data();
                 const tile = document.createElement('div');
                 tile.className = "tile";
-                tile.style.border = "1px solid var(--accent)";
+                tile.style.borderColor = "var(--accent)";
                 tile.innerHTML = `
                     <button class="btn-del-item" onclick="deleteItem('contacts', '${d.id}', event)">X</button>
                     <span style="font-weight:bold; color:var(--accent)">@ ${c.name}</span>
@@ -212,12 +261,14 @@
         const input = document.getElementById('contact-name-input');
         const val = input.value.trim();
         if(val && currentUser) {
+            // Optionnel: vérifier si l'utilisateur existe
             await addDoc(collection(db, "contacts"), { 
                 name: val, 
                 owner: currentUser, 
                 timestamp: serverTimestamp() 
             });
             input.value = "";
+            showPopup(`Contact @${val} ajouté.`);
         }
     };
 
@@ -226,6 +277,7 @@
         curRoom = name;
         document.getElementById('chat-header').innerText = "# " + name;
         if(unsubChat) unsubChat();
+        
         const q = query(collection(db, "messages"), where("room", "==", name), orderBy("timestamp", "asc"));
         unsubChat = onSnapshot(q, (snap) => {
             const box = document.getElementById('chat-messages');
@@ -254,17 +306,18 @@
     // --- UTILS ---
     window.deleteItem = async (col, id, e) => {
         e.stopPropagation();
-        if(confirm("Supprimer ?")) await deleteDoc(doc(db, col, id));
+        const confirm = await showPopup("Supprimer cet élément ?", true);
+        if(confirm) await deleteDoc(doc(db, col, id));
     };
 
     window.switchTab = (t) => {
         document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('view-'+t).classList.add('active');
-        document.querySelector(`[onclick="switchTab('${t}')"]`).classList.add('active');
+        document.getElementById('nav-'+t).classList.add('active');
     };
 
-    // Dust Effect
+    // Dust Effect logic (inchangé)
     const canvas = document.getElementById('canvas-dust'), ctx = canvas.getContext('2d');
     let particles = [];
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
