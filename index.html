@@ -28,14 +28,16 @@
     .view-section { display: none; width: 100%; }
     .view-section.active { display: block; }
     .action-row { display: flex; gap: 10px; margin-bottom: 15px; }
-    .search-box { flex: 1; background: #000; border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
+    .search-box { flex: 1; background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
     .btn-add { background: var(--accent); border: none; color: #fff; padding: 0 20px; font-size: 1.5rem; cursor: pointer; }
 
-    /* TILES */
+    /* TILES - PLUS TRANSPARENTES */
     .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 110px; gap: 12px; }
     .tile { 
-        background: rgba(20, 20, 20, 0.85); border: 1px solid rgba(255,255,255,0.1); 
-        padding: 15px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; 
+        background: rgba(20, 20, 20, 0.4); /* Transparence augmentée */
+        border: 1px solid rgba(255,255,255,0.1); 
+        padding: 15px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer;
+        backdrop-filter: blur(2px); 
     }
     .tile-1x1 { grid-column: span 1; grid-row: span 1; }
     .tile-2x1 { grid-column: span 2; grid-row: span 1; }
@@ -44,11 +46,11 @@
     /* CHAT */
     #chat-messages { height: calc(100vh - 220px); overflow-y: auto; padding: 10px; }
     .msg-block { margin-bottom: 12px; animation: materialize 0.6s forwards; }
-    .msg-text { background: rgba(255,255,255,0.05); padding: 10px; border-left: 3px solid var(--accent); }
+    .msg-text { background: rgba(255,255,255,0.08); padding: 10px; border-left: 3px solid var(--accent); }
 
     /* POPUPS SYSTEM */
     .popup-overlay { 
-        position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 6000; 
+        position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 6000; 
         display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px);
     }
     .popup-card { background: #000; border: 1px solid var(--accent); width: 100%; max-width: 300px; padding: 20px; animation: materialize 0.4s forwards; }
@@ -173,14 +175,31 @@
     let currentUser = null;
     let pendingRoom = null;
 
-    // DUST ENGINE
+    // DUST ENGINE (VITESSE AUGMENTÉE)
     const canvas = document.getElementById('canvas-dust');
     const ctx = canvas.getContext('2d');
     let particles = [];
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.onresize = resize; resize();
-    class P { constructor(){this.r()} r(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.v=(Math.random()-0.5)*0.3;this.s=Math.random()*1.5} u(){this.x+=this.v;this.y+=this.v;if(this.x<0||this.x>canvas.width)this.r()} d(){ctx.fillStyle="rgba(0,120,215,0.25)";ctx.beginPath();ctx.arc(this.x,this.y,this.s,0,7);ctx.fill()}}
-    for(let i=0;i<60;i++)particles.push(new P());
+    class P { 
+        constructor(){this.r()} 
+        r(){
+            this.x=Math.random()*canvas.width;
+            this.y=Math.random()*canvas.height;
+            this.vx=(Math.random()-0.5)*1.2; // Vitesse X plus rapide
+            this.vy=(Math.random()-0.5)*1.2; // Vitesse Y plus rapide
+            this.s=Math.random()*1.8
+        } 
+        u(){
+            this.x+=this.vx; this.y+=this.vy;
+            if(this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height)this.r()
+        } 
+        d(){
+            ctx.fillStyle="rgba(0,120,215,0.35)";
+            ctx.beginPath();ctx.arc(this.x,this.y,this.s,0,7);ctx.fill()
+        }
+    }
+    for(let i=0;i<70;i++)particles.push(new P());
     function anim(){ ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p=>{p.u();p.d()}); requestAnimationFrame(anim) } anim();
 
     // POPUP UTILS
@@ -194,11 +213,9 @@
         const p = document.getElementById('auth-pseudo').value.trim();
         const c = document.getElementById('auth-code').value.trim();
         if(!p || !c) return showPopupAlert("Remplis tout !");
-        
         const q = query(collection(db, "users"), where("pseudo", "==", p));
         const check = await getDocs(q);
         if(!check.empty) return showPopupAlert("Pseudo déjà pris !");
-
         await addDoc(collection(db, "users"), { pseudo: p, code: c });
         showPopupAlert("Compte créé !");
     };
@@ -259,27 +276,15 @@
     // CHAT ENGINE
     let curRoom = "";
     let unsubChat = null;
-
     function tryJoinRoom(name, code) {
-        if(code) {
-            pendingRoom = { name, code };
-            document.getElementById('pop-join-code').style.display = 'flex';
-        } else {
-            enterRoom(name);
-        }
+        if(code) { pendingRoom = { name, code }; document.getElementById('pop-join-code').style.display = 'flex'; }
+        else { enterRoom(name); }
     }
-
     document.getElementById('btn-confirm-join').onclick = () => {
         const pass = document.getElementById('input-join-pass').value;
-        if(pass === pendingRoom.code) {
-            document.getElementById('input-join-pass').value = "";
-            closePopups();
-            enterRoom(pendingRoom.name);
-        } else {
-            showPopupAlert("Code incorrect.");
-        }
+        if(pass === pendingRoom.code) { document.getElementById('input-join-pass').value = ""; closePopups(); enterRoom(pendingRoom.name); }
+        else { showPopupAlert("Code incorrect."); }
     };
-
     function enterRoom(name) {
         curRoom = name;
         document.getElementById('chat-header').innerText = "# " + name;
@@ -299,23 +304,24 @@
             box.scrollTop = box.scrollHeight;
         });
     }
-
     document.getElementById('send-btn').onclick = async () => {
         const input = document.getElementById('chat-input');
         if(input.value.trim() && curRoom) {
-            await addDoc(collection(db, "messages"), { 
-                text: input.value, 
-                room: curRoom, 
-                sender: currentUser,
-                timestamp: serverTimestamp() 
-            });
+            await addDoc(collection(db, "messages"), { text: input.value, room: curRoom, sender: currentUser, timestamp: serverTimestamp() });
             input.value = "";
         }
     };
 
-    document.getElementById('btn-logout').onclick = () => { location.reload(); };
-
     // CONTACTS
+    document.getElementById('btn-add-contact').onclick = async () => {
+        const input = document.getElementById('contact-name-input');
+        const name = input.value.trim();
+        if(name) {
+            await addDoc(collection(db, "contacts"), { name: name, addedBy: currentUser });
+            input.value = "";
+            showPopupAlert("contact ajouté !");
+        }
+    };
     onSnapshot(collection(db, "contacts"), (snap) => {
         const grid = document.getElementById('contacts-grid');
         grid.innerHTML = "";
@@ -325,12 +331,7 @@
         });
     });
 
-    document.getElementById('btn-add-contact').onclick = async () => {
-        const name = document.getElementById('contact-name-input').value.trim();
-        if(name) await addDoc(collection(db, "contacts"), { name });
-        document.getElementById('contact-name-input').value = "";
-    };
-
+    document.getElementById('btn-logout').onclick = () => { location.reload(); };
 </script>
 </body>
 </html>
