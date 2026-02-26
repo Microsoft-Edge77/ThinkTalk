@@ -10,23 +10,9 @@
         body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; position: fixed; width: 100%; }
         #canvas-dust { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
         
-        /* Popups */
-        #popup-container { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
-            z-index: 10000; display: none; align-items: center; justify-content: center; 
-            backdrop-filter: blur(10px); 
-        }
-        .popup-card { 
-            background: #111; border: 1px solid var(--accent); padding: 25px; 
-            width: 90%; max-width: 350px; text-align: center; box-shadow: 0 0 20px rgba(0,120,215,0.3);
-        }
-        .popup-msg { margin-bottom: 20px; font-size: 1.1rem; }
-
-        /* Auth Screen */
         #auth-screen { position: fixed; inset: 0; z-index: 5000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
         .auth-logo { font-size: 3.5rem; font-weight: 100; color: var(--accent); margin-bottom: 40px; }
         
-        /* App Root */
         .app-root { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; display: none; }
         .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
         .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); }
@@ -35,27 +21,25 @@
         .view-section { display: none; width: 100%; }
         .view-section.active { display: block; }
         
-        /* UI Elements */
         .action-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .search-box { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; color: #fff; outline: none; transition: 0.3s; }
-        .search-box:focus { border-color: var(--accent); }
+        .search-box { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
         .btn-add { background: var(--accent); border: none; color: #fff; padding: 0 20px; font-size: 1.5rem; cursor: pointer; }
         
-        /* Tiles Grid */
         .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 110px; gap: 12px; }
         .tile { position: relative; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; backdrop-filter: blur(4px); transition: 0.3s; }
         .tile:hover { border-color: var(--accent); background: rgba(0, 120, 215, 0.1); }
         
         .btn-del-item { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.5); color: white; border: none; width: 22px; height: 22px; font-size: 12px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; border-radius: 3px; }
 
-        /* Chat */
         #chat-messages { height: calc(100vh - 220px); overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
         .msg-block { align-self: flex-start; max-width: 90%; animation: materialize 0.5s ease-out forwards; }
         .msg-text { background: rgba(255,255,255,0.08); padding: 10px; border-left: 3px solid var(--accent); word-break: break-word; }
         .msg-block.own { align-self: flex-end; }
         .msg-block.own .msg-text { border-left: none; border-right: 3px solid #666; background: rgba(0,120,215,0.15); }
 
-        /* Bottom Nav */
+        .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 6000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
+        .popup-card { background: #000; border: 1px solid var(--accent); width: 100%; max-width: 300px; padding: 20px; text-align: center; }
+        
         .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 56px; display: flex; background: #000; border-top: 1px solid #222; }
         .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.9rem; cursor: pointer; }
         .nav-btn.active { color: #fff; font-weight: bold; border-top: 2px solid var(--accent); }
@@ -70,13 +54,10 @@
 
 <canvas id="canvas-dust"></canvas>
 
-<div id="popup-container">
+<div class="popup-overlay" id="global-popup">
     <div class="popup-card">
-        <div class="popup-msg" id="popup-msg">Message ici</div>
-        <div id="popup-actions">
-            <button class="btn-full" id="popup-ok">D'ACCORD</button>
-            <button class="btn-full" id="popup-cancel" style="background:#333; display:none">ANNULER</button>
-        </div>
+        <p id="popup-text" style="margin-bottom:20px"></p>
+        <button class="btn-full" onclick="closePopup()">OK</button>
     </div>
 </div>
 
@@ -99,7 +80,7 @@
     <div class="view-container">
         <section id="view-home" class="view-section active">
             <div class="action-row">
-                <input type="text" id="search-room-input" class="search-box" placeholder="rechercher ou créer...">
+                <input type="text" id="new-room-input" class="search-box" placeholder="rechercher ou créer...">
                 <button class="btn-add" id="btn-add-room">+</button>
             </div>
             <div class="tiles-grid" id="rooms-grid"></div>
@@ -148,26 +129,16 @@
     let currentUser = localStorage.getItem('tt_user');
     let curRoom = "général";
     let unsubChat = null;
-    let allRooms = []; // Stockage local pour la recherche
+    let allRooms = [];
 
-    // --- POPUP SYSTEM ---
-    const showPopup = (msg, isConfirm = false) => {
-        return new Promise((resolve) => {
-            const container = document.getElementById('popup-container');
-            const msgEl = document.getElementById('popup-msg');
-            const okBtn = document.getElementById('popup-ok');
-            const cancelBtn = document.getElementById('popup-cancel');
-            
-            msgEl.innerText = msg;
-            container.style.display = 'flex';
-            cancelBtn.style.display = isConfirm ? 'block' : 'none';
-
-            okBtn.onclick = () => { container.style.display = 'none'; resolve(true); };
-            cancelBtn.onclick = () => { container.style.display = 'none'; resolve(false); };
-        });
+    window.openPopup = (text) => {
+        document.getElementById('popup-text').innerText = text;
+        document.getElementById('global-popup').style.display = 'flex';
+    };
+    window.closePopup = () => {
+        document.getElementById('global-popup').style.display = 'none';
     };
 
-    // --- INITIALISATION ---
     window.onload = () => {
         if(currentUser) {
             document.getElementById('auth-screen').style.display='none';
@@ -178,13 +149,12 @@
         }
     };
 
-    // --- AUTH ---
     document.getElementById('btn-register').onclick = async () => {
         const p = document.getElementById('auth-pseudo').value.trim();
         const c = document.getElementById('auth-code').value.trim();
-        if(!p || !c) return showPopup("Remplis tous les champs !");
+        if(!p || !c) return openPopup("Remplis tout !");
         await addDoc(collection(db, "users"), { pseudo: p, code: c });
-        showPopup("Compte créé ! Connecte-toi.");
+        openPopup("Compte créé !");
     };
 
     document.getElementById('btn-login').onclick = async () => {
@@ -195,10 +165,9 @@
         if(!res.empty) {
             localStorage.setItem('tt_user', p);
             location.reload();
-        } else showPopup("Identifiants incorrects...");
+        } else openPopup("Identifiants incorrects.");
     };
 
-    // --- SALONS (Avec Recherche Fonctionnelle) ---
     function initRooms() {
         onSnapshot(collection(db, "rooms"), (snap) => {
             allRooms = [];
@@ -219,26 +188,25 @@
         });
     }
 
-    // Barre de recherche réelle
-    document.getElementById('search-room-input').oninput = (e) => {
-        const val = e.target.value.toLowerCase();
-        const filtered = allRooms.filter(r => r.name.toLowerCase().includes(val));
+    document.getElementById('new-room-input').oninput = (e) => {
+        const search = e.target.value.toLowerCase();
+        const filtered = allRooms.filter(r => r.name.toLowerCase().includes(search));
         renderRooms(filtered);
     };
 
     document.getElementById('btn-add-room').onclick = async () => {
-        const input = document.getElementById('search-room-input');
-        const name = input.value.trim();
-        if(name) {
-            await addDoc(collection(db, "rooms"), { name: name, creator: currentUser });
+        const input = document.getElementById('new-room-input');
+        if(input.value.trim()) {
+            await addDoc(collection(db, "rooms"), { name: input.value.trim(), creator: currentUser });
             input.value = "";
-            showPopup(`Salon #${name} créé !`);
         }
     };
 
-    // --- CONTACTS ---
+    // --- SECTION CONTACTS CORRIGÉE ---
     function initContacts() {
+        // Suppression du orderBy pour éviter de forcer un index composite
         const q = query(collection(db, "contacts"), where("owner", "==", currentUser));
+        
         onSnapshot(q, (snap) => {
             const contactGrid = document.getElementById('contacts-grid');
             contactGrid.innerHTML = "";
@@ -246,7 +214,7 @@
                 const c = d.data();
                 const tile = document.createElement('div');
                 tile.className = "tile";
-                tile.style.borderColor = "var(--accent)";
+                tile.style.border = "1px solid var(--accent)";
                 tile.innerHTML = `
                     <button class="btn-del-item" onclick="deleteItem('contacts', '${d.id}', event)">X</button>
                     <span style="font-weight:bold; color:var(--accent)">@ ${c.name}</span>
@@ -254,6 +222,11 @@
                 tile.onclick = () => { enterRoom(c.name); switchTab('chat'); };
                 contactGrid.appendChild(tile);
             });
+        }, (error) => {
+            console.error("Erreur contacts:", error);
+            if(error.code === 'failed-precondition') {
+                openPopup("Index Firestore manquant. Vérifie la console F12.");
+            }
         });
     }
 
@@ -261,23 +234,27 @@
         const input = document.getElementById('contact-name-input');
         const val = input.value.trim();
         if(val && currentUser) {
-            // Optionnel: vérifier si l'utilisateur existe
-            await addDoc(collection(db, "contacts"), { 
-                name: val, 
-                owner: currentUser, 
-                timestamp: serverTimestamp() 
-            });
-            input.value = "";
-            showPopup(`Contact @${val} ajouté.`);
+            try {
+                await addDoc(collection(db, "contacts"), { 
+                    name: val, 
+                    owner: currentUser, 
+                    timestamp: serverTimestamp() 
+                });
+                input.value = "";
+                openPopup("Contact ajouté !");
+            } catch (e) {
+                console.error("Erreur ajout:", e);
+                openPopup("Erreur d'enregistrement.");
+            }
+        } else {
+            openPopup("Nom vide !");
         }
     };
 
-    // --- CHAT ENGINE ---
     window.enterRoom = (name) => {
         curRoom = name;
         document.getElementById('chat-header').innerText = "# " + name;
         if(unsubChat) unsubChat();
-        
         const q = query(collection(db, "messages"), where("room", "==", name), orderBy("timestamp", "asc"));
         unsubChat = onSnapshot(q, (snap) => {
             const box = document.getElementById('chat-messages');
@@ -303,11 +280,14 @@
         }
     };
 
-    // --- UTILS ---
     window.deleteItem = async (col, id, e) => {
         e.stopPropagation();
-        const confirm = await showPopup("Supprimer cet élément ?", true);
-        if(confirm) await deleteDoc(doc(db, col, id));
+        try {
+            await deleteDoc(doc(db, col, id));
+            openPopup("Supprimé");
+        } catch (err) {
+            openPopup("Erreur suppression");
+        }
     };
 
     window.switchTab = (t) => {
@@ -317,7 +297,7 @@
         document.getElementById('nav-'+t).classList.add('active');
     };
 
-    // Dust Effect logic (inchangé)
+    // Dust Effect logic (Inchangé)
     const canvas = document.getElementById('canvas-dust'), ctx = canvas.getContext('2d');
     let particles = [];
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
