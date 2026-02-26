@@ -31,6 +31,9 @@
     .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 110px; gap: 12px; }
     .tile { position: relative; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; backdrop-filter: blur(4px); }
     
+    /* Bouton supprimer salon */
+    .btn-del-room { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.5); color: white; border: none; width: 20px; height: 20px; font-size: 12px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+
     #chat-messages { height: calc(100vh - 220px); overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
     .msg-block { align-self: flex-start; max-width: 90%; animation: materialize 0.8s ease-out forwards; cursor: pointer; display: flex; flex-direction: column; }
     .msg-content-wrapper { display: flex; align-items: flex-end; gap: 8px; }
@@ -274,7 +277,7 @@
         });
     };
 
-    // SEND LOGIC (IMAGE REPAIR)
+    // SEND LOGIC
     const sendMessage = async (val) => {
         if(!val || !currentUser) return;
         await addDoc(collection(db, "messages"), { text: val, room: curRoom, sender: currentUser, timestamp: serverTimestamp() });
@@ -303,11 +306,18 @@
     document.getElementById('file-input').onchange = (e) => { if(e.target.files[0]) sendImage(e.target.files[0]); };
     document.getElementById('send-btn').onclick = () => { const i = document.getElementById('chat-input'); if(i.value.trim()){ sendMessage(i.value); i.value = ""; } };
 
-    // ROOMS LOGIC (PRIVATE ROOMS)
+    // ROOMS LOGIC
     document.getElementById('btn-confirm-create').onclick = async () => {
         const n = document.getElementById('new-room-name').value;
         const c = document.getElementById('new-room-code').value;
-        if(n) { await addDoc(collection(db, "rooms"), { name: n, code: c || null }); closePopups(); }
+        if(n) { 
+            await addDoc(collection(db, "rooms"), { 
+                name: n, 
+                code: c || null,
+                creator: currentUser // Ajout du créateur
+            }); 
+            closePopups(); 
+        }
     };
 
     onSnapshot(collection(db, "rooms"), (snap) => {
@@ -315,7 +325,13 @@
         snap.forEach(d => {
             const r = d.data();
             const tile = document.createElement('div'); tile.className = "tile tile-1x1"; 
-            tile.innerHTML = `<span># ${r.name} ${r.code ? '🔒' : ''}</span>`;
+            
+            let delBtn = "";
+            if(r.creator === currentUser) {
+                delBtn = `<button class="btn-del-room" onclick="deleteRoom('${d.id}', event)">X</button>`;
+            }
+
+            tile.innerHTML = `${delBtn}<span># ${r.name} ${r.code ? '🔒' : ''}</span>`;
             tile.onclick = () => {
                 if(r.code) {
                     document.getElementById('pop-room-auth').style.display = 'flex';
@@ -328,6 +344,13 @@
             grid.appendChild(tile);
         });
     });
+
+    window.deleteRoom = async (id, e) => {
+        e.stopPropagation();
+        if(confirm("Supprimer ce salon ?")) {
+            await deleteDoc(doc(db, "rooms", id));
+        }
+    };
 
     // MISC
     document.getElementById('btn-msg-del').onclick = async () => { if(selectedMsgId) { await deleteDoc(doc(db, "messages", selectedMsgId)); closePopups(); } };
