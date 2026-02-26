@@ -15,25 +15,23 @@
         position: fixed; inset: 0; z-index: 5000; background: #000;
         display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px;
     }
-    .auth-logo { font-size: 3.5rem; font-weight: 100; color: var(--accent); margin-bottom: 40px; animation: materialize 1s; }
+    .auth-logo { font-size: 3.5rem; font-weight: 100; color: var(--accent); margin-bottom: 40px; }
 
     .app-root { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; display: none; }
     .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
     .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); }
-    .hamburger { font-size: 28px; cursor: pointer; padding: 5px; color: #fff; }
+    .hamburger { font-size: 28px; cursor: pointer; color: #fff; }
 
     .view-container { flex: 1; position: relative; overflow-y: auto; padding: 10px; padding-bottom: 80px; }
     .view-section { display: none; width: 100%; }
     .view-section.active { display: block; }
     .action-row { display: flex; gap: 10px; margin-bottom: 15px; }
-    .search-box { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
+    .search-box { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
     .btn-add { background: var(--accent); border: none; color: #fff; padding: 0 20px; font-size: 1.5rem; cursor: pointer; }
 
-    /* TUILES ULTRA TRANSPARENTES */
     .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 110px; gap: 12px; }
     .tile { 
-        background: rgba(255, 255, 255, 0.05); 
-        border: 1px solid rgba(255,255,255,0.1); 
+        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); 
         padding: 15px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer;
         backdrop-filter: blur(4px); 
     }
@@ -46,7 +44,7 @@
     .msg-text { background: rgba(255,255,255,0.08); padding: 10px; border-left: 3px solid var(--accent); }
 
     .popup-overlay { 
-        position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 6000; 
+        position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 6000; 
         display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px);
     }
     .popup-card { background: #000; border: 1px solid var(--accent); width: 100%; max-width: 300px; padding: 20px; animation: materialize 0.4s forwards; }
@@ -58,7 +56,7 @@
     .nav-btn.active { color: #fff; font-weight: bold; border-top: 2px solid var(--accent); }
 
     .input-box { width: 100%; background: #111; border: 1px solid #333; color: var(--accent); padding: 12px; margin-bottom: 10px; outline: none; }
-    .btn-full { width: 100%; padding: 12px; background: var(--accent); border: none; color: #fff; margin-top: 10px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+    .btn-full { width: 100%; padding: 12px; background: var(--accent); border: none; color: #fff; margin-top: 10px; cursor: pointer; font-weight: bold; }
     .btn-secondary { background: #222; border: 1px solid #444; }
   </style>
 </head>
@@ -94,15 +92,16 @@
             <div id="chat-header" style="color:var(--accent); margin-bottom:10px; font-weight:bold"></div>
             <div id="chat-messages"></div>
             <div style="position:fixed; bottom:56px; left:0; right:0; display:flex; background:#000; padding:10px; gap:8px;">
+                <button style="background:none; border:none; color:var(--accent); font-size:20px; cursor:pointer;">📎</button>
                 <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="répondre...">
-                <button id="send-btn" style="background:var(--accent); color:#fff; border:none; padding:10px 15px">OK</button>
+                <button id="send-btn" style="background:var(--accent); color:#fff; border:none; padding:10px 15px; cursor:pointer;">OK</button>
             </div>
         </section>
 
         <section id="view-contacts" class="view-section">
             <div class="action-row">
                 <input type="text" id="contact-name-input" class="search-box" placeholder="nom du contact...">
-                <button class="btn-add" id="btn-add-contact-trigger">+</button>
+                <button class="btn-add" id="add-contact-now">+</button>
             </div>
             <div class="tiles-grid" id="contacts-grid"></div>
         </section>
@@ -133,7 +132,7 @@
     let currentUser = null;
     let pendingRoom = null;
 
-    // DUST ULTRA RAPIDE
+    // POUSSIÈRE RAPIDE
     const canvas = document.getElementById('canvas-dust');
     const ctx = canvas.getContext('2d');
     let particles = [];
@@ -141,7 +140,7 @@
     window.onresize = resize; resize();
     class P { 
         constructor(){this.r()} 
-        r(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.vx=(Math.random()-0.5)*2.5;this.vy=(Math.random()-0.5)*2.5;this.s=Math.random()*2} 
+        r(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.vx=(Math.random()-0.5)*3;this.vy=(Math.random()-0.5)*3;this.s=Math.random()*2} 
         u(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height)this.r()} 
         d(){ctx.fillStyle="rgba(0,120,215,0.4)";ctx.beginPath();ctx.arc(this.x,this.y,this.s,0,7);ctx.fill()}
     }
@@ -157,9 +156,7 @@
     document.getElementById('btn-register').onclick = async () => {
         const p = document.getElementById('auth-pseudo').value.trim();
         const c = document.getElementById('auth-code').value.trim();
-        if(!p || !c) return showPopupAlert("Champs vides");
-        await addDoc(collection(db, "users"), { pseudo: p, code: c });
-        showPopupAlert("Compte créé !");
+        if(p && c) { await addDoc(collection(db, "users"), { pseudo: p, code: c }); showPopupAlert("Compte créé !"); }
     };
 
     document.getElementById('btn-login').onclick = async () => {
@@ -172,7 +169,7 @@
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('user-display').innerText = "@" + p;
-        } else { showPopupAlert("Invalide"); }
+        } else { showPopupAlert("Identifiants incorrects"); }
     };
 
     // NAVIGATION
@@ -180,10 +177,11 @@
         document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('view-'+t).classList.add('active');
-        document.querySelector(`[onclick="switchTab('${t}')"]`).classList.add('active');
+        const btn = document.querySelector(`[onclick="switchTab('${t}')"]`);
+        if(btn) btn.classList.add('active');
     };
 
-    // ROOMS
+    // SALONS
     onSnapshot(collection(db, "rooms"), (snap) => {
         const grid = document.getElementById('rooms-grid');
         grid.innerHTML = "";
@@ -207,7 +205,7 @@
 
     document.getElementById('btn-confirm-join').onclick = () => {
         if(document.getElementById('input-join-pass').value === pendingRoom.code) { closePopups(); enterRoom(pendingRoom.name); }
-        else showPopupAlert("Code faux");
+        else showPopupAlert("Mauvais code");
     };
 
     // CHAT
@@ -225,22 +223,47 @@
 
     document.getElementById('send-btn').onclick = async () => {
         const inp = document.getElementById('chat-input');
-        if(inp.value.trim()) { await addDoc(collection(db, "messages"), { text: inp.value, room: document.getElementById('chat-header').innerText.replace('# ',''), sender: currentUser, timestamp: serverTimestamp() }); inp.value = ""; }
-    };
-
-    // CONTACTS (FIXED)
-    document.getElementById('btn-add-contact-trigger').onclick = async () => {
-        const name = document.getElementById('contact-name-input').value.trim();
-        if(name) {
-            await addDoc(collection(db, "contacts"), { name: name, owner: currentUser });
-            document.getElementById('contact-name-input').value = "";
-            showPopupAlert("Ajouté !");
+        if(inp.value.trim()) { 
+            const roomName = document.getElementById('chat-header').innerText.replace('# ','');
+            await addDoc(collection(db, "messages"), { 
+                text: inp.value, 
+                room: roomName, 
+                sender: currentUser, 
+                timestamp: serverTimestamp() 
+            }); 
+            inp.value = ""; 
         }
     };
 
+    // CONTACTS
+    const btnAddContact = document.getElementById('add-contact-now');
+    if(btnAddContact) {
+        btnAddContact.onclick = async () => {
+            const nameInput = document.getElementById('contact-name-input');
+            const nameValue = nameInput.value.trim();
+            if(nameValue) {
+                await addDoc(collection(db, "contacts"), { 
+                    name: nameValue, 
+                    owner: currentUser,
+                    at: serverTimestamp() 
+                });
+                nameInput.value = "";
+                showPopupAlert("Contact ajouté !");
+            } else { showPopupAlert("Entre un nom"); }
+        };
+    }
+
     onSnapshot(collection(db, "contacts"), (snap) => {
-        const grid = document.getElementById('contacts-grid'); grid.innerHTML = "";
-        snap.forEach(doc => { grid.innerHTML += `<div class="tile tile-1x1"><span>@ ${doc.data().name}</span></div>`; });
+        const grid = document.getElementById('contacts-grid');
+        if(!grid) return;
+        grid.innerHTML = "";
+        snap.forEach(doc => {
+            const data = doc.data();
+            const tile = document.createElement('div');
+            tile.className = "tile tile-1x1";
+            tile.innerHTML = `<span>@ ${data.name}</span>`;
+            grid.appendChild(tile);
+        });
     });
 
     document.getElementById('btn-logout').onclick = () => location.reload();
