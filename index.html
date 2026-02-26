@@ -10,80 +10,96 @@
     body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
     #canvas-dust { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-    .app-root { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; }
+    
+    /* ÉCRAN DE CONNEXION OBLIGATOIRE */
+    #auth-screen {
+        position: fixed; inset: 0; z-index: 5000; background: #000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px;
+    }
+    .auth-logo { font-size: 3.5rem; font-weight: 100; color: var(--accent); margin-bottom: 40px; animation: materialize 1.5s; }
 
+    /* STRUCTURE APP */
+    .app-root { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; display: none; }
     .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
     .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); }
     .hamburger { font-size: 28px; cursor: pointer; padding: 5px; color: #fff; }
 
+    /* COMPOSANTS UI */
     .view-container { flex: 1; position: relative; overflow-y: auto; padding: 10px; padding-bottom: 80px; }
     .view-section { display: none; width: 100%; }
     .view-section.active { display: block; }
-
     .action-row { display: flex; gap: 10px; margin-bottom: 15px; }
-    .search-box { flex: 1; background: #000; border: 1px solid #333; padding: 10px; color: #fff; border-radius: 0; outline: none; }
-    .search-box:focus { border-color: var(--accent); }
+    .search-box { flex: 1; background: #000; border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
     .btn-add { background: var(--accent); border: none; color: #fff; padding: 0 20px; font-size: 1.5rem; cursor: pointer; }
 
-    .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 110px; gap: 12px; transition: 0.5s; }
+    /* TUILES */
+    .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 110px; gap: 12px; }
     .tile { 
         background: rgba(20, 20, 20, 0.85); border: 1px solid rgba(255,255,255,0.1); 
         padding: 15px; display: flex; flex-direction: column; justify-content: flex-end;
-        transition: transform 0.4s, opacity 0.4s; cursor: pointer; 
+        cursor: pointer; 
     }
     .tile-1x1 { grid-column: span 1; grid-row: span 1; }
     .tile-2x1 { grid-column: span 2; grid-row: span 1; }
     .tile-2x2 { grid-column: span 2; grid-row: span 2; }
 
+    /* CHAT */
     #chat-messages { height: calc(100vh - 220px); overflow-y: auto; padding: 10px; }
     .msg-block { margin-bottom: 12px; animation: materialize 0.6s forwards; }
     .msg-text { background: rgba(255,255,255,0.05); padding: 10px; border-left: 3px solid var(--accent); }
-    
-    .input-bar { position: fixed; bottom: 56px; left: 0; right: 0; display: flex; background: #000; padding: 10px; gap: 8px; border-top: 1px solid #222; }
-    .input-box { flex: 1; background: #111; border: 1px solid #333; color: var(--accent); padding: 10px; outline: none; }
 
+    /* POPUPS & OVERLAYS */
     .popup-overlay { 
         position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; 
-        display: none; align-items: center; justify-content: center; padding: 20px;
-        backdrop-filter: blur(10px);
+        display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px);
     }
-    .popup-card { 
-        background: #000; border: 1px solid var(--accent); width: 100%; max-width: 300px; padding: 20px;
-        animation: materialize 0.5s forwards;
-    }
+    .popup-card { background: #000; border: 1px solid var(--accent); width: 100%; max-width: 300px; padding: 20px; animation: materialize 0.5s forwards; }
+    
     @keyframes materialize { from { filter: blur(15px); opacity: 0; transform: scale(0.9); } to { filter: blur(0); opacity: 1; transform: scale(1); } }
 
+    /* NAV */
     .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 56px; display: flex; background: #000; border-top: 1px solid #222; }
     .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.9rem; cursor: pointer; }
     .nav-btn.active { color: #fff; font-weight: bold; border-top: 2px solid var(--accent); }
 
-    .btn-full { width: 100%; padding: 12px; background: var(--accent); border: none; color: #fff; margin-top: 10px; cursor: pointer; }
-    .btn-red { background: #cc0000; }
+    .input-box { width: 100%; background: #111; border: 1px solid #333; color: var(--accent); padding: 12px; margin-bottom: 10px; outline: none; }
+    .btn-full { width: 100%; padding: 12px; background: var(--accent); border: none; color: #fff; margin-top: 10px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+    .btn-secondary { background: #222; border: 1px solid #444; }
   </style>
 </head>
 <body>
 
 <canvas id="canvas-dust"></canvas>
 
+<div id="auth-screen">
+    <div class="auth-logo">thinktalk</div>
+    <div style="width: 100%; max-width: 300px;">
+        <input type="text" id="auth-pseudo" class="input-box" placeholder="pseudo">
+        <input type="password" id="auth-code" class="input-box" placeholder="code">
+        <button class="btn-full" id="btn-login">se connecter</button>
+        <button class="btn-full btn-secondary" id="btn-register">créer un compte</button>
+    </div>
+</div>
+
 <div class="popup-overlay" id="pop-create">
     <div class="popup-card">
         <h3>nouveau salon</h3>
-        <input type="text" id="new-room-name" placeholder="nom..." class="input-box" style="margin-bottom:10px">
+        <input type="text" id="new-room-name" placeholder="nom..." class="input-box">
         <input type="text" id="new-room-code" placeholder="code (optionnel)..." class="input-box">
         <button class="btn-full" id="btn-confirm-create">créer</button>
-        <button class="btn-full" style="background:#333" onclick="closePopups()">annuler</button>
+        <button class="btn-full btn-secondary" onclick="closePopups()">annuler</button>
     </div>
 </div>
 
 <div class="popup-overlay" id="pop-menu">
     <div class="popup-card">
-        <h3 style="color:var(--accent)">menu</h3>
-        <button class="btn-full btn-red" id="btn-logout">déconnexion</button>
-        <button class="btn-full" style="background:#333" onclick="closePopups()">fermer</button>
+        <h3 id="user-display" style="color:var(--accent); margin-bottom:10px;">@user</h3>
+        <button class="btn-full" style="background:#cc0000" id="btn-logout">déconnexion</button>
+        <button class="btn-full btn-secondary" onclick="closePopups()">fermer</button>
     </div>
 </div>
 
-<div class="app-root">
+<div class="app-root" id="main-app">
     <div class="top-bar">
         <div id="top-label" class="top-title">thinktalk</div>
         <div class="hamburger" onclick="openMenu()">☰</div>
@@ -101,9 +117,9 @@
         <section id="view-chat" class="view-section">
             <div id="chat-header" style="color:var(--accent); margin-bottom:10px; font-weight:bold"></div>
             <div id="chat-messages"></div>
-            <div class="input-bar">
+            <div style="position:fixed; bottom:56px; left:0; right:0; display:flex; background:#000; padding:10px; gap:8px;">
                 <button style="background:none; border:none; color:var(--accent); font-size:20px">📎</button>
-                <input type="text" id="chat-input" class="input-box" placeholder="répondre...">
+                <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="répondre...">
                 <button id="send-btn" style="background:var(--accent); color:#fff; border:none; padding:10px 15px">OK</button>
             </div>
         </section>
@@ -140,6 +156,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    let currentUser = null;
+
     // DUST ENGINE
     const canvas = document.getElementById('canvas-dust');
     const ctx = canvas.getContext('2d');
@@ -150,7 +168,38 @@
     for(let i=0;i<60;i++)particles.push(new P());
     function anim(){ ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p=>{p.u();p.d()}); requestAnimationFrame(anim) } anim();
 
-    // NAVIGATION (GLOBAL SCOPE)
+    // AUTH LOGIC
+    document.getElementById('btn-register').onclick = async () => {
+        const p = document.getElementById('auth-pseudo').value.trim();
+        const c = document.getElementById('auth-code').value.trim();
+        if(!p || !c) return alert("Remplis tout !");
+        
+        const q = query(collection(db, "users"), where("pseudo", "==", p));
+        const check = await getDocs(q);
+        if(!check.empty) return alert("Pseudo déjà pris !");
+
+        await addDoc(collection(db, "users"), { pseudo: p, code: c });
+        alert("Compte créé ! Connecte-toi.");
+    };
+
+    document.getElementById('btn-login').onclick = async () => {
+        const p = document.getElementById('auth-pseudo').value.trim();
+        const c = document.getElementById('auth-code').value.trim();
+        
+        const q = query(collection(db, "users"), where("pseudo", "==", p), where("code", "==", c));
+        const check = await getDocs(q);
+        
+        if(!check.empty) {
+            currentUser = p;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            document.getElementById('user-display').innerText = "@" + p;
+        } else {
+            alert("Pseudo ou code incorrect.");
+        }
+    };
+
+    // UI LOGIC
     window.switchTab = (t) => {
         document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -163,7 +212,7 @@
     window.openMenu = () => document.getElementById('pop-menu').style.display = 'flex';
     window.closePopups = () => document.querySelectorAll('.popup-overlay').forEach(p=>p.style.display='none');
 
-    // FIRESTORE : ROOMS
+    // FIRESTORE : SALONS
     onSnapshot(collection(db, "rooms"), (snap) => {
         const grid = document.getElementById('rooms-grid');
         grid.innerHTML = "";
@@ -184,42 +233,15 @@
         const name = document.getElementById('new-room-name').value.trim();
         const code = document.getElementById('new-room-code').value.trim();
         if(!name) return;
-
-        // Vérification Unicité
-        const q = query(collection(db, "rooms"), where("name", "==", name));
-        const check = await getDocs(q);
-        if(!check.empty) return alert("Ce nom existe déjà !");
-
         await addDoc(collection(db, "rooms"), { name, code: code || null, createdAt: serverTimestamp() });
-        document.getElementById('new-room-name').value = "";
-        document.getElementById('new-room-code').value = "";
         closePopups();
-    };
-
-    // FIRESTORE : CONTACTS
-    onSnapshot(collection(db, "contacts"), (snap) => {
-        const grid = document.getElementById('contacts-grid');
-        grid.innerHTML = "";
-        snap.forEach(doc => {
-            const c = doc.data();
-            grid.innerHTML += `<div class="tile tile-1x1"><span>@ ${c.name}</span></div>`;
-        });
-    });
-
-    document.getElementById('btn-add-contact').onclick = async () => {
-        const name = document.getElementById('contact-name-input').value.trim();
-        if(name) await addDoc(collection(db, "contacts"), { name });
-        document.getElementById('contact-name-input').value = "";
     };
 
     // CHAT ENGINE
     let curRoom = "";
     let unsubChat = null;
     function joinRoom(name, code) {
-        if(code) {
-            const pass = prompt("Code requis :");
-            if(pass !== code) return alert("Code incorrect");
-        }
+        if(code && prompt("Code salon :") !== code) return;
         curRoom = name;
         document.getElementById('chat-header').innerText = "# " + name;
         switchTab('chat');
@@ -230,14 +252,10 @@
             box.innerHTML = "";
             snap.forEach(d => {
                 const m = d.data();
-                const time = m.timestamp ? new Date(m.timestamp.seconds*1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
-                box.innerHTML += `
-                    <div class="msg-block">
-                        <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--accent); margin-bottom:4px;">
-                            <span>MOI</span><span>${time}</span>
-                        </div>
-                        <div class="msg-text">${m.text}</div>
-                    </div>`;
+                box.innerHTML += `<div class="msg-block">
+                    <div style="font-size:10px; color:var(--accent); margin-bottom:4px;">${m.sender || 'Anonyme'}</div>
+                    <div class="msg-text">${m.text}</div>
+                </div>`;
             });
             box.scrollTop = box.scrollHeight;
         });
@@ -249,6 +267,7 @@
             await addDoc(collection(db, "messages"), { 
                 text: input.value, 
                 room: curRoom, 
+                sender: currentUser,
                 timestamp: serverTimestamp() 
             });
             input.value = "";
