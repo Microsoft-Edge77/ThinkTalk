@@ -135,7 +135,7 @@
             </div>
         </section>
         <section id="view-contacts" class="view-section">
-            <div class="action-row"><input type="text" id="contact-name-input" class="search-box" placeholder="nom..."><button class="btn-add" id="add-contact-now">+</button></div>
+            <div class="action-row"><input type="text" id="contact-name-input" class="search-box" placeholder="nom du contact..."><button class="btn-add" id="add-contact-now">+</button></div>
             <div class="tiles-grid" id="contacts-grid"></div>
         </section>
     </div>
@@ -204,22 +204,17 @@
         if(confirm("Action irréversible : supprimer ton compte et tes salons ?")) {
             try {
                 const batch = writeBatch(db);
-                
-                // 1. Trouver l'utilisateur
                 const userQuery = query(collection(db, "users"), where("pseudo", "==", currentUser));
                 const userSnap = await getDocs(userQuery);
                 userSnap.forEach(d => batch.delete(d.ref));
 
-                // 2. Trouver et supprimer ses salons
                 const roomQuery = query(collection(db, "rooms"), where("creator", "==", currentUser));
                 const roomSnap = await getDocs(roomQuery);
                 roomSnap.forEach(d => batch.delete(d.ref));
 
                 await batch.commit();
                 logout();
-            } catch (e) {
-                showPopupAlert("Erreur lors de la suppression.");
-            }
+            } catch (e) { showPopupAlert("Erreur lors de la suppression."); }
         }
     };
 
@@ -228,16 +223,14 @@
         if(u) { currentUser = u; document.getElementById('auth-screen').style.display='none'; document.getElementById('main-app').style.display='flex'; initContacts(); enterRoom("général"); }
     };
 
-    // AUTH CORRIGÉ
+    // AUTH
     document.getElementById('btn-register').onclick = async () => {
         const p = document.getElementById('auth-pseudo').value.trim(), c = document.getElementById('auth-code').value.trim();
         if(!p || !c) return showPopupAlert("Champs vides !");
-        
         try {
             const check = query(collection(db, "users"), where("pseudo", "==", p));
             const snap = await getDocs(check);
             if(!snap.empty) return showPopupAlert("Pseudo déjà pris.");
-            
             await addDoc(collection(db, "users"), { pseudo: p, code: c });
             showPopupAlert("Compte créé !");
         } catch (e) { showPopupAlert("Erreur réseau."); }
@@ -264,48 +257,22 @@
                 const isImg = m.text && m.text.startsWith("data:image");
                 const date = m.timestamp ? m.timestamp.toDate() : new Date();
                 const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
                 const div = document.createElement('div');
                 div.className = "msg-block" + (m.sender === currentUser ? " own" : "");
                 const content = isImg ? `<img src="${m.text}" class="msg-img">` : (m.text || "");
-                
-                div.innerHTML = `
-                    <div style="font-size:10px; color:var(--accent); margin-bottom:2px">${m.sender}</div>
-                    <div class="msg-content-wrapper">
-                        <div class="msg-text">${content}</div>
-                        <div class="msg-info">${timeStr}</div>
-                    </div>
-                `;
-                
+                div.innerHTML = `<div style="font-size:10px; color:var(--accent); margin-bottom:2px">${m.sender}</div><div class="msg-content-wrapper"><div class="msg-text">${content}</div><div class="msg-info">${timeStr}</div></div>`;
                 let pressTimer;
                 let isLongPress = false;
-
-                const startPress = () => {
-                    isLongPress = false;
-                    pressTimer = setTimeout(() => {
-                        if(m.sender === currentUser) {
-                            isLongPress = true;
-                            selectedMsgId = d.id;
-                            document.getElementById('pop-msg-options').style.display = 'flex';
-                            if(navigator.vibrate) navigator.vibrate(50);
-                        }
-                    }, 700);
-                };
+                const startPress = () => { isLongPress = false; pressTimer = setTimeout(() => { if(m.sender === currentUser) { isLongPress = true; selectedMsgId = d.id; document.getElementById('pop-msg-options').style.display = 'flex'; if(navigator.vibrate) navigator.vibrate(50); } }, 700); };
                 const endPress = () => clearTimeout(pressTimer);
-
                 div.onmousedown = div.ontouchstart = startPress;
                 div.onmouseup = div.onmouseleave = div.ontouchend = endPress;
-
                 div.onclick = (e) => {
                     if(isLongPress) return;
                     selectedMsgId = d.id;
                     if(isImg) {
                         targetX = e.clientX; targetY = e.clientY;
-                        setTimeout(() => {
-                            document.getElementById('fullscreen-img').src = m.text;
-                            document.getElementById('fullscreen-view').style.display = 'flex';
-                            targetX = targetY = null;
-                        }, 400);
+                        setTimeout(() => { document.getElementById('fullscreen-img').src = m.text; document.getElementById('fullscreen-view').style.display = 'flex'; targetX = targetY = null; }, 400);
                     } else if(m.sender === currentUser) {
                         document.getElementById('edit-msg-input').value = m.text || "";
                         document.getElementById('pop-edit-msg').style.display = 'flex';
@@ -320,9 +287,7 @@
     // SEND LOGIC
     const sendMessage = async (val) => {
         if(!val.trim() || !currentUser) return;
-        try {
-            await addDoc(collection(db, "messages"), { text: val, room: curRoom, sender: currentUser, timestamp: serverTimestamp() });
-        } catch(e) { console.error(e); }
+        try { await addDoc(collection(db, "messages"), { text: val, room: curRoom, sender: currentUser, timestamp: serverTimestamp() }); } catch(e) { console.error(e); }
     };
 
     const sendImage = (file) => {
@@ -333,8 +298,7 @@
                 const cvs = document.createElement('canvas');
                 const max = 500;
                 let w = img.width, h = img.height;
-                if (w > h && w > max) { h *= max / w; w = max; }
-                else if (h > max) { w *= max / h; h = max; }
+                if (w > h && w > max) { h *= max / w; w = max; } else if (h > max) { w *= max / h; h = max; }
                 cvs.width = w; cvs.height = h;
                 cvs.getContext('2d').drawImage(img, 0, 0, w, h);
                 sendMessage(cvs.toDataURL("image/jpeg", 0.6));
@@ -352,14 +316,7 @@
     document.getElementById('btn-confirm-create').onclick = async () => {
         const n = document.getElementById('new-room-name').value.trim();
         const c = document.getElementById('new-room-code').value.trim();
-        if(n) { 
-            try {
-                await addDoc(collection(db, "rooms"), { name: n, code: c || null, creator: currentUser }); 
-                closePopups();
-                document.getElementById('new-room-name').value = "";
-                document.getElementById('new-room-code').value = "";
-            } catch(e) { showPopupAlert("Erreur de création."); }
-        }
+        if(n) { try { await addDoc(collection(db, "rooms"), { name: n, code: c || null, creator: currentUser }); closePopups(); document.getElementById('new-room-name').value = ""; document.getElementById('new-room-code').value = ""; } catch(e) { showPopupAlert("Erreur."); } }
     };
 
     onSnapshot(collection(db, "rooms"), (snap) => {
@@ -369,48 +326,39 @@
             const tile = document.createElement('div'); tile.className = "tile tile-1x1"; 
             let delBtn = r.creator === currentUser ? `<button class="btn-del-room" onclick="deleteRoom('${d.id}', event)">X</button>` : "";
             tile.innerHTML = `${delBtn}<span># ${r.name} ${r.code ? '🔒' : ''}</span>`;
-            tile.onclick = () => {
-                if(r.code) {
-                    document.getElementById('pop-room-auth').style.display = 'flex';
-                    document.getElementById('btn-room-enter').onclick = () => {
-                        if(document.getElementById('room-auth-input').value === r.code) { enterRoom(r.name); closePopups(); }
-                        else alert("Code incorrect");
-                    };
-                } else enterRoom(r.name);
-            };
+            tile.onclick = () => { if(r.code) { document.getElementById('pop-room-auth').style.display = 'flex'; document.getElementById('btn-room-enter').onclick = () => { if(document.getElementById('room-auth-input').value === r.code) { enterRoom(r.name); closePopups(); } else alert("Code incorrect"); }; } else enterRoom(r.name); };
             grid.appendChild(tile);
         });
     });
 
-    window.deleteRoom = async (id, e) => {
-        e.stopPropagation();
-        if(confirm("Supprimer ce salon ?")) {
-            try { await deleteDoc(doc(db, "rooms", id)); } catch(e) { showPopupAlert("Action interdite."); }
-        }
-    };
+    window.deleteRoom = async (id, e) => { e.stopPropagation(); if(confirm("Supprimer ce salon ?")) { try { await deleteDoc(doc(db, "rooms", id)); } catch(e) { showPopupAlert("Interdit."); } } };
 
     // MESSAGE OPTIONS
-    document.getElementById('btn-msg-del').onclick = async () => { 
-        if(selectedMsgId) { 
-            try {
-                await deleteDoc(doc(db, "messages", selectedMsgId)); 
-                closePopups(); 
-            } catch(e) { alert("Erreur de suppression"); }
-        } 
-    };
+    document.getElementById('btn-msg-del').onclick = async () => { if(selectedMsgId) { try { await deleteDoc(doc(db, "messages", selectedMsgId)); closePopups(); } catch(e) { alert("Erreur"); } } };
+    document.getElementById('btn-msg-edit').onclick = () => { document.getElementById('pop-msg-options').style.display='none'; document.getElementById('pop-edit-msg').style.display='flex'; };
+    document.getElementById('btn-save-edit').onclick = async () => { const n = document.getElementById('edit-msg-input').value.trim(); if(n && selectedMsgId) { try { await updateDoc(doc(db, "messages", selectedMsgId), { text: n }); closePopups(); } catch(e) { alert("Erreur"); } } };
 
-    document.getElementById('btn-msg-edit').onclick = () => { 
-        document.getElementById('pop-msg-options').style.display='none'; 
-        document.getElementById('pop-edit-msg').style.display='flex'; 
-    };
-
-    document.getElementById('btn-save-edit').onclick = async () => {
-        const n = document.getElementById('edit-msg-input').value.trim();
-        if(n && selectedMsgId) { 
+    // CONTACTS LOGIC (NOUVEAU)
+    document.getElementById('add-contact-now').onclick = async () => {
+        const nameInput = document.getElementById('contact-name-input');
+        const name = nameInput.value.trim();
+        if (name && currentUser) {
             try {
-                await updateDoc(doc(db, "messages", selectedMsgId), { text: n }); 
-                closePopups(); 
-            } catch(e) { alert("Erreur de modification."); }
+                // Vérifier si le contact existe déjà pour cet utilisateur
+                const qCheck = query(collection(db, "contacts"), where("owner", "==", currentUser), where("name", "==", name));
+                const snapCheck = await getDocs(qCheck);
+                
+                if (snapCheck.empty) {
+                    await addDoc(collection(db, "contacts"), {
+                        name: name,
+                        owner: currentUser,
+                        timestamp: serverTimestamp()
+                    });
+                    nameInput.value = "";
+                } else {
+                    showPopupAlert("Contact déjà présent.");
+                }
+            } catch (e) { showPopupAlert("Erreur lors de l'ajout."); }
         }
     };
 
@@ -423,15 +371,26 @@
     };
 
     function initContacts() {
-        onSnapshot(query(collection(db, "contacts"), where("owner", "==", currentUser)), (snap) => {
+        onSnapshot(query(collection(db, "contacts"), where("owner", "==", currentUser), orderBy("timestamp", "desc")), (snap) => {
             const grid = document.getElementById('contacts-grid'); grid.innerHTML = "";
             snap.forEach(d => {
-                const tile = document.createElement('div'); tile.className = "tile tile-1x1";
-                tile.innerHTML = `<span>@ ${d.data().name}</span>`;
-                tile.onclick = () => enterRoom(d.data().name); grid.appendChild(tile);
+                const contactData = d.data();
+                const tile = document.createElement('div'); 
+                tile.className = "tile tile-1x1";
+                // On peut supprimer un contact en restant appuyé (ou en cliquant sur une petite croix)
+                tile.innerHTML = `<button class="btn-del-room" onclick="deleteContact('${d.id}', event)">X</button><span>@ ${contactData.name}</span>`;
+                tile.onclick = () => enterRoom(contactData.name); 
+                grid.appendChild(tile);
             });
         });
     }
+
+    window.deleteContact = async (id, e) => {
+        e.stopPropagation();
+        if(confirm("Supprimer ce contact ?")) {
+            try { await deleteDoc(doc(db, "contacts", id)); } catch(e) { showPopupAlert("Erreur."); }
+        }
+    };
 </script>
 </body>
 </html>
