@@ -246,18 +246,27 @@
                 `;
                 
                 let pressTimer;
-                const startPress = () => pressTimer = setTimeout(() => {
-                    if(m.sender === currentUser) {
-                        selectedMsgId = d.id;
-                        document.getElementById('pop-msg-options').style.display = 'flex';
-                    }
-                }, 700);
+                let isLongPress = false;
+
+                const startPress = () => {
+                    isLongPress = false;
+                    pressTimer = setTimeout(() => {
+                        if(m.sender === currentUser) {
+                            isLongPress = true;
+                            selectedMsgId = d.id;
+                            document.getElementById('pop-msg-options').style.display = 'flex';
+                            if(navigator.vibrate) navigator.vibrate(50);
+                        }
+                    }, 700);
+                };
                 const endPress = () => clearTimeout(pressTimer);
 
                 div.onmousedown = div.ontouchstart = startPress;
                 div.onmouseup = div.onmouseleave = div.ontouchend = endPress;
 
                 div.onclick = (e) => {
+                    if(isLongPress) return;
+                    selectedMsgId = d.id;
                     if(isImg) {
                         targetX = e.clientX; targetY = e.clientY;
                         setTimeout(() => {
@@ -266,9 +275,8 @@
                             targetX = targetY = null;
                         }, 400);
                     } else if(m.sender === currentUser) {
-                        selectedMsgId = d.id;
                         document.getElementById('edit-msg-input').value = m.text || "";
-                        document.getElementById('pop-msg-options').style.display = 'flex';
+                        document.getElementById('pop-edit-msg').style.display = 'flex';
                     }
                 };
                 box.appendChild(div);
