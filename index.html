@@ -1,63 +1,62 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>ThinkTalk</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <style>
-    :root { --accent: #0078d7; --bg: #000; --text: #fff; }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", sans-serif; }
-    body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; position: fixed; width: 100%; }
-    #canvas-dust { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-    #auth-screen { position: fixed; inset: 0; z-index: 5000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
-    .auth-logo { font-size: 3.5rem; font-weight: 100; color: var(--accent); margin-bottom: 40px; }
-    .app-root { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; display: none; }
-    .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
-    .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); }
-    
-    .hamburger { cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
-    .hamburger span { display: block; width: 25px; height: 2px; background: #fff; transition: 0.3s; }
-    
-    .dropdown-menu { display: none; position: absolute; top: 40px; right: 0; background: #000; border: 1px solid var(--accent); width: 180px; z-index: 1000; animation: materialize 0.3s forwards; }
-    .dropdown-item { padding: 12px; font-size: 0.9rem; cursor: pointer; border-bottom: 1px solid #222; }
-    .dropdown-item:hover { background: var(--accent); }
-    
-    .view-container { flex: 1; position: relative; overflow-y: auto; padding: 10px; padding-bottom: 80px; }
-    .view-section { display: none; width: 100%; }
-    .view-section.active { display: block; }
-    .action-row { display: flex; gap: 10px; margin-bottom: 15px; }
-    .search-box { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
-    .btn-add { background: var(--accent); border: none; color: #fff; padding: 0 20px; font-size: 1.5rem; cursor: pointer; }
-    .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 110px; gap: 12px; }
-    .tile { position: relative; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; backdrop-filter: blur(4px); }
-    
-    /* Bouton supprimer salon */
-    .btn-del-room { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.5); color: white; border: none; width: 20px; height: 20px; font-size: 12px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+    <meta charset="UTF-8">
+    <title>ThinkTalk</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        :root { --accent: #0078d7; --bg: #000; --text: #fff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", sans-serif; }
+        body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; position: fixed; width: 100%; }
+        #canvas-dust { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+        #auth-screen { position: fixed; inset: 0; z-index: 5000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
+        .auth-logo { font-size: 3.5rem; font-weight: 100; color: var(--accent); margin-bottom: 40px; }
+        .app-root { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; display: none; }
+        .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
+        .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); }
+        
+        .hamburger { cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
+        .hamburger span { display: block; width: 25px; height: 2px; background: #fff; transition: 0.3s; }
+        
+        .dropdown-menu { display: none; position: absolute; top: 40px; right: 0; background: #000; border: 1px solid var(--accent); width: 180px; z-index: 1000; animation: materialize 0.3s forwards; }
+        .dropdown-item { padding: 12px; font-size: 0.9rem; cursor: pointer; border-bottom: 1px solid #222; }
+        .dropdown-item:hover { background: var(--accent); }
+        
+        .view-container { flex: 1; position: relative; overflow-y: auto; padding: 10px; padding-bottom: 80px; }
+        .view-section { display: none; width: 100%; }
+        .view-section.active { display: block; }
+        .action-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .search-box { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; color: #fff; outline: none; }
+        .btn-add { background: var(--accent); border: none; color: #fff; padding: 0 20px; font-size: 1.5rem; cursor: pointer; }
+        .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 110px; gap: 12px; }
+        .tile { position: relative; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; backdrop-filter: blur(4px); }
+        
+        .btn-del-room { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.5); color: white; border: none; width: 20px; height: 20px; font-size: 12px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
 
-    #chat-messages { height: calc(100vh - 220px); overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
-    .msg-block { align-self: flex-start; max-width: 90%; animation: materialize 0.8s ease-out forwards; cursor: pointer; display: flex; flex-direction: column; }
-    .msg-content-wrapper { display: flex; align-items: flex-end; gap: 8px; }
-    .msg-text { background: rgba(255,255,255,0.08); padding: 10px; border-left: 3px solid var(--accent); word-break: break-word; }
-    .msg-block.own .msg-text { background: rgba(0,120,215,0.15); border-left-color: #555; }
-    .msg-info { font-size: 9px; color: #666; white-space: nowrap; margin-bottom: 4px; }
-    .msg-img { max-width: 200px; border-radius: 4px; margin-top: 5px; cursor: zoom-in; }
+        #chat-messages { height: calc(100vh - 220px); overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+        .msg-block { align-self: flex-start; max-width: 90%; animation: materialize 0.8s ease-out forwards; cursor: pointer; display: flex; flex-direction: column; }
+        .msg-content-wrapper { display: flex; align-items: flex-end; gap: 8px; }
+        .msg-text { background: rgba(255,255,255,0.08); padding: 10px; border-left: 3px solid var(--accent); word-break: break-word; }
+        .msg-block.own .msg-text { background: rgba(0,120,215,0.15); border-left-color: #555; }
+        .msg-info { font-size: 9px; color: #666; white-space: nowrap; margin-bottom: 4px; }
+        .msg-img { max-width: 200px; border-radius: 4px; margin-top: 5px; cursor: zoom-in; }
 
-    .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 6000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
-    .popup-card { background: #000; border: 1px solid var(--accent); width: 100%; max-width: 300px; padding: 20px; animation: materialize 0.5s forwards; }
-    
-    #fullscreen-view { position: fixed; inset: 0; z-index: 7000; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; cursor: zoom-out; }
-    #fullscreen-img { max-width: 95%; max-height: 95%; border: 1px solid var(--accent); }
+        .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 6000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
+        .popup-card { background: #000; border: 1px solid var(--accent); width: 100%; max-width: 300px; padding: 20px; animation: materialize 0.5s forwards; }
+        
+        #fullscreen-view { position: fixed; inset: 0; z-index: 7000; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; cursor: zoom-out; }
+        #fullscreen-img { max-width: 95%; max-height: 95%; border: 1px solid var(--accent); }
 
-    @keyframes materialize { from { filter: blur(15px); opacity: 0; transform: scale(0.9); } to { filter: blur(0); opacity: 1; transform: scale(1); } }
-    
-    .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 56px; display: flex; background: #000; border-top: 1px solid #222; }
-    .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.9rem; cursor: pointer; }
-    .nav-btn.active { color: #fff; font-weight: bold; border-top: 2px solid var(--accent); }
-    .input-box { width: 100%; background: #111; border: 1px solid #333; color: var(--accent); padding: 12px; margin-bottom: 10px; outline: none; }
-    .btn-full { width: 100%; padding: 12px; background: var(--accent); border: none; color: #fff; margin-top: 10px; cursor: pointer; font-weight: bold; }
-    .btn-secondary { background: #222; border: 1px solid #444; }
-    .btn-danger { background: #a30000; }
-  </style>
+        @keyframes materialize { from { filter: blur(15px); opacity: 0; transform: scale(0.9); } to { filter: blur(0); opacity: 1; transform: scale(1); } }
+        
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 56px; display: flex; background: #000; border-top: 1px solid #222; }
+        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.9rem; cursor: pointer; }
+        .nav-btn.active { color: #fff; font-weight: bold; border-top: 2px solid var(--accent); }
+        .input-box { width: 100%; background: #111; border: 1px solid #333; color: var(--accent); padding: 12px; margin-bottom: 10px; outline: none; }
+        .btn-full { width: 100%; padding: 12px; background: var(--accent); border: none; color: #fff; margin-top: 10px; cursor: pointer; font-weight: bold; }
+        .btn-secondary { background: #222; border: 1px solid #444; }
+        .btn-danger { background: #a30000; }
+    </style>
 </head>
 <body>
 <canvas id="canvas-dust"></canvas>
@@ -177,10 +176,7 @@
                 let dx = targetX - this.x;
                 let dy = targetY - this.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
-                if(dist < 300) {
-                    this.x += dx * 0.08;
-                    this.y += dy * 0.08;
-                }
+                if(dist < 300) { this.x += dx * 0.08; this.y += dy * 0.08; }
             }
             this.x += this.vx; this.y += this.vy;
             if(this.x<0 || this.x>canvas.width || this.y<0 || this.y>canvas.height) this.init();
@@ -266,7 +262,7 @@
 
                 div.onclick = (e) => {
                     if(isLongPress) return;
-                    selectedMsgId = d.id;
+                    selectedMsgId = d.id; // On s'assure que l'ID est bien capturé
                     if(isImg) {
                         targetX = e.clientX; targetY = e.clientY;
                         setTimeout(() => {
@@ -319,11 +315,7 @@
         const n = document.getElementById('new-room-name').value;
         const c = document.getElementById('new-room-code').value;
         if(n) { 
-            await addDoc(collection(db, "rooms"), { 
-                name: n, 
-                code: c || null,
-                creator: currentUser // Ajout du créateur
-            }); 
+            await addDoc(collection(db, "rooms"), { name: n, code: c || null, creator: currentUser }); 
             closePopups(); 
         }
     };
@@ -333,12 +325,7 @@
         snap.forEach(d => {
             const r = d.data();
             const tile = document.createElement('div'); tile.className = "tile tile-1x1"; 
-            
-            let delBtn = "";
-            if(r.creator === currentUser) {
-                delBtn = `<button class="btn-del-room" onclick="deleteRoom('${d.id}', event)">X</button>`;
-            }
-
+            let delBtn = r.creator === currentUser ? `<button class="btn-del-room" onclick="deleteRoom('${d.id}', event)">X</button>` : "";
             tile.innerHTML = `${delBtn}<span># ${r.name} ${r.code ? '🔒' : ''}</span>`;
             tile.onclick = () => {
                 if(r.code) {
@@ -355,17 +342,30 @@
 
     window.deleteRoom = async (id, e) => {
         e.stopPropagation();
-        if(confirm("Supprimer ce salon ?")) {
-            await deleteDoc(doc(db, "rooms", id));
-        }
+        if(confirm("Supprimer ce salon ?")) await deleteDoc(doc(db, "rooms", id));
     };
 
-    // MISC
-    document.getElementById('btn-msg-del').onclick = async () => { if(selectedMsgId) { await deleteDoc(doc(db, "messages", selectedMsgId)); closePopups(); } };
-    document.getElementById('btn-msg-edit').onclick = () => { document.getElementById('pop-msg-options').style.display='none'; document.getElementById('pop-edit-msg').style.display='flex'; };
+    // MISC & CORRECTIONS MESSAGES
+    document.getElementById('btn-msg-del').onclick = async () => { 
+        if(selectedMsgId) { 
+            try {
+                await deleteDoc(doc(db, "messages", selectedMsgId)); 
+                closePopups(); 
+            } catch(e) { alert("Erreur de suppression"); }
+        } 
+    };
+
+    document.getElementById('btn-msg-edit').onclick = () => { 
+        document.getElementById('pop-msg-options').style.display='none'; 
+        document.getElementById('pop-edit-msg').style.display='flex'; 
+    };
+
     document.getElementById('btn-save-edit').onclick = async () => {
         const n = document.getElementById('edit-msg-input').value;
-        if(n && selectedMsgId) { await updateDoc(doc(db, "messages", selectedMsgId), { text: n }); closePopups(); }
+        if(n && selectedMsgId) { 
+            await updateDoc(doc(db, "messages", selectedMsgId), { text: n }); 
+            closePopups(); 
+        }
     };
 
     window.switchTab = (t) => {
