@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkTalk Pro</title>
+    <title>ThinkTalk</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         :root { --accent: #0078d7; --bg: #000; --text: #fff; }
@@ -14,74 +14,76 @@
         .view-blur { filter: blur(25px); transform: translateX(-30px); }
 
         .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; transition: 0.5s; }
-        .tile { position: relative; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; height: 110px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; backdrop-filter: blur(10px); transition: transform 0.4s; overflow: hidden; }
-        .tile .lock-icon { position: absolute; top: 10px; right: 10px; font-size: 0.8rem; opacity: 0.5; }
+        .tile { position: relative; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; height: 110px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; backdrop-filter: blur(10px); transition: transform 0.4s, opacity 0.4s; overflow: hidden; }
+        .tile.visible { opacity: 1; }
+        .lock-badge { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; opacity: 0.5; }
 
-        .msg-block { opacity: 0; transform: translateY(10px); transition: 0.4s; margin-bottom: 20px; max-width: 85%; }
+        .msg-block { opacity: 0; transform: translateY(10px); transition: opacity 0.5s 0.8s, transform 0.5s 0.8s; margin-bottom: 20px; max-width: 85%; cursor: pointer; }
         .msg-block.own { align-self: flex-end; }
         .msg-block.visible { opacity: 1; transform: translateY(0); }
-        .msg-text { background: rgba(255,255,255,0.05); padding: 12px; border-left: 3px solid var(--accent); word-break: break-word; }
+        .msg-info { font-size: 0.65rem; color: #888; margin-bottom: 4px; display: flex; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .msg-block.own .msg-info { justify-content: flex-end; color: var(--accent); }
+        .msg-text { background: rgba(0,120,215,0.1); padding: 12px; border-left: 3px solid var(--accent); word-break: break-word; }
+        .msg-block.own .msg-text { border-left: none; border-right: 3px solid #666; background: rgba(255,255,255,0.05); }
         .msg-img { max-width: 100%; border-radius: 4px; margin-top: 8px; display: block; }
 
-        .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .popup-card { background: #000; border: 2px solid var(--accent); width: 100%; max-width: 320px; padding: 25px; }
+        .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .popup-card { background: #000; border: 2px solid var(--accent); width: 100%; max-width: 320px; padding: 25px; opacity: 0; transition: opacity 0.4s; }
+        .popup-card.visible { opacity: 1; }
 
         .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
         .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); cursor: pointer; }
-        .view-container { flex: 1; overflow-y: auto; padding: 10px 10px 120px 10px; display: flex; flex-direction: column; }
-        .view-section { display: none; width: 100%; }
+        .view-container { flex: 1; overflow-y: auto; padding: 10px 10px 120px 10px; }
+        .view-section { display: none; }
         .view-section.active { display: block; }
-
         .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; display: flex; background: #000; border-top: 1px solid #222; }
-        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; cursor: pointer; font-size: 0.8rem; }
-        .nav-btn.active { color: #fff; border-top: 3px solid var(--accent); }
-
+        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px; }
+        .nav-btn.active { color: #fff; border-top: 3px solid var(--accent); font-weight: bold; }
         .input-box { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid #333; padding: 12px; color: #fff; outline: none; margin-bottom: 10px; }
-        .btn-full { width: 100%; padding: 15px; background: var(--accent); border: none; color: #fff; cursor: pointer; font-weight: bold; }
-        
-        #auth-screen { position: relative; z-index: 2; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .btn-full { width: 100%; padding: 15px; background: var(--accent); border: none; color: #fff; cursor: pointer; font-weight: bold; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
 <canvas id="canvas-dust"></canvas>
 
-<div class="popup-overlay" id="pop-logout"><div class="popup-card"><h3>DÉCONNEXION ?</h3><br><button class="btn-full" onclick="confirmLogout()">QUITTER</button><button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button></div></div>
+<div class="popup-overlay" id="pop-logout"><div class="popup-card" id="card-logout"><h3>DÉCONNEXION ?</h3><p style="margin:15px 0">Voulez-vous quitter la session ?</p><button class="btn-full" onclick="confirmLogout()">OUI, QUITTER</button><button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button></div></div>
 
 <div class="popup-overlay" id="pop-create">
-    <div class="popup-card">
-        <h3>NOUVEAU SALON</h3><br>
-        <input type="text" id="new-room-name" placeholder="Nom du salon" class="input-box">
-        <input type="password" id="new-room-pass" placeholder="Code (optionnel)" class="input-box">
+    <div class="popup-card" id="card-create">
+        <h3>NOUVEAU SALON</h3>
+        <input type="text" id="new-room-name" placeholder="Nom du salon..." class="input-box" style="margin-top:15px">
+        <input type="password" id="new-room-pass" placeholder="Code (optionnel)..." class="input-box">
         <button class="btn-full" id="btn-do-create">CRÉER</button>
         <button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button>
     </div>
 </div>
 
-<div id="auth-screen">
-    <div style="font-size:3rem; color:var(--accent); font-weight:100; margin-bottom:20px;">thinktalk</div>
-    <div style="width:280px;">
+<div class="popup-overlay" id="pop-options"><div class="popup-card" id="card-options"><h3>OPTIONS</h3><button class="btn-full" style="background:#800;margin-top:20px" id="btn-msg-del">SUPPRIMER</button><button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button></div></div>
+
+<div id="auth-screen" style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; position:relative; z-index:10;">
+    <div style="font-size:3rem; color:var(--accent); text-align:center; margin-bottom:30px; font-weight:100;">thinktalk</div>
+    <div style="width:300px; margin:0 auto;">
         <input type="text" id="auth-pseudo" class="input-box" placeholder="Pseudo">
         <input type="password" id="auth-code" class="input-box" placeholder="Code secret">
-        <button class="btn-full" id="btn-login">CONNEXION / INSCRIPTION</button>
+        <button class="btn-full" id="btn-login">ENTRER</button>
     </div>
 </div>
 
 <div class="app-root" id="main-app">
-    <div class="top-bar"><div class="top-title" onclick="openPopup('pop-logout')">thinktalk</div></div>
-    
+    <div class="top-bar"><div class="top-title" onclick="openPopup('pop-logout', 'card-logout')">thinktalk</div></div>
     <div class="view-container">
         <section id="view-home" class="view-section active">
             <div style="display:flex;gap:10px;margin-bottom:20px">
                 <input type="text" id="rooms-search" class="input-box" style="margin:0" placeholder="Chercher...">
-                <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" onclick="openPopup('pop-create')">+</button>
+                <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" onclick="openPopup('pop-create', 'card-create')">+</button>
             </div>
             <div class="tiles-grid" id="rooms-grid"></div>
         </section>
 
         <section id="view-chat" class="view-section">
             <div id="chat-header" style="color:var(--accent);margin-bottom:15px;font-weight:bold"># général</div>
-            <div id="chat-messages" style="display:flex; flex-direction:column;"></div>
+            <div id="chat-messages"></div>
             <div style="position:fixed;bottom:60px;left:0;right:0;display:flex;background:#000;padding:10px;gap:8px;border-top:1px solid #222">
                 <button onclick="document.getElementById('file-input').click()" style="background:#222;color:#fff;border:none;padding:0 15px;cursor:pointer">📎</button>
                 <input type="file" id="file-input" hidden accept="image/*">
@@ -89,137 +91,197 @@
                 <button id="send-btn" style="background:var(--accent);color:#fff;border:none;padding:0 20px">OK</button>
             </div>
         </section>
-    </div>
 
+        <section id="view-contacts" class="view-section">
+            <div style="display:flex;gap:10px;margin-bottom:20px">
+                <input type="text" id="contact-name-input" class="input-box" style="margin:0" placeholder="Pseudo de l'ami...">
+                <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" id="btn-add-contact">+</button>
+            </div>
+            <div class="tiles-grid" id="contacts-grid"></div>
+        </section>
+    </div>
     <nav class="bottom-nav">
         <div class="nav-btn active" onclick="switchTab('home')">HOME</div>
         <div class="nav-btn" onclick="switchTab('chat')">CHAT</div>
+        <div class="nav-btn" onclick="switchTab('contacts')">CONTACTS</div>
     </nav>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const cfg = { apiKey: "AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M", authDomain: "thinktalk-b3c85.firebaseapp.com", projectId: "thinktalk-b3c85", storageBucket: "thinktalk-b3c85.firebasestorage.app", messagingSenderId: "752141817301", appId: "1:752141817301:web:28fecaf81db27eb51d595c" };
     const app = initializeApp(cfg); const db = getFirestore(app);
 
     let currentUser = localStorage.getItem('tt_user');
-    let curRoom = "général", unsubChat = null;
+    let curRoom = "général", unsubChat = null, selectedMsgId = null;
 
-    // --- MOTEUR VISUEL ---
+    // --- MOTEUR PARTICULES ---
     const canvas = document.getElementById('canvas-dust'), ctx = canvas.getContext('2d');
-    let pts = [];
+    let pts = [], mouse = {x: -1000, y: -1000};
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     window.onresize = resize; resize();
-    class P { constructor() { this.init(); } init() { this.x=Math.random()*canvas.width; this.y=Math.random()*canvas.height; this.vx=(Math.random()-0.5); this.vy=(Math.random()-0.5); this.s=Math.random()*2; } update() { this.x+=this.vx; this.y+=this.vy; if(this.x<0||this.x>canvas.width)this.vx*=-1; if(this.y<0||this.y>canvas.height)this.vy*=-1; } draw() { ctx.fillStyle="#0078d755"; ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,Math.PI*2); ctx.fill(); } }
-    for(let i=0;i<150;i++) pts.push(new P());
-    function anim() { ctx.clearRect(0,0,canvas.width,canvas.height); pts.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(anim); } anim();
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
-    // --- NAVIGATION ---
-    window.openPopup = (id) => document.getElementById(id).style.display = 'flex';
-    window.closePopups = () => document.querySelectorAll('.popup-overlay').forEach(p=>p.style.display='none');
+    class Particle {
+        constructor() { this.init(); this.target = null; }
+        init() { this.x = Math.random()*canvas.width; this.y = Math.random()*canvas.height; this.vx = (Math.random()-0.5)*1.5; this.vy = (Math.random()-0.5)*1.5; this.s = Math.random()*2+1; }
+        update() {
+            if(this.target) { this.x += (this.target.x - this.x) * 0.15; this.y += (this.target.y - this.y) * 0.15; }
+            else {
+                let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.sqrt(dx*dx+dy*dy);
+                if(d < 180) { this.vx += dx*0.002; this.vy += dy*0.002; }
+                this.x += this.vx; this.y += this.vy; this.vx *= 0.99; this.vy *= 0.99;
+                if(this.x<0||this.x>canvas.width) this.vx *= -1; if(this.y<0||this.y>canvas.height) this.vy *= -1;
+            }
+        }
+        draw() { ctx.fillStyle = "#0078d7cc"; ctx.shadowBlur = 8; ctx.shadowColor = "#0078d7"; ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; }
+    }
+    for(let i=0; i<400; i++) pts.push(new Particle());
+    function anim() { ctx.clearRect(0,0,canvas.width,canvas.height); pts.forEach(p=>{p.update();p.draw()}); requestAnimationFrame(anim); } anim();
+
+    window.materialize = (el, delay = 0) => {
+        setTimeout(() => {
+            const r = el.getBoundingClientRect();
+            const pCount = 30; let targets = [];
+            for(let i=0; i<pCount; i++) { targets.push({x: r.left + (r.width/pCount)*i, y: r.top}); targets.push({x: r.left + (r.width/pCount)*i, y: r.bottom}); }
+            pts.forEach((p, index) => { if(targets[index]) p.target = targets[index]; });
+            setTimeout(() => { pts.forEach(p => p.target = null); el.classList.add('visible'); }, 800);
+        }, delay);
+    };
+
+    window.openPopup = (popId, cardId) => {
+        document.getElementById(popId).style.display = 'flex';
+        materialize(document.getElementById(cardId));
+    };
+    window.closePopups = () => { 
+        document.querySelectorAll('.popup-overlay').forEach(p=>p.style.display='none'); 
+        document.querySelectorAll('.popup-card').forEach(c=>c.classList.remove('visible')); 
+    };
+
     window.confirmLogout = () => { localStorage.removeItem('tt_user'); location.reload(); };
 
     window.switchTab = (tab) => {
+        const appRoot = document.getElementById('main-app'); appRoot.classList.add('view-blur');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-        document.getElementById('view-' + tab).classList.add('active');
         const btn = document.querySelector(`[onclick="switchTab('${tab}')"]`);
         if(btn) btn.classList.add('active');
+        setTimeout(() => {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('view-' + tab).classList.add('active');
+            appRoot.classList.remove('view-blur');
+            if(tab === 'chat') { document.querySelectorAll('.msg-block').forEach((m, i) => { m.classList.remove('visible'); materialize(m, i * 100); }); }
+        }, 400);
     };
 
     // --- AUTHENTIFICATION ---
     document.getElementById('btn-login').onclick = async () => {
         const p = document.getElementById('auth-pseudo').value.trim().toLowerCase();
         const c = document.getElementById('auth-code').value.trim();
-        if(!p || !c) return alert("Remplis tout !");
+        if(!p || !c) return alert("Pseudo et code requis !");
 
         const uDoc = await getDoc(doc(db, "users", p));
         if(uDoc.exists()) {
-            if(uDoc.data().code === c) { loginSuccess(p); } 
-            else { alert("Code incorrect !"); }
+            if(uDoc.data().code === c) { 
+                localStorage.setItem('tt_user', p); location.reload(); 
+            } else { alert("Code secret incorrect !"); }
         } else {
             await setDoc(doc(db, "users", p), { code: c });
-            loginSuccess(p);
+            localStorage.setItem('tt_user', p); location.reload();
         }
     };
 
-    function loginSuccess(pseudo) {
-        localStorage.setItem('tt_user', pseudo);
-        location.reload();
-    }
-
-    // --- CHAT & SALONS ---
-    window.enterRoom = async (name, pass = null) => {
-        const rSnap = await getDocs(query(collection(db, "rooms"), where("name", "==", name)));
-        let roomData = rSnap.docs[0].data();
-
-        if(roomData.pass && roomData.pass !== "") {
-            const check = prompt("Ce salon est privé. Code ?");
-            if(check !== roomData.pass) return alert("Mauvais code !");
+    // --- LOGIQUE SALONS & CHAT ---
+    window.enterRoom = async (name, isPrivateChat=false) => {
+        if(!isPrivateChat) {
+            const rSnap = await getDocs(query(collection(db, "rooms"), where("name", "==", name)));
+            if(!rSnap.empty) {
+                const roomData = rSnap.docs[0].data();
+                if(roomData.pass && roomData.pass !== "") {
+                    const code = prompt("Salon privé. Entrez le code :");
+                    if(code !== roomData.pass) return alert("Code erroné.");
+                }
+            }
         }
-
-        curRoom = name;
-        document.getElementById('chat-header').innerText = "# " + name;
+        
+        curRoom = isPrivateChat ? [currentUser, name].sort().join("_") : name;
+        document.getElementById('chat-header').innerText = isPrivateChat ? "@ " + name : "# " + name;
         switchTab('chat');
-        loadMessages();
-    };
-
-    function loadMessages() {
         if(unsubChat) unsubChat();
         const q = query(collection(db,"messages"), where("room","==",curRoom), orderBy("timestamp","asc"));
         unsubChat = onSnapshot(q, (snap) => {
             const box = document.getElementById('chat-messages'); box.innerHTML="";
             snap.forEach(d => {
                 const m = d.data();
+                const date = m.timestamp ? new Date(m.timestamp.seconds * 1000) : new Date();
+                const timeStr = date.getHours().toString().padStart(2,'0') + ":" + date.getMinutes().toString().padStart(2,'0');
                 const div = document.createElement('div');
                 div.className = "msg-block" + (m.sender === currentUser ? " own" : "");
                 let content = m.image ? `<img src="${m.image}" class="msg-img">` : m.text;
-                div.innerHTML = `<div style="font-size:0.7rem; color:#888;">${m.sender}</div><div class="msg-text">${content}</div>`;
+                div.innerHTML = `<div class="msg-info"><span>${m.sender}</span><span>${timeStr}</span></div><div class="msg-text">${content}</div>`;
+                div.onclick = () => { if(m.sender === currentUser) { selectedMsgId = d.id; openPopup('pop-options', 'card-options'); } };
                 box.appendChild(div);
-                setTimeout(() => div.classList.add('visible'), 50);
+                div.classList.add('visible');
             });
             box.parentElement.scrollTop = box.parentElement.scrollHeight;
         });
-    }
+    };
 
     document.getElementById('btn-do-create').onclick = async () => {
-        const n = document.getElementById('new-room-name').value.trim();
-        const p = document.getElementById('new-room-pass').value.trim();
-        if(n) {
-            await addDoc(collection(db, "rooms"), { name: n, pass: p });
-            closePopups();
-            enterRoom(n);
+        const name = document.getElementById('new-room-name').value.trim();
+        const pass = document.getElementById('new-room-pass').value.trim();
+        if(name) { 
+            await addDoc(collection(db, "rooms"), { name: name, pass: pass }); 
+            closePopups(); 
+            document.getElementById('new-room-name').value=""; 
+            document.getElementById('new-room-pass').value="";
         }
     };
 
     document.getElementById('send-btn').onclick = async () => {
         const i = document.getElementById('chat-input');
-        if(i.value.trim()){ 
-            await addDoc(collection(db,"messages"),{text: i.value, room: curRoom, sender: currentUser, timestamp: serverTimestamp()}); 
-            i.value=""; 
-        }
+        if(i.value.trim()){ await addDoc(collection(db,"messages"),{text: i.value, room: curRoom, sender: currentUser, timestamp: serverTimestamp()}); i.value=""; }
     };
 
     document.getElementById('file-input').onchange = (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files[0]; if(!file) return;
         const reader = new FileReader();
-        reader.onload = async (ev) => {
-            await addDoc(collection(db,"messages"), { image: ev.target.result, room: curRoom, sender: currentUser, timestamp: serverTimestamp() });
-        };
+        reader.onload = async (ev) => { await addDoc(collection(db,"messages"), { image: ev.target.result, room: curRoom, sender: currentUser, timestamp: serverTimestamp() }); };
         reader.readAsDataURL(file);
     };
 
-    // --- ECOUTE DES SALONS ---
+    document.getElementById('btn-msg-del').onclick = async () => { if(selectedMsgId) { await deleteDoc(doc(db, "messages", selectedMsgId)); closePopups(); } };
+
+    // --- CONTACTS ---
+    document.getElementById('btn-add-contact').onclick = async () => {
+        const name = document.getElementById('contact-name-input').value.trim().toLowerCase();
+        if(name && name !== currentUser) {
+            await addDoc(collection(db, "contacts"), { owner: currentUser, name: name });
+            document.getElementById('contact-name-input').value = "";
+        }
+    };
+
+    // --- SNAPSHOTS (SALONS & CONTACTS) ---
     onSnapshot(collection(db,"rooms"), (snap) => {
         const g = document.getElementById('rooms-grid'); g.innerHTML="";
         snap.forEach(d => {
-            const r = d.data();
-            const t = document.createElement('div'); t.className="tile";
-            t.innerHTML = `<span># ${r.name}</span> ${r.pass ? '<span class="lock-icon">🔒</span>' : ''}`;
-            t.onclick = () => enterRoom(r.name);
-            g.appendChild(t);
+            const r = d.data(); const t = document.createElement('div'); t.className="tile";
+            t.innerHTML = `<span># ${r.name}</span> ${r.pass ? '<span class="lock-badge">🔒</span>' : ''}`;
+            t.onclick = () => enterRoom(r.name); g.appendChild(t);
+        });
+    });
+
+    onSnapshot(collection(db,"contacts"), (snap) => {
+        const g = document.getElementById('contacts-grid'); g.innerHTML=""; let list = new Set();
+        snap.forEach(d => { 
+            const c = d.data(); 
+            if(c.owner === currentUser) list.add(c.name); 
+            if(c.name === currentUser) list.add(c.owner); 
+        });
+        list.forEach(name => {
+            const t = document.createElement('div'); t.className="tile"; t.innerHTML=`<span>@ ${name}</span>`;
+            t.onclick = () => enterRoom(name, true); g.appendChild(t);
         });
     });
 
