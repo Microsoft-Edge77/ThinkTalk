@@ -486,7 +486,7 @@
                 await supabase.from("messages").delete().eq("id", selectedMsgId); 
             } catch(e) {
                 console.error(e);
-                alert("Impossible de supprimer le message (vérifie les règles Firestore).");
+                alert("Impossible de supprimer le message (vérifie les règles).");
             }
             closePopups(); 
             selectedMsgId = null;
@@ -497,7 +497,6 @@
     document.getElementById('btn-add-contact').onclick = async () => {
         const name = document.getElementById('contact-name-input').value.trim().toLowerCase();
         if(!name || name === currentUser) return;
-        // vérifier que l'utilisateur existe
         const { data: user, error } = await supabase
             .from("users")
             .select("name")
@@ -526,7 +525,7 @@
                 previews = msgs.map(m => {
                     const base = m.image ? "[image]" : (m.text || "");
                     return `${m.sender}: ${base}`.slice(0,60);
-                }).reverse(); // pour avoir du plus ancien au plus récent
+                }).reverse();
             }
             result.push({ room: r, previews });
         }
@@ -637,16 +636,10 @@
         )
         .subscribe();
 
-    // --- ENSURE BASE DATA (général) ---
-    async function ensureBaseData() {
-        const { data, error } = await supabase
-            .from("rooms")
-            .select("id")
-            .eq("name", "général")
-            .limit(1);
-        if(!error && (!data || data.length === 0)) {
-            await supabase.from("rooms").insert({ name: "général", pass: "" });
-        }
+    // --- ENSURE BASE DATA (via Edge Function + général) ---
+    async function initDatabase() {
+        // Appel de l’Edge Function init-db
+        await supabase.functions.invoke("init-db");
     }
 
     // --- INIT APP ---
@@ -656,7 +649,7 @@
     initTheme();
 
     (async () => {
-        await ensureBaseData();
+        await initDatabase();          // crée les tables + policies + "général"
         if(currentUser){ 
             document.getElementById('auth-screen').style.display='none'; 
             document.getElementById('main-app').style.display='flex'; 
