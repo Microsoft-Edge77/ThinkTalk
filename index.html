@@ -18,6 +18,8 @@
         .tile.visible { opacity: 1; }
         .lock-badge { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; opacity: 0.5; }
 
+        .tile-preview { font-size: 0.7rem; color: #aaa; margin-top: 6px; max-height: 2.4em; overflow: hidden; line-height: 1.2em; }
+
         .msg-block { opacity: 0; transform: translateY(10px); transition: opacity 0.5s 0.8s, transform 0.5s 0.8s; margin-bottom: 20px; max-width: 85%; cursor: pointer; }
         .msg-block.own { align-self: flex-end; }
         .msg-block.visible { opacity: 1; transform: translateY(0); }
@@ -33,6 +35,9 @@
 
         .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
         .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); cursor: pointer; }
+        .top-actions { display:flex; gap:10px; align-items:center; }
+        .top-btn { background:#111; border:1px solid #333; color:var(--accent); padding:6px 10px; cursor:pointer; font-size:0.8rem; }
+
         .view-container { flex: 1; overflow-y: auto; padding: 10px 10px 120px 10px; }
         .view-section { display: none; }
         .view-section.active { display: block; }
@@ -41,6 +46,9 @@
         .nav-btn.active { color: #fff; border-top: 3px solid var(--accent); font-weight: bold; }
         .input-box { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid #333; padding: 12px; color: #fff; outline: none; margin-bottom: 10px; }
         .btn-full { width: 100%; padding: 15px; background: var(--accent); border: none; color: #fff; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+
+        .color-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .color-dot { width:24px; height:24px; border-radius:50%; border:2px solid #444; cursor:pointer; }
     </style>
 </head>
 <body>
@@ -78,6 +86,35 @@
     </div>
 </div>
 
+<!-- POPUP THEME / COULEURS -->
+<div class="popup-overlay" id="pop-theme">
+    <div class="popup-card" id="card-theme">
+        <h3>COULEUR D'ACCENT</h3>
+        <p style="margin:10px 0;font-size:0.8rem;color:#aaa">Choisissez une couleur principale :</p>
+        <div class="color-row" id="theme-basic">
+            <div class="color-dot" data-color="#0078d7" style="background:#0078d7"></div>
+            <div class="color-dot" data-color="#ff4081" style="background:#ff4081"></div>
+            <div class="color-dot" data-color="#00c853" style="background:#00c853"></div>
+            <div class="color-dot" data-color="#ffab00" style="background:#ffab00"></div>
+            <div class="color-dot" data-color="#9c27b0" style="background:#9c27b0"></div>
+        </div>
+        <button class="btn-full" style="background:#222;margin-top:15px" id="btn-more-colors">PLUS DE COULEURS</button>
+        <div id="theme-more" style="display:none;margin-top:10px">
+            <div class="color-row">
+                <div class="color-dot" data-color="#03a9f4" style="background:#03a9f4"></div>
+                <div class="color-dot" data-color="#e91e63" style="background:#e91e63"></div>
+                <div class="color-dot" data-color="#4caf50" style="background:#4caf50"></div>
+                <div class="color-dot" data-color="#ff5722" style="background:#ff5722"></div>
+                <div class="color-dot" data-color="#cddc39" style="background:#cddc39"></div>
+                <div class="color-dot" data-color="#673ab7" style="background:#673ab7"></div>
+                <div class="color-dot" data-color="#00bcd4" style="background:#00bcd4"></div>
+                <div class="color-dot" data-color="#ffc107" style="background:#ffc107"></div>
+            </div>
+        </div>
+        <button class="btn-full" style="background:#222;margin-top:15px" onclick="closePopups()">FERMER</button>
+    </div>
+</div>
+
 <!-- ÉCRAN AUTH -->
 <div id="auth-screen" style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; position:relative; z-index:10;">
     <div style="font-size:3rem; color:var(--accent); text-align:center; margin-bottom:30px; font-weight:100;">thinktalk</div>
@@ -92,12 +129,15 @@
 <div class="app-root" id="main-app">
     <div class="top-bar">
         <div class="top-title" onclick="openPopup('pop-logout', 'card-logout')">thinktalk</div>
+        <div class="top-actions">
+            <button class="top-btn" id="btn-accent">🎨 Couleur</button>
+        </div>
     </div>
     <div class="view-container">
         <!-- HOME / ROOMS -->
         <section id="view-home" class="view-section active">
-            <div style="display:flex;gap:10px;margin-bottom:20px">
-                <input type="text" id="rooms-search" class="input-box" style="margin:0" placeholder="Chercher...">
+            <div style="display:flex;gap:10px;margin-bottom:10px">
+                <input type="text" id="rooms-search" class="input-box" style="margin:0" placeholder="Chercher un salon...">
                 <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" onclick="openPopup('pop-create', 'card-create')">+</button>
             </div>
             <div class="tiles-grid" id="rooms-grid"></div>
@@ -117,8 +157,11 @@
 
         <!-- CONTACTS -->
         <section id="view-contacts" class="view-section">
+            <div style="display:flex;gap:10px;margin-bottom:10px">
+                <input type="text" id="contacts-search" class="input-box" style="margin:0" placeholder="Chercher un contact...">
+            </div>
             <div style="display:flex;gap:10px;margin-bottom:20px">
-                <input type="text" id="contact-name-input" class="input-box" style="margin:0" placeholder="Pseudo de l'ami...">
+                <input type="text" id="contact-name-input" class="input-box" style="margin:0" placeholder="Pseudo de l'ami à ajouter...">
                 <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" id="btn-add-contact">+</button>
             </div>
             <div class="tiles-grid" id="contacts-grid"></div>
@@ -141,6 +184,9 @@
 
     let currentUser = localStorage.getItem('tt_user');
     let curRoom = "général", chatChannel = null, selectedMsgId = null;
+
+    let roomsCache = [];      // { room, previews: [string,...] }
+    let contactsCache = [];   // { name, previews: [string,...] }
 
     // --- MOTEUR PARTICULES ---
     const canvas = document.getElementById('canvas-dust'), ctx = canvas.getContext('2d');
@@ -213,6 +259,28 @@
         document.querySelectorAll('.popup-card').forEach(c=>c.classList.remove('visible')); 
     };
 
+    // --- THEME / COULEUR ---
+    function setAccent(color) {
+        document.documentElement.style.setProperty('--accent', color);
+        localStorage.setItem('tt_accent', color);
+    }
+    function initTheme() {
+        const saved = localStorage.getItem('tt_accent');
+        if(saved) setAccent(saved);
+        document.querySelectorAll('.color-dot[data-color]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const c = btn.getAttribute('data-color');
+                setAccent(c);
+            });
+        });
+        const moreBtn = document.getElementById('btn-more-colors');
+        const morePanel = document.getElementById('theme-more');
+        moreBtn.addEventListener('click', () => {
+            morePanel.style.display = morePanel.style.display === 'none' ? 'block' : 'none';
+        });
+        document.getElementById('btn-accent').onclick = () => openPopup('pop-theme','card-theme');
+    }
+
     // --- DÉCONNEXION SIMPLE ---
     window.confirmLogout = () => { 
         localStorage.removeItem('tt_user'); 
@@ -227,9 +295,7 @@
 
         try {
             await supabase.from("users").delete().eq("name", currentUser);
-
             await supabase.from("contacts").delete().or(`owner.eq.${currentUser},name.eq.${currentUser}`);
-
             localStorage.removeItem('tt_user');
             alert("Profil supprimé.");
             location.reload();
@@ -284,6 +350,7 @@
         }
     };
 
+    // --- MESSAGES ---
     async function renderMessages() {
         const { data, error } = await supabase
             .from("messages")
@@ -303,7 +370,7 @@
             const timeStr = date.getHours().toString().padStart(2,'0') + ":" + date.getMinutes().toString().padStart(2,'0');
             const div = document.createElement('div');
             div.className = "msg-block" + (m.sender === currentUser ? " own" : "");
-            let content = m.image ? `<img src="${m.image}" class="msg-img">` : m.text;
+            let content = m.image ? `<img src="${m.image}" class="msg-img">` : (m.text || "");
             div.innerHTML = `<div class="msg-info"><span>${m.sender}</span><span>${timeStr}</span></div><div class="msg-text">${content}</div>`;
             div.onclick = () => { 
                 if(m.sender === currentUser) { 
@@ -318,6 +385,15 @@
     }
 
     // --- LOGIQUE SALONS & CHAT ---
+    function hasRoomAccessLocally(roomName) {
+        if(!currentUser) return false;
+        return localStorage.getItem(`tt_access_${currentUser}_${roomName}`) === "1";
+    }
+    function storeRoomAccessLocally(roomName) {
+        if(!currentUser) return;
+        localStorage.setItem(`tt_access_${currentUser}_${roomName}`, "1");
+    }
+
     window.enterRoom = async (name, isPrivateChat=false) => {
         if(!isPrivateChat) {
             const { data: rooms, error } = await supabase
@@ -329,8 +405,11 @@
             if(!error && rooms && rooms.length > 0) {
                 const roomData = rooms[0];
                 if(roomData.pass && roomData.pass !== "") {
-                    const code = prompt("Salon privé. Entrez le code :");
-                    if(code !== roomData.pass) return alert("Code erroné.");
+                    if(!hasRoomAccessLocally(name)) {
+                        const code = prompt("Salon privé. Entrez le code :");
+                        if(code !== roomData.pass) return alert("Code erroné.");
+                        storeRoomAccessLocally(name);
+                    }
                 }
             }
         }
@@ -417,45 +496,129 @@
     // --- CONTACTS ---
     document.getElementById('btn-add-contact').onclick = async () => {
         const name = document.getElementById('contact-name-input').value.trim().toLowerCase();
-        if(name && name !== currentUser) {
-            await supabase.from("contacts").insert({ owner: currentUser, name: name });
-            document.getElementById('contact-name-input').value = "";
+        if(!name || name === currentUser) return;
+        // vérifier que l'utilisateur existe
+        const { data: user, error } = await supabase
+            .from("users")
+            .select("name")
+            .eq("name", name)
+            .maybeSingle();
+        if(!user) {
+            alert("Cet utilisateur n'existe pas.");
+            return;
         }
+        await supabase.from("contacts").insert({ owner: currentUser, name: name });
+        document.getElementById('contact-name-input').value = "";
     };
+
+    // --- RENDER ROOMS + PREVIEWS ---
+    async function buildRoomPreviews(rooms) {
+        const result = [];
+        for(const r of rooms) {
+            const { data: msgs, error } = await supabase
+                .from("messages")
+                .select("sender,text,image,timestamp")
+                .eq("room", r.name)
+                .order("timestamp", { ascending:false })
+                .limit(2);
+            let previews = [];
+            if(msgs && msgs.length > 0) {
+                previews = msgs.map(m => {
+                    const base = m.image ? "[image]" : (m.text || "");
+                    return `${m.sender}: ${base}`.slice(0,60);
+                }).reverse(); // pour avoir du plus ancien au plus récent
+            }
+            result.push({ room: r, previews });
+        }
+        return result;
+    }
 
     async function renderRooms() {
         const { data, error } = await supabase.from("rooms").select("*");
         if(error) { console.error(error); return; }
+        const rooms = data || [];
+        const withPreviews = await buildRoomPreviews(rooms);
+        roomsCache = withPreviews;
+        applyRoomFilter();
+    }
+
+    function applyRoomFilter() {
+        const term = (document.getElementById('rooms-search').value || "").trim().toLowerCase();
         const g = document.getElementById('rooms-grid'); 
         g.innerHTML="";
-        (data || []).forEach(r => {
-            const t = document.createElement('div'); 
-            t.className="tile";
-            t.innerHTML = `<span># ${r.name}</span> ${r.pass ? '<span class="lock-badge">🔒</span>' : ''}`;
-            t.onclick = () => enterRoom(r.name); 
-            g.appendChild(t);
-        });
+        roomsCache
+            .filter(item => !term || item.room.name.toLowerCase().includes(term))
+            .forEach(item => {
+                const r = item.room;
+                const t = document.createElement('div'); 
+                t.className="tile";
+                let previewHtml = "";
+                if(item.previews.length > 0) {
+                    previewHtml = `<div class="tile-preview">${item.previews.join("<br>")}</div>`;
+                }
+                t.innerHTML = `<span># ${r.name}</span> ${r.pass ? '<span class="lock-badge">🔒</span>' : ''}${previewHtml}`;
+                t.onclick = () => enterRoom(r.name); 
+                g.appendChild(t);
+            });
+    }
+
+    // --- RENDER CONTACTS + PREVIEWS ---
+    async function buildContactPreviews(names) {
+        const result = [];
+        for(const name of names) {
+            const roomName = [currentUser, name].sort().join("_");
+            const { data: msgs, error } = await supabase
+                .from("messages")
+                .select("sender,text,image,timestamp")
+                .eq("room", roomName)
+                .order("timestamp", { ascending:false })
+                .limit(2);
+            let previews = [];
+            if(msgs && msgs.length > 0) {
+                previews = msgs.map(m => {
+                    const base = m.image ? "[image]" : (m.text || "");
+                    return `${m.sender}: ${base}`.slice(0,60);
+                }).reverse();
+            }
+            result.push({ name, previews });
+        }
+        return result;
     }
 
     async function renderContacts() {
         const { data, error } = await supabase.from("contacts").select("*");
         if(error) { console.error(error); return; }
-        const g = document.getElementById('contacts-grid'); 
-        g.innerHTML=""; 
         let list = new Set();
         (data || []).forEach(c => { 
             if(c.owner === currentUser) list.add(c.name); 
             if(c.name === currentUser) list.add(c.owner); 
         });
-        list.forEach(name => {
-            const t = document.createElement('div'); 
-            t.className="tile"; 
-            t.innerHTML=`<span>@ ${name}</span>`;
-            t.onclick = () => enterRoom(name, true); 
-            g.appendChild(t);
-        });
+        const names = Array.from(list);
+        const withPreviews = await buildContactPreviews(names);
+        contactsCache = withPreviews;
+        applyContactsFilter();
     }
 
+    function applyContactsFilter() {
+        const term = (document.getElementById('contacts-search').value || "").trim().toLowerCase();
+        const g = document.getElementById('contacts-grid'); 
+        g.innerHTML=""; 
+        contactsCache
+            .filter(item => !term || item.name.toLowerCase().includes(term))
+            .forEach(item => {
+                const t = document.createElement('div'); 
+                t.className="tile"; 
+                let previewHtml = "";
+                if(item.previews.length > 0) {
+                    previewHtml = `<div class="tile-preview">${item.previews.join("<br>")}</div>`;
+                }
+                t.innerHTML=`<span>@ ${item.name}</span>${previewHtml}`;
+                t.onclick = () => enterRoom(item.name, true); 
+                g.appendChild(t);
+            });
+    }
+
+    // --- REALTIME ROOMS & CONTACTS ---
     const roomsChannel = supabase
         .channel("rooms")
         .on(
@@ -474,15 +637,34 @@
         )
         .subscribe();
 
-    // --- INIT APP ---
-    if(currentUser){ 
-        document.getElementById('auth-screen').style.display='none'; 
-        document.getElementById('main-app').style.display='flex'; 
-        renderRooms();
-        renderContacts();
-        enterRoom("général"); 
+    // --- ENSURE BASE DATA (général) ---
+    async function ensureBaseData() {
+        const { data, error } = await supabase
+            .from("rooms")
+            .select("id")
+            .eq("name", "général")
+            .limit(1);
+        if(!error && (!data || data.length === 0)) {
+            await supabase.from("rooms").insert({ name: "général", pass: "" });
+        }
     }
+
+    // --- INIT APP ---
+    document.getElementById('rooms-search').addEventListener('input', applyRoomFilter);
+    document.getElementById('contacts-search').addEventListener('input', applyContactsFilter);
+
+    initTheme();
+
+    (async () => {
+        await ensureBaseData();
+        if(currentUser){ 
+            document.getElementById('auth-screen').style.display='none'; 
+            document.getElementById('main-app').style.display='flex'; 
+            await renderRooms();
+            await renderContacts();
+            enterRoom("général"); 
+        }
+    })();
 </script>
 </body>
 </html>
-
