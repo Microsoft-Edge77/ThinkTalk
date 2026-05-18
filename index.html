@@ -133,28 +133,14 @@
 </div>
 
 <script type="module">
-    import { 
-        initializeApp 
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { 
-        getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, 
-        serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc 
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    const cfg = { 
-        apiKey: "AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M",
-        authDomain: "thinktalk-b3c85.firebaseapp.com",
-        projectId: "thinktalk-b3c85",
-        storageBucket: "thinktalk-b3c85.firebasestorage.app",
-        messagingSenderId: "752141817301",
-        appId: "1:752141817301:web:28fecaf81db27eb51d595c" 
-    };
-
-    const app = initializeApp(cfg);
-    const db = getFirestore(app);
+    const supabaseUrl = "https://znbypfscxvmxvwnwevsy.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnlwZnNjeHZteHZ3bndldnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjAzMzMsImV4cCI6MjA5NDY5NjMzM30.7q04-YpG2TFWNjZyIoad4gFiKaqL9-jUl72s3OB9RlE";
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     let currentUser = localStorage.getItem('tt_user');
-    let curRoom = "général", unsubChat = null, selectedMsgId = null;
+    let curRoom = "général", chatChannel = null, selectedMsgId = null;
 
     // --- MOTEUR PARTICULES ---
     const canvas = document.getElementById('canvas-dust'), ctx = canvas.getContext('2d');
@@ -240,20 +226,9 @@
         if(!ok) return;
 
         try {
-            // Supprimer le document user
-            await deleteDoc(doc(db, "users", currentUser));
+            await supabase.from("users").delete().eq("name", currentUser);
 
-            // Supprimer les contacts où il est owner ou name
-            const contactsRef = collection(db, "contacts");
-            const q1 = query(contactsRef, where("owner", "==", currentUser));
-            const q2 = query(contactsRef, where("name", "==", currentUser));
-
-            const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-            snap1.forEach(d => deleteDoc(doc(db, "contacts", d.id)));
-            snap2.forEach(d => deleteDoc(doc(db, "contacts", d.id)));
-
-            // On pourrait aussi supprimer ses messages, mais ça peut être lourd.
-            // Ici on laisse les messages pour l'historique.
+            await supabase.from("contacts").delete().or(`owner.eq.${currentUser},name.eq.${currentUser}`);
 
             localStorage.removeItem('tt_user');
             alert("Profil supprimé.");
@@ -289,27 +264,70 @@
         const c = document.getElementById('auth-code').value.trim();
         if(!p || !c) return alert("Pseudo et code requis !");
 
-        const uDoc = await getDoc(doc(db, "users", p));
-        if(uDoc.exists()) {
-            if(uDoc.data().code === c) { 
+        const { data: user, error } = await supabase
+            .from("users")
+            .select("*")
+            .eq("name", p)
+            .maybeSingle();
+
+        if(user) {
+            if(user.code === c) { 
                 localStorage.setItem('tt_user', p); 
                 location.reload(); 
             } else { 
                 alert("Code secret incorrect !"); 
             }
         } else {
-            await setDoc(doc(db, "users", p), { code: c });
+            await supabase.from("users").insert({ name: p, code: c });
             localStorage.setItem('tt_user', p); 
             location.reload();
         }
     };
 
+    async function renderMessages() {
+        const { data, error } = await supabase
+            .from("messages")
+            .select("*")
+            .eq("room", curRoom)
+            .order("timestamp", { ascending: true });
+
+        if(error) {
+            console.error(error);
+            return;
+        }
+
+        const box = document.getElementById('chat-messages'); 
+        box.innerHTML="";
+        (data || []).forEach(m => {
+            const date = m.timestamp ? new Date(m.timestamp) : new Date();
+            const timeStr = date.getHours().toString().padStart(2,'0') + ":" + date.getMinutes().toString().padStart(2,'0');
+            const div = document.createElement('div');
+            div.className = "msg-block" + (m.sender === currentUser ? " own" : "");
+            let content = m.image ? `<img src="${m.image}" class="msg-img">` : m.text;
+            div.innerHTML = `<div class="msg-info"><span>${m.sender}</span><span>${timeStr}</span></div><div class="msg-text">${content}</div>`;
+            div.onclick = () => { 
+                if(m.sender === currentUser) { 
+                    selectedMsgId = m.id; 
+                    openPopup('pop-options', 'card-options'); 
+                } 
+            };
+            box.appendChild(div);
+            div.classList.add('visible');
+        });
+        box.parentElement.scrollTop = box.parentElement.scrollHeight;
+    }
+
     // --- LOGIQUE SALONS & CHAT ---
     window.enterRoom = async (name, isPrivateChat=false) => {
         if(!isPrivateChat) {
-            const rSnap = await getDocs(query(collection(db, "rooms"), where("name", "==", name)));
-            if(!rSnap.empty) {
-                const roomData = rSnap.docs[0].data();
+            const { data: rooms, error } = await supabase
+                .from("rooms")
+                .select("*")
+                .eq("name", name)
+                .limit(1);
+
+            if(!error && rooms && rooms.length > 0) {
+                const roomData = rooms[0];
                 if(roomData.pass && roomData.pass !== "") {
                     const code = prompt("Salon privé. Entrez le code :");
                     if(code !== roomData.pass) return alert("Code erroné.");
@@ -321,35 +339,23 @@
         document.getElementById('chat-header').innerText = isPrivateChat ? "@ " + name : "# " + name;
         switchTab('chat');
 
-        if(unsubChat) unsubChat();
-        const q = query(
-            collection(db,"messages"), 
-            where("room","==",curRoom), 
-            orderBy("timestamp","asc")
-        );
-        unsubChat = onSnapshot(q, (snap) => {
-            const box = document.getElementById('chat-messages'); 
-            box.innerHTML="";
-            snap.forEach(d => {
-                const m = d.data();
-                const date = m.timestamp ? new Date(m.timestamp.seconds * 1000) : new Date();
-                const timeStr = date.getHours().toString().padStart(2,'0') + ":" + date.getMinutes().toString().padStart(2,'0');
-                const div = document.createElement('div');
-                div.className = "msg-block" + (m.sender === currentUser ? " own" : "");
-                let content = m.image ? `<img src="${m.image}" class="msg-img">` : m.text;
-                div.innerHTML = `<div class="msg-info"><span>${m.sender}</span><span>${timeStr}</span></div><div class="msg-text">${content}</div>`;
-                // Suppression possible uniquement pour ses propres messages côté UI
-                div.onclick = () => { 
-                    if(m.sender === currentUser) { 
-                        selectedMsgId = d.id; 
-                        openPopup('pop-options', 'card-options'); 
-                    } 
-                };
-                box.appendChild(div);
-                div.classList.add('visible');
-            });
-            box.parentElement.scrollTop = box.parentElement.scrollHeight;
-        });
+        if(chatChannel) {
+            await supabase.removeChannel(chatChannel);
+            chatChannel = null;
+        }
+
+        await renderMessages();
+
+        chatChannel = supabase
+            .channel("room:" + curRoom)
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "messages", filter: `room=eq.${curRoom}` },
+                payload => {
+                    renderMessages();
+                }
+            )
+            .subscribe();
     };
 
     // CRÉATION SALON
@@ -357,7 +363,7 @@
         const name = document.getElementById('new-room-name').value.trim();
         const pass = document.getElementById('new-room-pass').value.trim();
         if(name) { 
-            await addDoc(collection(db, "rooms"), { name: name, pass: pass }); 
+            await supabase.from("rooms").insert({ name: name, pass: pass || "" }); 
             closePopups(); 
             document.getElementById('new-room-name').value=""; 
             document.getElementById('new-room-pass').value="";
@@ -368,11 +374,11 @@
     document.getElementById('send-btn').onclick = async () => {
         const i = document.getElementById('chat-input');
         if(i.value.trim()){ 
-            await addDoc(collection(db,"messages"),{
+            await supabase.from("messages").insert({
                 text: i.value, 
                 room: curRoom, 
                 sender: currentUser, 
-                timestamp: serverTimestamp()
+                timestamp: new Date().toISOString()
             }); 
             i.value=""; 
         }
@@ -384,11 +390,11 @@
         if(!file) return;
         const reader = new FileReader();
         reader.onload = async (ev) => { 
-            await addDoc(collection(db,"messages"), { 
+            await supabase.from("messages").insert({ 
                 image: ev.target.result, 
                 room: curRoom, 
                 sender: currentUser, 
-                timestamp: serverTimestamp() 
+                timestamp: new Date().toISOString()
             }); 
         };
         reader.readAsDataURL(file);
@@ -398,7 +404,7 @@
     document.getElementById('btn-msg-del').onclick = async () => { 
         if(selectedMsgId) { 
             try {
-                await deleteDoc(doc(db, "messages", selectedMsgId)); 
+                await supabase.from("messages").delete().eq("id", selectedMsgId); 
             } catch(e) {
                 console.error(e);
                 alert("Impossible de supprimer le message (vérifie les règles Firestore).");
@@ -412,31 +418,32 @@
     document.getElementById('btn-add-contact').onclick = async () => {
         const name = document.getElementById('contact-name-input').value.trim().toLowerCase();
         if(name && name !== currentUser) {
-            await addDoc(collection(db, "contacts"), { owner: currentUser, name: name });
+            await supabase.from("contacts").insert({ owner: currentUser, name: name });
             document.getElementById('contact-name-input').value = "";
         }
     };
 
-    // --- SNAPSHOTS (SALONS & CONTACTS) ---
-    onSnapshot(collection(db,"rooms"), (snap) => {
+    async function renderRooms() {
+        const { data, error } = await supabase.from("rooms").select("*");
+        if(error) { console.error(error); return; }
         const g = document.getElementById('rooms-grid'); 
         g.innerHTML="";
-        snap.forEach(d => {
-            const r = d.data(); 
+        (data || []).forEach(r => {
             const t = document.createElement('div'); 
             t.className="tile";
             t.innerHTML = `<span># ${r.name}</span> ${r.pass ? '<span class="lock-badge">🔒</span>' : ''}`;
             t.onclick = () => enterRoom(r.name); 
             g.appendChild(t);
         });
-    });
+    }
 
-    onSnapshot(collection(db,"contacts"), (snap) => {
+    async function renderContacts() {
+        const { data, error } = await supabase.from("contacts").select("*");
+        if(error) { console.error(error); return; }
         const g = document.getElementById('contacts-grid'); 
         g.innerHTML=""; 
         let list = new Set();
-        snap.forEach(d => { 
-            const c = d.data(); 
+        (data || []).forEach(c => { 
             if(c.owner === currentUser) list.add(c.name); 
             if(c.name === currentUser) list.add(c.owner); 
         });
@@ -447,14 +454,35 @@
             t.onclick = () => enterRoom(name, true); 
             g.appendChild(t);
         });
-    });
+    }
+
+    const roomsChannel = supabase
+        .channel("rooms")
+        .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "rooms" },
+            payload => { renderRooms(); }
+        )
+        .subscribe();
+
+    const contactsChannel = supabase
+        .channel("contacts")
+        .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "contacts" },
+            payload => { renderContacts(); }
+        )
+        .subscribe();
 
     // --- INIT APP ---
     if(currentUser){ 
         document.getElementById('auth-screen').style.display='none'; 
         document.getElementById('main-app').style.display='flex'; 
+        renderRooms();
+        renderContacts();
         enterRoom("général"); 
     }
 </script>
 </body>
 </html>
+
