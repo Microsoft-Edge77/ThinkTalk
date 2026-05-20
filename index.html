@@ -1,663 +1,683 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>ThinkTalk</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        :root { --accent: #0078d7; --bg: #000; --text: #fff; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", sans-serif; }
-        body { background: var(--bg); color: var(--text); overflow: hidden; height: 100svh; position: fixed; width: 100%; }
-        #canvas-dust { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-
-        .app-root { position: relative; z-index: 1; height: 100%; display: none; flex-direction: column; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s; }
-        .view-blur { filter: blur(25px); transform: translateX(-30px); }
-
-        .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; transition: 0.5s; }
-        .tile { position: relative; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; height: 110px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; backdrop-filter: blur(10px); transition: transform 0.4s, opacity 0.4s; overflow: hidden; }
-        .tile.visible { opacity: 1; }
-        .lock-badge { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; opacity: 0.5; }
-
-        .tile-preview { font-size: 0.7rem; color: #aaa; margin-top: 6px; max-height: 2.4em; overflow: hidden; line-height: 1.2em; }
-
-        .msg-block { opacity: 0; transform: translateY(10px); transition: opacity 0.5s 0.8s, transform 0.5s 0.8s; margin-bottom: 20px; max-width: 85%; cursor: pointer; }
-        .msg-block.own { align-self: flex-end; }
-        .msg-block.visible { opacity: 1; transform: translateY(0); }
-        .msg-info { font-size: 0.65rem; color: #888; margin-bottom: 4px; display: flex; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        .msg-block.own .msg-info { justify-content: flex-end; color: var(--accent); }
-        .msg-text { background: rgba(0,120,215,0.1); padding: 12px; border-left: 3px solid var(--accent); word-break: break-word; }
-        .msg-block.own .msg-text { border-left: none; border-right: 3px solid #666; background: rgba(255,255,255,0.05); }
-        .msg-img { max-width: 100%; border-radius: 4px; margin-top: 8px; display: block; }
-
-        .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .popup-card { background: #000; border: 2px solid var(--accent); width: 100%; max-width: 320px; padding: 25px; opacity: 0; transition: opacity 0.4s; }
-        .popup-card.visible { opacity: 1; }
-
-        .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
-        .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); cursor: pointer; }
-        .top-actions { display:flex; gap:10px; align-items:center; }
-        .top-btn { background:#111; border:1px solid #333; color:var(--accent); padding:6px 10px; cursor:pointer; font-size:0.8rem; }
-
-        .view-container { flex: 1; overflow-y: auto; padding: 10px 10px 120px 10px; }
-        .view-section { display: none; }
-        .view-section.active { display: block; }
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; display: flex; background: #000; border-top: 1px solid #222; }
-        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px; }
-        .nav-btn.active { color: #fff; border-top: 3px solid var(--accent); font-weight: bold; }
-        .input-box { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid #333; padding: 12px; color: #fff; outline: none; margin-bottom: 10px; }
-        .btn-full { width: 100%; padding: 15px; background: var(--accent); border: none; color: #fff; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-
-        .color-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-        .color-dot { width:24px; height:24px; border-radius:50%; border:2px solid #444; cursor:pointer; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>ThinkTalk Messenger</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #05060a;
+      --bg2: #0b0d14;
+      --accent: #4f8cff;
+      --accent-soft: #1b2a4f;
+      --text: #f5f7ff;
+      --muted: #8b90a5;
+      --danger: #ff4f6a;
+      --border: #1a1d27;
+      --radius: 14px;
+      --radius-sm: 9px;
+      --shadow-soft: 0 18px 45px rgba(0,0,0,0.55);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body {
+      background: radial-gradient(circle at top, #1b2340 0, #05060a 45%, #020308 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 16px;
+    }
+    .app {
+      width: 100%;
+      max-width: 1200px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.02), rgba(0,0,0,0.7));
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.04);
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      grid-template-columns: 260px 1fr 260px;
+      overflow: hidden;
+      backdrop-filter: blur(26px);
+    }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+      .sidebar, .contacts { min-height: 220px; }
+    }
+    .sidebar, .contacts {
+      background: radial-gradient(circle at top left, rgba(79,140,255,0.18), rgba(2,3,8,0.96));
+      border-right: 1px solid var(--border);
+      padding: 14px 14px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .contacts { border-right: none; border-left: 1px solid var(--border); }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .title {
+      font-size: 18px;
+      font-weight: 650;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .title span.logo {
+      width: 22px;
+      height: 22px;
+      border-radius: 9px;
+      background: conic-gradient(from 210deg, #4f8cff, #7b5cff, #4f8cff);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #05060a;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.18);
+    }
+    .pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+    .card {
+      background: radial-gradient(circle at top left, rgba(79,140,255,0.18), rgba(2,3,8,0.96));
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .field-row {
+      display: flex;
+      gap: 6px;
+    }
+    input, select, button, textarea {
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(3,5,12,0.9);
+      color: var(--text);
+      font-size: 13px;
+      padding: 7px 9px;
+      outline: none;
+      transition: border 0.15s, background 0.15s, box-shadow 0.15s, transform 0.08s;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(79,140,255,0.9);
+      box-shadow: 0 0 0 1px rgba(79,140,255,0.5);
+      background: rgba(5,9,20,0.98);
+    }
+    button {
+      cursor: pointer;
+      background: linear-gradient(135deg, #4f8cff, #7b5cff);
+      border: none;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 11px;
+      padding: 7px 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 10px 25px rgba(79,140,255,0.45);
+    }
+    button.secondary {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: none;
+      text-transform: none;
+      font-size: 12px;
+      letter-spacing: 0.01em;
+    }
+    button:active { transform: translateY(1px) scale(0.99); box-shadow: 0 6px 18px rgba(0,0,0,0.6); }
+    button.danger { background: linear-gradient(135deg, #ff4f6a, #ff7b8a); box-shadow: 0 10px 25px rgba(255,79,106,0.45); }
+    .tag {
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+    .main {
+      display: flex;
+      flex-direction: column;
+      border-inline: 1px solid var(--border);
+      background: radial-gradient(circle at top, rgba(79,140,255,0.12), rgba(2,3,8,0.98));
+    }
+    .room-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .room-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .room-title span.sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .messages {
+      flex: 1;
+      padding: 10px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scroll-behavior: smooth;
+    }
+    .msg {
+      max-width: 80%;
+      padding: 7px 9px;
+      border-radius: 12px;
+      background: rgba(9,12,22,0.96);
+      border: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 13px;
+    }
+    .msg.me { margin-left: auto; background: linear-gradient(135deg, rgba(79,140,255,0.9), rgba(123,92,255,0.9)); border-color: rgba(255,255,255,0.18); }
+    .msg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .msg-sender { font-weight: 600; color: #cfd5ff; }
+    .msg-text { white-space: pre-wrap; word-wrap: break-word; }
+    .msg-img {
+      margin-top: 4px;
+      border-radius: 10px;
+      max-width: 220px;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .composer {
+      padding: 8px 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: radial-gradient(circle at bottom, rgba(79,140,255,0.18), rgba(2,3,8,0.98));
+    }
+    .composer-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .composer-row textarea {
+      flex: 1;
+      resize: none;
+      min-height: 40px;
+      max-height: 90px;
+      font-size: 13px;
+    }
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .item {
+      padding: 6px 7px;
+      border-radius: 9px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(3,5,12,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .item span.name { font-weight: 500; }
+    .item span.meta { font-size: 11px; color: var(--muted); }
+    .item.active { border-color: rgba(79,140,255,0.9); background: rgba(10,18,40,0.98); }
+    .small {
+      font-size: 11px;
+      color: var(--muted);
+    }
+  </style>
 </head>
 <body>
-
-<canvas id="canvas-dust"></canvas>
-
-<!-- POPUP SESSION / PROFIL -->
-<div class="popup-overlay" id="pop-logout">
-    <div class="popup-card" id="card-logout">
-        <h3>SESSION</h3>
-        <p style="margin:15px 0">Que voulez-vous faire ?</p>
-        <button class="btn-full" onclick="confirmLogout()">SE DÉCONNECTER</button>
-        <button class="btn-full" style="background:#800;margin-top:10px" onclick="confirmDeleteProfile()">SUPPRIMER LE PROFIL</button>
-        <button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button>
-    </div>
-</div>
-
-<!-- POPUP CRÉATION SALON -->
-<div class="popup-overlay" id="pop-create">
-    <div class="popup-card" id="card-create">
-        <h3>NOUVEAU SALON</h3>
-        <input type="text" id="new-room-name" placeholder="Nom du salon..." class="input-box" style="margin-top:15px">
-        <input type="password" id="new-room-pass" placeholder="Code (optionnel)..." class="input-box">
-        <button class="btn-full" id="btn-do-create">CRÉER</button>
-        <button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button>
-    </div>
-</div>
-
-<!-- POPUP OPTIONS MESSAGE -->
-<div class="popup-overlay" id="pop-options">
-    <div class="popup-card" id="card-options">
-        <h3>OPTIONS</h3>
-        <button class="btn-full" style="background:#800;margin-top:20px" id="btn-msg-del">SUPPRIMER</button>
-        <button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button>
-    </div>
-</div>
-
-<!-- POPUP THEME / COULEURS -->
-<div class="popup-overlay" id="pop-theme">
-    <div class="popup-card" id="card-theme">
-        <h3>COULEUR D'ACCENT</h3>
-        <p style="margin:10px 0;font-size:0.8rem;color:#aaa">Choisissez une couleur principale :</p>
-        <div class="color-row" id="theme-basic">
-            <div class="color-dot" data-color="#0078d7" style="background:#0078d7"></div>
-            <div class="color-dot" data-color="#ff4081" style="background:#ff4081"></div>
-            <div class="color-dot" data-color="#00c853" style="background:#00c853"></div>
-            <div class="color-dot" data-color="#ffab00" style="background:#ffab00"></div>
-            <div class="color-dot" data-color="#9c27b0" style="background:#9c27b0"></div>
+  <div class="app">
+    <!-- SIDEBAR GAUCHE -->
+    <aside class="sidebar">
+      <div class="header">
+        <div class="title">
+          <span class="logo">T</span>
+          ThinkTalk
         </div>
-        <button class="btn-full" style="background:#222;margin-top:15px" id="btn-more-colors">PLUS DE COULEURS</button>
-        <div id="theme-more" style="display:none;margin-top:10px">
-            <div class="color-row">
-                <div class="color-dot" data-color="#03a9f4" style="background:#03a9f4"></div>
-                <div class="color-dot" data-color="#e91e63" style="background:#e91e63"></div>
-                <div class="color-dot" data-color="#4caf50" style="background:#4caf50"></div>
-                <div class="color-dot" data-color="#ff5722" style="background:#ff5722"></div>
-                <div class="color-dot" data-color="#cddc39" style="background:#cddc39"></div>
-                <div class="color-dot" data-color="#673ab7" style="background:#673ab7"></div>
-                <div class="color-dot" data-color="#00bcd4" style="background:#00bcd4"></div>
-                <div class="color-dot" data-color="#ffc107" style="background:#ffc107"></div>
-            </div>
+        <span class="pill">Firebase • Realtime</span>
+      </div>
+
+      <div class="card" id="auth-card">
+        <div class="section-label">Identité</div>
+        <div class="field">
+          <label>Pseudo</label>
+          <input id="username" placeholder/>
         </div>
-        <button class="btn-full" style="background:#222;margin-top:15px" onclick="closePopups()">FERMER</button>
-    </div>
-</div>
-
-<!-- ÉCRAN AUTH -->
-<div id="auth-screen" style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; position:relative; z-index:10;">
-    <div style="font-size:3rem; color:var(--accent); text-align:center; margin-bottom:30px; font-weight:100;">thinktalk</div>
-    <div style="width:300px; margin:0 auto;">
-        <input type="text" id="auth-pseudo" class="input-box" placeholder="Pseudo">
-        <input type="password" id="auth-code" class="input-box" placeholder="Code secret">
-        <button class="btn-full" id="btn-login">ENTRER</button>
-    </div>
-</div>
-
-<!-- APP PRINCIPALE -->
-<div class="app-root" id="main-app">
-    <div class="top-bar">
-        <div class="top-title" onclick="openPopup('pop-logout', 'card-logout')">thinktalk</div>
-        <div class="top-actions">
-            <button class="top-btn" id="btn-accent">Couleur</button>
+        <div class="field">
+          <label>Code secret</label>
+          <input id="usercode" placeholder="4 chiffres, ex: 1234" />
         </div>
-    </div>
-    <div class="view-container">
-        <!-- HOME / ROOMS -->
-        <section id="view-home" class="view-section active">
-            <div style="display:flex;gap:10px;margin-bottom:10px">
-                <input type="text" id="rooms-search" class="input-box" style="margin:0" placeholder="Chercher un salon...">
-                <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" onclick="openPopup('pop-create', 'card-create')">+</button>
-            </div>
-            <div class="tiles-grid" id="rooms-grid"></div>
-        </section>
+        <div class="field-row">
+          <button id="btn-login">Connexion</button>
+          <button class="secondary" id="btn-logout">Déconnexion</button>
+        </div>
+        <div class="small" id="auth-status">Non connecté</div>
+      </div>
 
-        <!-- CHAT -->
-        <section id="view-chat" class="view-section">
-            <div id="chat-header" style="color:var(--accent);margin-bottom:15px;font-weight:bold"># général</div>
-            <div id="chat-messages"></div>
-            <div style="position:fixed;bottom:60px;left:0;right:0;display:flex;background:#000;padding:10px;gap:8px;border-top:1px solid #222">
-                <button onclick="document.getElementById('file-input').click()" style="background:#222;color:#fff;border:none;padding:0 15px;cursor:pointer">📎</button>
-                <input type="file" id="file-input" hidden accept="image/*">
-                <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="Message...">
-                <button id="send-btn" style="background:var(--accent);color:#fff;border:none;padding:0 20px">OK</button>
-            </div>
-        </section>
+      <div class="card">
+        <div class="section-label">Salons</div>
+        <div class="field">
+          <label>Nom du salon</label>
+          <input id="room-name" placeholder="général, dev, etc." />
+        </div>
+        <div class="field">
+          <label>Mot de passe (optionnel)</label>
+          <input id="room-pass" placeholder="laisser vide si public" />
+        </div>
+        <div class="field-row">
+          <button id="btn-join-room">Rejoindre / Créer</button>
+          <button class="secondary" id="btn-room-general"># général</button>
+        </div>
+        <div class="list" id="rooms-list"></div>
+      </div>
+    </aside>
 
-        <!-- CONTACTS -->
-        <section id="view-contacts" class="view-section">
-            <div style="display:flex;gap:10px;margin-bottom:10px">
-                <input type="text" id="contacts-search" class="input-box" style="margin:0" placeholder="Chercher un contact...">
-            </div>
-            <div style="display:flex;gap:10px;margin-bottom:20px">
-                <input type="text" id="contact-name-input" class="input-box" style="margin:0" placeholder="Pseudo de l'ami à ajouter...">
-                <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" id="btn-add-contact">+</button>
-            </div>
-            <div class="tiles-grid" id="contacts-grid"></div>
-        </section>
-    </div>
+    <!-- ZONE CENTRALE -->
+    <main class="main">
+      <div class="room-header">
+        <div class="room-title">
+          <span id="room-title">Aucun salon</span>
+          <span class="sub" id="room-subtitle">Connecte-toi et rejoins un salon pour commencer à discuter.</span>
+        </div>
+        <div class="tag" id="user-tag">Invité</div>
+      </div>
 
-    <nav class="bottom-nav">
-        <div class="nav-btn active" onclick="switchTab('home')">HOME</div>
-        <div class="nav-btn" onclick="switchTab('chat')">CHAT</div>
-        <div class="nav-btn" onclick="switchTab('contacts')">CONTACTS</div>
-    </nav>
-</div>
+      <div class="messages" id="messages"></div>
 
-<script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+      <div class="composer">
+        <div class="composer-row">
+          <textarea id="message-input" placeholder="Écris un message..."></textarea>
+          <button id="btn-send">Envoyer</button>
+        </div>
+        <div class="composer-row">
+          <input type="file" id="image-input" accept="image/*" />
+          <button class="secondary" id="btn-clear-img">Retirer l'image</button>
+        </div>
+        <div class="hint">
+          <span id="composer-hint">Aucun fichier sélectionné.</span>
+          <span>Entrée = envoyer • Shift+Entrée = retour à la ligne</span>
+        </div>
+      </div>
+    </main>
 
-    const supabaseUrl = "https://znbypfscxvmxvwnwevsy.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnlwZnNjeHZteHZ3bndldnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjAzMzMsImV4cCI6MjA5NDY5NjMzM30.7q04-YpG2TFWNjZyIoad4gFiKaqL9-jUl72s3OB9RlE";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    <!-- SIDEBAR DROITE -->
+    <aside class="contacts">
+      <div class="header">
+        <div class="title" style="font-size:15px;">
+          Contacts
+        </div>
+        <span class="pill">Privés & favoris</span>
+      </div>
 
-    let currentUser = localStorage.getItem('tt_user');
-    let curRoom = "général", chatChannel = null, selectedMsgId = null;
+      <div class="card">
+        <div class="section-label">Ajouter un contact</div>
+        <div class="field">
+          <label>Pseudo du contact</label>
+          <input id="contact-name" placeholder="ex: Pixel" />
+        </div>
+        <div class="field-row">
+          <button id="btn-add-contact">Ajouter</button>
+        </div>
+      </div>
 
-    let roomsCache = [];      // { room, previews: [string,...] }
-    let contactsCache = [];   // { name, previews: [string,...] }
+      <div class="card">
+        <div class="section-label">Liste des contacts</div>
+        <div class="list" id="contacts-list"></div>
+        <div class="small">Clique sur un contact pour ouvrir un salon privé.</div>
+      </div>
+    </aside>
+  </div>
 
-    // --- MOTEUR PARTICULES ---
-    const canvas = document.getElementById('canvas-dust'), ctx = canvas.getContext('2d');
-    let pts = [], mouse = {x: -1000, y: -1000};
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-    window.onresize = resize; resize();
-    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  <script type="module">
+    // --- Firebase imports ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, doc, setDoc, getDoc, getDocs, addDoc,
+      collection, query, where, orderBy, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getStorage, ref, uploadString, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-    class Particle {
-        constructor() { this.init(); this.target = null; }
-        init() { 
-            this.x = Math.random()*canvas.width; 
-            this.y = Math.random()*canvas.height; 
-            this.vx = (Math.random()-0.5)*1.5; 
-            this.vy = (Math.random()-0.5)*1.5; 
-            this.s = Math.random()*2+1; 
-        }
-        update() {
-            if(this.target) { 
-                this.x += (this.target.x - this.x) * 0.15; 
-                this.y += (this.target.y - this.y) * 0.15; 
-            } else {
-                let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.sqrt(dx*dx+dy*dy);
-                if(d < 180) { this.vx += dx*0.002; this.vy += dy*0.002; }
-                this.x += this.vx; this.y += this.vy; this.vx *= 0.99; this.vy *= 0.99;
-                if(this.x<0||this.x>canvas.width) this.vx *= -1; 
-                if(this.y<0||this.y>canvas.height) this.vy *= -1;
-            }
-        }
-        draw() { 
-            ctx.fillStyle = "#0078d7cc"; 
-            ctx.shadowBlur = 8; 
-            ctx.shadowColor = "#0078d7"; 
-            ctx.beginPath(); 
-            ctx.arc(this.x,this.y,this.s,0,Math.PI*2); 
-            ctx.fill(); 
-            ctx.shadowBlur = 0; 
-        }
+    // --- Config fournie ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M",
+      authDomain: "thinktalk-b3c85.firebaseapp.com",
+      projectId: "thinktalk-b3c85",
+      storageBucket: "thinktalk-b3c85.firebasestorage.app",
+      messagingSenderId: "752141817301",
+      appId: "1:752141817301:web:28fecaf81db27eb51d595c",
+      measurementId: "G-78QR24ZJC6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    // --- État local ---
+    let currentUser = null;      // { name, code }
+    let currentRoom = null;      // string
+    let currentImageData = null; // base64
+    let messagesUnsub = null;
+
+    // --- Helpers DOM ---
+    const $ = (id) => document.getElementById(id);
+
+    const usernameInput = $("username");
+    const usercodeInput = $("usercode");
+    const authStatus = $("auth-status");
+    const userTag = $("user-tag");
+
+    const roomNameInput = $("room-name");
+    const roomPassInput = $("room-pass");
+    const roomsList = $("rooms-list");
+    const roomTitle = $("room-title");
+    const roomSubtitle = $("room-subtitle");
+
+    const messagesEl = $("messages");
+    const msgInput = $("message-input");
+    const imgInput = $("image-input");
+    const composerHint = $("composer-hint");
+
+    const contactNameInput = $("contact-name");
+    const contactsList = $("contacts-list");
+
+    // --- Auth simple (pseudo + code) ---
+    async function login() {
+      const name = usernameInput.value.trim();
+      const code = usercodeInput.value.trim();
+      if (!name || !code) {
+        alert("Pseudo et code sont obligatoires.");
+        return;
+      }
+      currentUser = { name, code };
+      await setDoc(doc(db, "users", name), { code }, { merge: true });
+      authStatus.textContent = `Connecté en tant que ${name}`;
+      userTag.textContent = name;
+      userTag.classList.add("tag");
+      loadContacts();
+      loadRooms();
+      if (!currentRoom) joinRoom("général");
     }
-    for(let i=0; i<400; i++) pts.push(new Particle());
-    function anim() { 
-        ctx.clearRect(0,0,canvas.width,canvas.height); 
-        pts.forEach(p=>{p.update();p.draw()}); 
-        requestAnimationFrame(anim); 
-    } 
-    anim();
 
-    window.materialize = (el, delay = 0) => {
-        setTimeout(() => {
-            const r = el.getBoundingClientRect();
-            const pCount = 30; let targets = [];
-            for(let i=0; i<pCount; i++) { 
-                targets.push({x: r.left + (r.width/pCount)*i, y: r.top}); 
-                targets.push({x: r.left + (r.width/pCount)*i, y: r.bottom}); 
-            }
-            pts.forEach((p, index) => { if(targets[index]) p.target = targets[index]; });
-            setTimeout(() => { 
-                pts.forEach(p => p.target = null); 
-                el.classList.add('visible'); 
-            }, 800);
-        }, delay);
-    };
-
-    window.openPopup = (popId, cardId) => {
-        document.getElementById(popId).style.display = 'flex';
-        materialize(document.getElementById(cardId));
-    };
-    window.closePopups = () => { 
-        document.querySelectorAll('.popup-overlay').forEach(p=>p.style.display='none'); 
-        document.querySelectorAll('.popup-card').forEach(c=>c.classList.remove('visible')); 
-    };
-
-    // --- THEME / COULEUR ---
-    function setAccent(color) {
-        document.documentElement.style.setProperty('--accent', color);
-        localStorage.setItem('tt_accent', color);
+    function logout() {
+      currentUser = null;
+      authStatus.textContent = "Non connecté";
+      userTag.textContent = "Invité";
+      if (messagesUnsub) messagesUnsub();
+      messagesUnsub = null;
+      messagesEl.innerHTML = "";
+      currentRoom = null;
+      roomTitle.textContent = "Aucun salon";
+      roomSubtitle.textContent = "Connecte-toi et rejoins un salon pour commencer à discuter.";
     }
-    function initTheme() {
-        const saved = localStorage.getItem('tt_accent');
-        if(saved) setAccent(saved);
-        document.querySelectorAll('.color-dot[data-color]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const c = btn.getAttribute('data-color');
-                setAccent(c);
-            });
+
+    // --- Salons ---
+    async function joinRoom(name, pass = "") {
+      if (!currentUser) {
+        alert("Connecte-toi d'abord.");
+        return;
+      }
+      name = name.trim();
+      if (!name) return;
+
+      // Crée / met à jour le salon
+      await setDoc(doc(db, "rooms", name), { pass: pass || "" }, { merge: true });
+
+      currentRoom = name;
+      roomTitle.textContent = `# ${name}`;
+      roomSubtitle.textContent = pass ? "Salon protégé" : "Salon public";
+
+      // UI liste
+      Array.from(roomsList.children).forEach(li => {
+        li.classList.toggle("active", li.dataset.room === name);
+      });
+
+      // Listener messages
+      if (messagesUnsub) messagesUnsub();
+      const q = query(
+        collection(db, "messages"),
+        where("room", "==", name),
+        orderBy("timestamp", "asc")
+      );
+      messagesUnsub = onSnapshot(q, (snap) => {
+        messagesEl.innerHTML = "";
+        snap.forEach(docSnap => {
+          const m = docSnap.data();
+          renderMessage(m);
         });
-        const moreBtn = document.getElementById('btn-more-colors');
-        const morePanel = document.getElementById('theme-more');
-        moreBtn.addEventListener('click', () => {
-            morePanel.style.display = morePanel.style.display === 'none' ? 'block' : 'none';
-        });
-        document.getElementById('btn-accent').onclick = () => openPopup('pop-theme','card-theme');
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      });
     }
 
-    // --- DÉCONNEXION SIMPLE ---
-    window.confirmLogout = () => { 
-        localStorage.removeItem('tt_user'); 
-        location.reload(); 
-    };
+    function renderMessage(m) {
+      const div = document.createElement("div");
+      div.className = "msg" + (currentUser && m.sender === currentUser.name ? " me" : "");
+      const header = document.createElement("div");
+      header.className = "msg-header";
+      const sender = document.createElement("span");
+      sender.className = "msg-sender";
+      sender.textContent = m.sender || "???";
+      const time = document.createElement("span");
+      time.textContent = m.timestamp?.toDate
+        ? m.timestamp.toDate().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+        : "";
+      header.appendChild(sender);
+      header.appendChild(time);
 
-    // --- SUPPRESSION DE PROFIL ---
-    window.confirmDeleteProfile = async () => {
-        if(!currentUser) return;
-        const ok = confirm("Supprimer définitivement le profil et les contacts liés ?");
-        if(!ok) return;
+      const text = document.createElement("div");
+      text.className = "msg-text";
+      text.textContent = m.text || "";
 
-        try {
-            await supabase.from("users").delete().eq("name", currentUser);
-            await supabase.from("contacts").delete().or(`owner.eq.${currentUser},name.eq.${currentUser}`);
-            localStorage.removeItem('tt_user');
-            alert("Profil supprimé.");
-            location.reload();
-        } catch (e) {
-            console.error(e);
-            alert("Erreur lors de la suppression du profil.");
-        }
-    };
+      div.appendChild(header);
+      if (m.text) div.appendChild(text);
 
-    window.switchTab = (tab) => {
-        const appRoot = document.getElementById('main-app'); 
-        appRoot.classList.add('view-blur');
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        const btn = document.querySelector(`[onclick="switchTab('${tab}')"]`);
-        if(btn) btn.classList.add('active');
-        setTimeout(() => {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-            document.getElementById('view-' + tab).classList.add('active');
-            appRoot.classList.remove('view-blur');
-            if(tab === 'chat') { 
-                document.querySelectorAll('.msg-block').forEach((m, i) => { 
-                    m.classList.remove('visible'); 
-                    materialize(m, i * 100); 
-                }); 
-            }
-        }, 400);
-    };
+      if (m.image) {
+        const img = document.createElement("img");
+        img.src = m.image;
+        img.className = "msg-img";
+        div.appendChild(img);
+      }
 
-    // --- AUTHENTIFICATION ---
-    document.getElementById('btn-login').onclick = async () => {
-        const p = document.getElementById('auth-pseudo').value.trim().toLowerCase();
-        const c = document.getElementById('auth-code').value.trim();
-        if(!p || !c) return alert("Pseudo et code requis !");
-
-        const { data: user, error } = await supabase
-            .from("users")
-            .select("*")
-            .eq("name", p)
-            .maybeSingle();
-
-        if(user) {
-            if(user.code === c) { 
-                localStorage.setItem('tt_user', p); 
-                location.reload(); 
-            } else { 
-                alert("Code secret incorrect !"); 
-            }
-        } else {
-            await supabase.from("users").insert({ name: p, code: c });
-            localStorage.setItem('tt_user', p); 
-            location.reload();
-        }
-    };
-
-    // --- MESSAGES ---
-    async function renderMessages() {
-        const { data, error } = await supabase
-            .from("messages")
-            .select("*")
-            .eq("room", curRoom)
-            .order("timestamp", { ascending: true });
-
-        if(error) {
-            console.error(error);
-            return;
-        }
-
-        const box = document.getElementById('chat-messages'); 
-        box.innerHTML="";
-        (data || []).forEach(m => {
-            const date = m.timestamp ? new Date(m.timestamp) : new Date();
-            const timeStr = date.getHours().toString().padStart(2,'0') + ":" + date.getMinutes().toString().padStart(2,'0');
-            const div = document.createElement('div');
-            div.className = "msg-block" + (m.sender === currentUser ? " own" : "");
-            let content = m.image ? `<img src="${m.image}" class="msg-img">` : (m.text || "");
-            div.innerHTML = `<div class="msg-info"><span>${m.sender}</span><span>${timeStr}</span></div><div class="msg-text">${content}</div>`;
-            div.onclick = () => { 
-                if(m.sender === currentUser) { 
-                    selectedMsgId = m.id; 
-                    openPopup('pop-options', 'card-options'); 
-                } 
-            };
-            box.appendChild(div);
-            div.classList.add('visible');
-        });
-        box.parentElement.scrollTop = box.parentElement.scrollHeight;
+      messagesEl.appendChild(div);
     }
 
-    // --- LOGIQUE SALONS & CHAT ---
-    function hasRoomAccessLocally(roomName) {
-        if(!currentUser) return false;
-        return localStorage.getItem(`tt_access_${currentUser}_${roomName}`) === "1";
-    }
-    function storeRoomAccessLocally(roomName) {
-        if(!currentUser) return;
-        localStorage.setItem(`tt_access_${currentUser}_${roomName}`, "1");
-    }
+    async function sendMessage() {
+      if (!currentUser) {
+        alert("Connecte-toi d'abord.");
+        return;
+      }
+      if (!currentRoom) {
+        alert("Rejoins un salon d'abord.");
+        return;
+      }
+      const text = msgInput.value.trim();
+      if (!text && !currentImageData) return;
 
-    window.enterRoom = async (name, isPrivateChat=false) => {
-        if(!isPrivateChat) {
-            const { data: rooms, error } = await supabase
-                .from("rooms")
-                .select("*")
-                .eq("name", name)
-                .limit(1);
+      let imageUrl = null;
+      if (currentImageData) {
+        const fileId = `${currentUser.name}_${Date.now()}`;
+        const r = ref(storage, `images/${fileId}.png`);
+        await uploadString(r, currentImageData, "data_url");
+        imageUrl = await getDownloadURL(r);
+      }
 
-            if(!error && rooms && rooms.length > 0) {
-                const roomData = rooms[0];
-                if(roomData.pass && roomData.pass !== "") {
-                    if(!hasRoomAccessLocally(name)) {
-                        const code = prompt("Salon privé. Entrez le code :");
-                        if(code !== roomData.pass) return alert("Code erroné.");
-                        storeRoomAccessLocally(name);
-                    }
-                }
-            }
-        }
-        
-        curRoom = isPrivateChat ? [currentUser, name].sort().join("_") : name;
-        document.getElementById('chat-header').innerText = isPrivateChat ? "@ " + name : "# " + name;
-        switchTab('chat');
+      await addDoc(collection(db, "messages"), {
+        room: currentRoom,
+        sender: currentUser.name,
+        text: text || "",
+        image: imageUrl,
+        timestamp: new Date()
+      });
 
-        if(chatChannel) {
-            await supabase.removeChannel(chatChannel);
-            chatChannel = null;
-        }
-
-        await renderMessages();
-
-        chatChannel = supabase
-            .channel("room:" + curRoom)
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "messages", filter: `room=eq.${curRoom}` },
-                payload => {
-                    renderMessages();
-                }
-            )
-            .subscribe();
-    };
-
-    // CRÉATION SALON
-    document.getElementById('btn-do-create').onclick = async () => {
-        const name = document.getElementById('new-room-name').value.trim();
-        const pass = document.getElementById('new-room-pass').value.trim();
-        if(name) { 
-            await supabase.from("rooms").insert({ name: name, pass: pass || "" }); 
-            closePopups(); 
-            document.getElementById('new-room-name').value=""; 
-            document.getElementById('new-room-pass').value="";
-        }
-    };
-
-    // ENVOI MESSAGE TEXTE
-    document.getElementById('send-btn').onclick = async () => {
-        const i = document.getElementById('chat-input');
-        if(i.value.trim()){ 
-            await supabase.from("messages").insert({
-                text: i.value, 
-                room: curRoom, 
-                sender: currentUser, 
-                timestamp: new Date().toISOString()
-            }); 
-            i.value=""; 
-        }
-    };
-
-    // ENVOI IMAGE
-    document.getElementById('file-input').onchange = (e) => {
-        const file = e.target.files[0]; 
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => { 
-            await supabase.from("messages").insert({ 
-                image: ev.target.result, 
-                room: curRoom, 
-                sender: currentUser, 
-                timestamp: new Date().toISOString()
-            }); 
-        };
-        reader.readAsDataURL(file);
-    };
-
-    // SUPPRESSION MESSAGE
-    document.getElementById('btn-msg-del').onclick = async () => { 
-        if(selectedMsgId) { 
-            try {
-                await supabase.from("messages").delete().eq("id", selectedMsgId); 
-            } catch(e) {
-                console.error(e);
-                alert("Impossible de supprimer le message (vérifie les règles).");
-            }
-            closePopups(); 
-            selectedMsgId = null;
-        }
-    };
-
-    // --- CONTACTS ---
-    document.getElementById('btn-add-contact').onclick = async () => {
-        const name = document.getElementById('contact-name-input').value.trim().toLowerCase();
-        if(!name || name === currentUser) return;
-        const { data: user, error } = await supabase
-            .from("users")
-            .select("name")
-            .eq("name", name)
-            .maybeSingle();
-        if(!user) {
-            alert("Cet utilisateur n'existe pas.");
-            return;
-        }
-        await supabase.from("contacts").insert({ owner: currentUser, name: name });
-        document.getElementById('contact-name-input').value = "";
-    };
-
-    // --- RENDER ROOMS + PREVIEWS ---
-    async function buildRoomPreviews(rooms) {
-        const result = [];
-        for(const r of rooms) {
-            const { data: msgs, error } = await supabase
-                .from("messages")
-                .select("sender,text,image,timestamp")
-                .eq("room", r.name)
-                .order("timestamp", { ascending:false })
-                .limit(2);
-            let previews = [];
-            if(msgs && msgs.length > 0) {
-                previews = msgs.map(m => {
-                    const base = m.image ? "[image]" : (m.text || "");
-                    return `${m.sender}: ${base}`.slice(0,60);
-                }).reverse();
-            }
-            result.push({ room: r, previews });
-        }
-        return result;
+      msgInput.value = "";
+      currentImageData = null;
+      composerHint.textContent = "Aucun fichier sélectionné.";
+      imgInput.value = "";
     }
 
-    async function renderRooms() {
-        const { data, error } = await supabase.from("rooms").select("*");
-        if(error) { console.error(error); return; }
-        const rooms = data || [];
-        const withPreviews = await buildRoomPreviews(rooms);
-        roomsCache = withPreviews;
-        applyRoomFilter();
+    // --- Contacts & MP ---
+    async function addContact() {
+      if (!currentUser) {
+        alert("Connecte-toi d'abord.");
+        return;
+      }
+      const name = contactNameInput.value.trim();
+      if (!name) return;
+      await addDoc(collection(db, "contacts"), {
+        owner: currentUser.name,
+        name
+      });
+      contactNameInput.value = "";
+      loadContacts();
     }
 
-    function applyRoomFilter() {
-        const term = (document.getElementById('rooms-search').value || "").trim().toLowerCase();
-        const g = document.getElementById('rooms-grid'); 
-        g.innerHTML="";
-        roomsCache
-            .filter(item => !term || item.room.name.toLowerCase().includes(term))
-            .forEach(item => {
-                const r = item.room;
-                const t = document.createElement('div'); 
-                t.className="tile";
-                let previewHtml = "";
-                if(item.previews.length > 0) {
-                    previewHtml = `<div class="tile-preview">${item.previews.join("<br>")}</div>`;
-                }
-                t.innerHTML = `<span># ${r.name}</span> ${r.pass ? '<span class="lock-badge">🔒</span>' : ''}${previewHtml}`;
-                t.onclick = () => enterRoom(r.name); 
-                g.appendChild(t);
-            });
+    async function loadContacts() {
+      if (!currentUser) return;
+      const q = query(
+        collection(db, "contacts"),
+        where("owner", "==", currentUser.name)
+      );
+      const snap = await getDocs(q);
+      contactsList.innerHTML = "";
+      snap.forEach(docSnap => {
+        const c = docSnap.data();
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `<span class="name">${c.name}</span><span class="meta">MP</span>`;
+        div.onclick = () => openPrivateRoom(c.name);
+        contactsList.appendChild(div);
+      });
     }
 
-    // --- RENDER CONTACTS + PREVIEWS ---
-    async function buildContactPreviews(names) {
-        const result = [];
-        for(const name of names) {
-            const roomName = [currentUser, name].sort().join("_");
-            const { data: msgs, error } = await supabase
-                .from("messages")
-                .select("sender,text,image,timestamp")
-                .eq("room", roomName)
-                .order("timestamp", { ascending:false })
-                .limit(2);
-            let previews = [];
-            if(msgs && msgs.length > 0) {
-                previews = msgs.map(m => {
-                    const base = m.image ? "[image]" : (m.text || "");
-                    return `${m.sender}: ${base}`.slice(0,60);
-                }).reverse();
-            }
-            result.push({ name, previews });
-        }
-        return result;
+    function privateRoomName(a, b) {
+      return ["pm", a, b].sort().join("_");
     }
 
-    async function renderContacts() {
-        const { data, error } = await supabase.from("contacts").select("*");
-        if(error) { console.error(error); return; }
-        let list = new Set();
-        (data || []).forEach(c => { 
-            if(c.owner === currentUser) list.add(c.name); 
-            if(c.name === currentUser) list.add(c.owner); 
-        });
-        const names = Array.from(list);
-        const withPreviews = await buildContactPreviews(names);
-        contactsCache = withPreviews;
-        applyContactsFilter();
+    function openPrivateRoom(other) {
+      if (!currentUser) {
+        alert("Connecte-toi d'abord.");
+        return;
+      }
+      const room = privateRoomName(currentUser.name, other);
+      joinRoom(room, "pm");
+      roomSubtitle.textContent = `Salon privé avec ${other}`;
     }
 
-    function applyContactsFilter() {
-        const term = (document.getElementById('contacts-search').value || "").trim().toLowerCase();
-        const g = document.getElementById('contacts-grid'); 
-        g.innerHTML=""; 
-        contactsCache
-            .filter(item => !term || item.name.toLowerCase().includes(term))
-            .forEach(item => {
-                const t = document.createElement('div'); 
-                t.className="tile"; 
-                let previewHtml = "";
-                if(item.previews.length > 0) {
-                    previewHtml = `<div class="tile-preview">${item.previews.join("<br>")}</div>`;
-                }
-                t.innerHTML=`<span>@ ${item.name}</span>${previewHtml}`;
-                t.onclick = () => enterRoom(item.name, true); 
-                g.appendChild(t);
-            });
+    // --- Liste des salons (simples) ---
+    async function loadRooms() {
+      const snap = await getDocs(collection(db, "rooms"));
+      roomsList.innerHTML = "";
+      snap.forEach(docSnap => {
+        const r = docSnap.data();
+        const name = docSnap.id;
+        const div = document.createElement("div");
+        div.className = "item";
+        div.dataset.room = name;
+        div.innerHTML = `<span class="name"># ${name}</span><span class="meta">${r.pass ? "🔒" : "Public"}</span>`;
+        div.onclick = () => joinRoom(name, r.pass || "");
+        roomsList.appendChild(div);
+      });
     }
 
-    // --- REALTIME ROOMS & CONTACTS ---
-    const roomsChannel = supabase
-        .channel("rooms")
-        .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "rooms" },
-            payload => { renderRooms(); }
-        )
-        .subscribe();
+    // --- Image preview ---
+    imgInput.addEventListener("change", () => {
+      const file = imgInput.files[0];
+      if (!file) {
+        currentImageData = null;
+        composerHint.textContent = "Aucun fichier sélectionné.";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentImageData = e.target.result;
+        composerHint.textContent = `Image prête : ${file.name}`;
+      };
+      reader.readAsDataURL(file);
+    });
 
-    const contactsChannel = supabase
-        .channel("contacts")
-        .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "contacts" },
-            payload => { renderContacts(); }
-        )
-        .subscribe();
+    $("btn-clear-img").addEventListener("click", () => {
+      currentImageData = null;
+      imgInput.value = "";
+      composerHint.textContent = "Aucun fichier sélectionné.";
+    });
 
-    // --- ENSURE BASE DATA (via Edge Function + général) ---
-    async function initDatabase() {
-        // Appel de l’Edge Function init-db
-        await supabase.functions.invoke("init-db");
-    }
+    // --- Events UI ---
+    $("btn-login").onclick = login;
+    $("btn-logout").onclick = logout;
+    $("btn-join-room").onclick = () => joinRoom(roomNameInput.value, roomPassInput.value);
+    $("btn-room-general").onclick = () => joinRoom("général");
+    $("btn-send").onclick = sendMessage;
+    $("btn-add-contact").onclick = addContact;
 
-    // --- INIT APP ---
-    document.getElementById('rooms-search').addEventListener('input', applyRoomFilter);
-    document.getElementById('contacts-search').addEventListener('input', applyContactsFilter);
+    msgInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
 
-    initTheme();
-
-    (async () => {
-        await initDatabase();          // crée les tables + policies + "général"
-        if(currentUser){ 
-            document.getElementById('auth-screen').style.display='none'; 
-            document.getElementById('main-app').style.display='flex'; 
-            await renderRooms();
-            await renderContacts();
-            enterRoom("général"); 
-        }
-    })();
-</script>
+    // --- Auto: salon général si déjà pseudo en local (optionnel) ---
+    // Tu peux ajouter du localStorage ici si tu veux mémoriser l'utilisateur.
+  </script>
 </body>
 </html>
