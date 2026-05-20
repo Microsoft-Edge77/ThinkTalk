@@ -1,104 +1,109 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>ThinkTalk</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <style>
-    :root { --accent:#0078d7; --bg:#000; --text:#fff; }
+    :root { --accent:#0078d7; --bg:#000; --text:#fff; --muted:#888; }
     * { box-sizing:border-box; margin:0; padding:0; font-family:"Segoe UI",sans-serif; }
-    body { background:var(--bg); color:var(--text); overflow:hidden; height:100svh; position:fixed; width:100%; }
+    html,body { height:100%; }
+    body { background:var(--bg); color:var(--text); overflow:hidden; position:fixed; inset:0; width:100%; }
     #canvas-dust { position:fixed; inset:0; z-index:0; pointer-events:none; }
 
-    .app-root { position:relative; z-index:1; height:100%; display:none; flex-direction:column; transition:transform .6s cubic-bezier(.4,0,.2,1), filter .6s; }
-    .view-blur { filter:blur(25px); transform:translateX(-30px); }
+    .app-root { position:relative; z-index:1; height:100%; display:none; flex-direction:column; transition:transform .45s cubic-bezier(.4,0,.2,1), filter .45s; }
+    .view-blur { filter:blur(20px); transform:translateX(-20px); }
 
     .tiles-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-    .tile { position:relative; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); padding:15px; height:130px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; backdrop-filter:blur(10px); transition:transform .2s, opacity .2s; overflow:hidden; }
-    .tile:hover { transform:translateY(-2px); }
-    .lock-badge { position:absolute; top:10px; right:10px; font-size:.7rem; opacity:.5; }
-    .tile-preview { font-size:.7rem; color:#aaa; margin-top:6px; line-height:1.2; max-height:2.4em; overflow:hidden; }
+    @media(min-width:900px){ .tiles-grid{ grid-template-columns:repeat(3,1fr); } }
+    .tile { position:relative; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); padding:14px; height:130px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; backdrop-filter:blur(8px); transition:transform .18s, box-shadow .18s; overflow:hidden; border-radius:8px; }
+    .tile:hover { transform:translateY(-4px); box-shadow:0 6px 18px rgba(0,0,0,.6); }
+    .tile .title { font-weight:600; color:var(--text); font-size:1rem; display:flex; align-items:center; gap:8px; }
+    .lock-badge { font-size:.75rem; opacity:.6; color:var(--muted); }
+    .tile-preview { font-size:.75rem; color:#bdbdbd; margin-top:6px; line-height:1.2; max-height:2.4em; overflow:hidden; white-space:pre-wrap; word-break:break-word; }
 
     .tile-delete-btn {
-      position:absolute;
-      top:8px;
-      left:8px;
-      font-size:.7rem;
-      background:#800;
-      color:#fff;
-      border:none;
-      padding:2px 6px;
-      cursor:pointer;
-      border-radius:3px;
-      opacity:.8;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: .75rem;
+      background: rgba(255, 0, 0, .9);
+      color: #fff;
+      border: none;
+      padding: 6px 8px;
+      cursor: pointer;
+      border-radius: 6px;
+      z-index: 12;
+      box-shadow: 0 2px 6px rgba(0,0,0,.5);
     }
 
-    .msg-block { opacity:0; transform:translateY(10px); transition:opacity .5s .2s, transform .5s .2s; margin-bottom:20px; max-width:85%; cursor:pointer; }
+    .msg-block { opacity:0; transform:translateY(10px); transition:opacity .45s .1s, transform .45s .1s; margin-bottom:16px; max-width:85%; cursor:pointer; }
     .msg-block.own { align-self:flex-end; }
     .msg-block.visible { opacity:1; transform:translateY(0); }
-    .msg-info { font-size:.65rem; color:#888; margin-bottom:4px; display:flex; gap:8px; text-transform:uppercase; letter-spacing:1px; }
+    .msg-info { font-size:.68rem; color:var(--muted); margin-bottom:6px; display:flex; gap:8px; text-transform:uppercase; letter-spacing:1px; }
     .msg-block.own .msg-info { justify-content:flex-end; color:var(--accent); }
-    .msg-text { background:rgba(0,120,215,.1); padding:12px; border-left:3px solid var(--accent); word-break:break-word; }
-    .msg-block.own .msg-text { border-left:none; border-right:3px solid #666; background:rgba(255,255,255,.05); }
-    .msg-img { max-width:100%; border-radius:4px; margin-top:8px; display:block; }
+    .msg-text { background:rgba(0,120,215,.08); padding:12px; border-left:3px solid var(--accent); word-break:break-word; border-radius:6px; }
+    .msg-block.own .msg-text { border-left:none; border-right:3px solid #666; background:rgba(255,255,255,.03); }
 
     .popup-overlay { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9000; display:none; align-items:center; justify-content:center; padding:20px; }
-    .popup-card { background:#000; border:2px solid var(--accent); width:100%; max-width:320px; padding:25px; opacity:0; transition:opacity .4s; }
+    .popup-card { background:#000; border:2px solid var(--accent); width:100%; max-width:420px; padding:22px; opacity:0; transition:opacity .28s; border-radius:10px; }
     .popup-card.visible { opacity:1; }
 
-    .top-bar { padding:15px; display:flex; justify-content:space-between; align-items:center; height:70px; }
-    .top-title { font-size:2.2rem; font-weight:100; color:var(--accent); cursor:pointer; }
+    .top-bar { padding:12px 16px; display:flex; justify-content:space-between; align-items:center; height:64px; border-bottom:1px solid rgba(255,255,255,.03); }
+    .top-title { font-size:2rem; font-weight:100; color:var(--accent); cursor:pointer; user-select:none; }
     .top-actions { display:flex; gap:10px; align-items:center; }
-    .top-btn { background:#111; border:1px solid #333; color:#fff; padding:6px 10px; font-size:.8rem; cursor:pointer; }
+    .top-btn { background:#111; border:1px solid #222; color:#fff; padding:8px 10px; font-size:.85rem; cursor:pointer; border-radius:6px; }
 
-    .view-container { flex:1; overflow-y:auto; padding:10px 10px 120px; }
+    .view-container { flex:1; overflow-y:auto; padding:12px 12px 120px; -webkit-overflow-scrolling:touch; }
     .view-section { display:none; }
     .view-section.active { display:block; }
-    .bottom-nav { position:fixed; bottom:0; width:100%; height:60px; display:flex; background:#000; border-top:1px solid #222; }
-    .nav-btn { flex:1; display:flex; align-items:center; justify-content:center; color:#666; cursor:pointer; font-size:.8rem; letter-spacing:1px; }
-    .nav-btn.active { color:#fff; border-top:3px solid var(--accent); font-weight:bold; }
+    .bottom-nav { position:fixed; bottom:0; width:100%; height:60px; display:flex; background:#000; border-top:1px solid #222; z-index:5; }
+    .nav-btn { flex:1; display:flex; align-items:center; justify-content:center; color:#888; cursor:pointer; font-size:.85rem; letter-spacing:1px; }
+    .nav-btn.active { color:#fff; border-top:3px solid var(--accent); font-weight:700; }
 
-    .input-box { width:100%; background:rgba(255,255,255,.08); border:1px solid #333; padding:12px; color:#fff; outline:none; margin-bottom:10px; }
-    .btn-full { width:100%; padding:15px; background:var(--accent); border:none; color:#fff; cursor:pointer; font-weight:bold; text-transform:uppercase; }
+    .input-box { width:100%; background:rgba(255,255,255,.06); border:1px solid #222; padding:12px; color:#fff; outline:none; margin-bottom:10px; border-radius:8px; }
+    .btn-full { width:100%; padding:12px; background:var(--accent); border:none; color:#fff; cursor:pointer; font-weight:700; text-transform:uppercase; border-radius:8px; }
 
-    .auth-toggle-link { color:var(--accent); font-size:.8rem; margin-top:10px; text-align:center; cursor:pointer; }
+    .auth-toggle-link { color:var(--accent); font-size:.9rem; margin-top:12px; text-align:center; cursor:pointer; user-select:none; }
 
-    .color-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:15px 0; }
-    .color-dot { width:28px; height:28px; border-radius:50%; border:2px solid #222; cursor:pointer; }
-    .color-dot.selected { border-color:#fff; }
+    .color-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:12px 0; }
+    .color-dot { width:34px; height:34px; border-radius:50%; border:2px solid #222; cursor:pointer; }
+    .color-dot.selected { border-color:#fff; box-shadow:0 4px 12px rgba(0,0,0,.6); }
 
-    .color-picker-input { width:100%; height:40px; padding:0; border:none; background:transparent; }
+    .color-picker-input { width:100%; height:44px; padding:0; border:none; background:transparent; cursor:pointer; }
 
-    .popup-message-text { margin:15px 0; font-size:.9rem; line-height:1.4; }
+    .popup-message-text { margin:12px 0; font-size:.95rem; line-height:1.4; color:#ddd; }
+
+    /* small helpers */
+    .muted { color:var(--muted); font-size:.85rem; }
+    .hidden { display:none !important; }
   </style>
 </head>
 <body>
 
 <canvas id="canvas-dust"></canvas>
 
-<!-- POPUP SESSION / PROFIL -->
+<!-- POPUPS -->
 <div class="popup-overlay" id="pop-logout">
   <div class="popup-card" id="card-logout">
     <h3>SESSION</h3>
-    <p style="margin:15px 0">Que faire ?</p>
+    <p class="popup-message-text">Que faire ?</p>
     <button class="btn-full" id="btn-logout">SE DÉCONNECTER</button>
     <button class="btn-full" style="background:#800;margin-top:10px" id="btn-delete-profile">SUPPRIMER LE PROFIL</button>
     <button class="btn-full" style="background:#222;margin-top:10px" data-close-popup>ANNULER</button>
   </div>
 </div>
 
-<!-- POPUP CRÉATION SALON -->
 <div class="popup-overlay" id="pop-create">
   <div class="popup-card" id="card-create">
     <h3>NOUVEAU SALON</h3>
-    <input type="text" id="new-room-name" placeholder="Nom du salon..." class="input-box" style="margin-top:15px">
+    <input type="text" id="new-room-name" placeholder="Nom du salon..." class="input-box" style="margin-top:12px">
     <input type="password" id="new-room-pass" placeholder="Code (optionnel)..." class="input-box">
     <button class="btn-full" id="btn-do-create">CRÉER</button>
     <button class="btn-full" style="background:#222;margin-top:10px" data-close-popup>ANNULER</button>
   </div>
 </div>
 
-<!-- POPUP OPTIONS MESSAGE -->
 <div class="popup-overlay" id="pop-options">
   <div class="popup-card" id="card-options">
     <h3>OPTIONS</h3>
@@ -107,20 +112,18 @@
   </div>
 </div>
 
-<!-- POPUP ACCENT COLOR -->
 <div class="popup-overlay" id="pop-accent">
   <div class="popup-card" id="card-accent">
     <h3>COULEUR D'ACCENT</h3>
     <div class="color-grid" id="accent-presets"></div>
-    <button class="btn-full" id="btn-more-colors" style="margin-top:5px;background:#222;">PLUS DE COULEURS</button>
-    <div id="advanced-color" style="display:none;margin-top:15px;">
+    <button class="btn-full" id="btn-more-colors" style="margin-top:8px;background:#222;">PLUS DE COULEURS</button>
+    <div id="advanced-color" style="display:none;margin-top:12px;">
       <input type="color" id="accent-picker" class="color-picker-input">
     </div>
-    <button class="btn-full" style="background:#222;margin-top:15px" data-close-popup>FERMER</button>
+    <button class="btn-full" style="background:#222;margin-top:12px" data-close-popup>FERMER</button>
   </div>
 </div>
 
-<!-- POPUP GENERIQUE MESSAGE -->
 <div class="popup-overlay" id="pop-message">
   <div class="popup-card" id="card-message">
     <h3 id="msg-title">INFO</h3>
@@ -129,7 +132,6 @@
   </div>
 </div>
 
-<!-- POPUP CONFIRM -->
 <div class="popup-overlay" id="pop-confirm">
   <div class="popup-card" id="card-confirm">
     <h3 id="confirm-title">CONFIRMATION</h3>
@@ -139,11 +141,11 @@
   </div>
 </div>
 
-<!-- ÉCRAN AUTH -->
+<!-- AUTH -->
 <div id="auth-screen" style="height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;z-index:10;">
   <div style="font-size:3rem;color:var(--accent);text-align:center;margin-bottom:10px;font-weight:100;">thinktalk</div>
-  <div id="auth-mode-title" style="color:#888;margin-bottom:20px;">Se connecter</div>
-  <div style="width:300px;margin:0 auto;">
+  <div id="auth-mode-title" style="color:var(--muted);margin-bottom:18px;">Se connecter</div>
+  <div style="width:320px;margin:0 auto;">
     <input type="text" id="auth-pseudo" class="input-box" placeholder="Pseudo">
     <input type="password" id="auth-code" class="input-box" placeholder="Code secret">
     <button class="btn-full" id="btn-login">SE CONNECTER</button>
@@ -151,7 +153,7 @@
   </div>
 </div>
 
-<!-- APP PRINCIPALE -->
+<!-- APP -->
 <div class="app-root" id="main-app">
   <div class="top-bar">
     <div class="top-title" id="btn-open-session">thinktalk</div>
@@ -159,25 +161,26 @@
       <button class="top-btn" id="btn-open-accent">Accent color</button>
     </div>
   </div>
+
   <div class="view-container">
-    <!-- HOME / ROOMS -->
+    <!-- HOME -->
     <section id="view-home" class="view-section active">
-      <div style="display:flex;gap:10px;margin-bottom:20px">
+      <div style="display:flex;gap:10px;margin-bottom:16px">
         <input type="text" id="rooms-search" class="input-box" style="margin:0" placeholder="Chercher un salon...">
-        <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" id="btn-open-create">+</button>
+        <button style="background:var(--accent);border:none;color:#fff;padding:0 18px;border-radius:8px" id="btn-open-create">+</button>
       </div>
       <div class="tiles-grid" id="rooms-grid"></div>
     </section>
 
     <!-- CHAT -->
     <section id="view-chat" class="view-section">
-      <div id="chat-header" style="color:var(--accent);margin-bottom:15px;font-weight:bold"># général</div>
-      <div id="chat-messages"></div>
+      <div id="chat-header" style="color:var(--accent);margin-bottom:12px;font-weight:bold"># général</div>
+      <div id="chat-messages" style="padding-bottom:20px;"></div>
       <div style="position:fixed;bottom:60px;left:0;right:0;display:flex;background:#000;padding:10px;gap:8px;border-top:1px solid #222">
-        <button id="btn-attach" style="background:#222;color:#fff;border:none;padding:0 15px;cursor:pointer">📎</button>
+        <button id="btn-attach" style="background:#222;color:#fff;border:none;padding:0 14px;cursor:pointer;border-radius:8px">📎</button>
         <input type="file" id="file-input" hidden accept="image/*">
         <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="Message...">
-        <button id="send-btn" style="background:var(--accent);color:#fff;border:none;padding:0 20px">OK</button>
+        <button id="send-btn" style="background:var(--accent);color:#fff;border:none;padding:0 18px;border-radius:8px">OK</button>
       </div>
     </section>
 
@@ -185,9 +188,9 @@
     <section id="view-contacts" class="view-section">
       <div style="display:flex;gap:10px;margin-bottom:10px">
         <input type="text" id="contact-name-input" class="input-box" style="margin:0" placeholder="Pseudo de l'ami...">
-        <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" id="btn-add-contact">+</button>
+        <button style="background:var(--accent);border:none;color:#fff;padding:0 18px;border-radius:8px" id="btn-add-contact">+</button>
       </div>
-      <input type="text" id="contacts-search" class="input-box" style="margin-bottom:15px" placeholder="Chercher un contact...">
+      <input type="text" id="contacts-search" class="input-box" style="margin-bottom:12px" placeholder="Chercher un contact...">
       <div class="tiles-grid" id="contacts-grid"></div>
     </section>
   </div>
@@ -203,9 +206,10 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import {
     getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
-    serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc
+    serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc, limit
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+  // ---------- CONFIG FIREBASE ----------
   const cfg = {
     apiKey: "AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M",
     authDomain: "thinktalk-b3c85.firebaseapp.com",
@@ -214,13 +218,15 @@
     messagingSenderId: "752141817301",
     appId: "1:752141817301:web:28fecaf81db27eb51d595c"
   };
-
   const app = initializeApp(cfg);
   const db = getFirestore(app);
 
+  // ---------- HELPERS ----------
   const byId = (id) => document.getElementById(id);
   const qsa = (sel) => Array.from(document.querySelectorAll(sel));
+  const debounce = (fn, wait=200) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
 
+  // ---------- STATE ----------
   let currentUser = localStorage.getItem("tt_user") || null;
   let curRoom = "général";
   let unsubChat = null;
@@ -228,283 +234,146 @@
   let authMode = "login"; // "login" | "register"
   let confirmCallback = null;
 
-  // pour tuiles dynamiques
-  const lastMessagesByRoom = new Map();   // roomName -> [{sender,text}, ...]
-  const lastMessagesByDM = new Map();     // dmKey -> [{sender,text}, ...]
+  // caches & maps
+  let roomsCache = [];
+  let contactsCache = [];
+  const lastMessagesByRoom = new Map();
+  const lastMessagesByDM = new Map();
 
-  // rooms privés déjà autorisés
+  // allowed rooms (local)
   let allowedRooms = [];
-  try {
-    allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]");
-  } catch {
-    allowedRooms = [];
-  }
+  try { allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]"); } catch { allowedRooms = []; }
 
-  // --- PARTICULES ---
+  // ---------- PARTICLES (unchanged, optimized) ----------
   const canvas = byId("canvas-dust");
   const ctx = canvas.getContext("2d");
   let pts = [];
-  const mouse = { x: -1000, y: -1000 };
+  const mouse = { x:-10000, y:-10000 };
 
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  window.addEventListener("resize", resizeCanvas);
+  function resizeCanvas(){ canvas.width = innerWidth; canvas.height = innerHeight; }
+  addEventListener("resize", resizeCanvas);
   resizeCanvas();
-
-  window.addEventListener("mousemove", (e) => {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-  });
+  addEventListener("mousemove", (e)=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
 
   class Particle {
-    constructor() {
-      this.init();
-      this.target = null;
+    constructor(){ this.init(); this.target=null; }
+    init(){ this.x=Math.random()*canvas.width; this.y=Math.random()*canvas.height; this.vx=(Math.random()-0.5)*1.5; this.vy=(Math.random()-0.5)*1.5; this.s=Math.random()*2+1; }
+    update(){
+      if(this.target){ this.x+=(this.target.x-this.x)*0.15; this.y+=(this.target.y-this.y)*0.15; return; }
+      const dx=mouse.x-this.x, dy=mouse.y-this.y, d=Math.hypot(dx,dy);
+      if(d<180){ this.vx+=dx*0.002; this.vy+=dy*0.002; }
+      this.x+=this.vx; this.y+=this.vy; this.vx*=0.99; this.vy*=0.99;
+      if(this.x<0||this.x>canvas.width) this.vx*=-1;
+      if(this.y<0||this.y>canvas.height) this.vy*=-1;
     }
-    init() {
-      this.x = Math.random() * canvas.width;
-      this.y = Math.random() * canvas.height;
-      this.vx = (Math.random() - 0.5) * 1.5;
-      this.vy = (Math.random() - 0.5) * 1.5;
-      this.s = Math.random() * 2 + 1;
-    }
-    update() {
-      if (this.target) {
-        this.x += (this.target.x - this.x) * 0.15;
-        this.y += (this.target.y - this.y) * 0.15;
-        return;
-      }
-      const dx = mouse.x - this.x;
-      const dy = mouse.y - this.y;
-      const d = Math.hypot(dx, dy);
-      if (d < 180) {
-        this.vx += dx * 0.002;
-        this.vy += dy * 0.002;
-      }
-      this.x += this.vx;
-      this.y += this.vy;
-      this.vx *= 0.99;
-      this.vy *= 0.99;
-      if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-      if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-    }
-    draw() {
-      ctx.fillStyle = "#0078d7cc";
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = "#0078d7";
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.s, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
+    draw(){ ctx.fillStyle="#0078d7cc"; ctx.shadowBlur=8; ctx.shadowColor="#0078d7"; ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; }
   }
+  for(let i=0;i<380;i++) pts.push(new Particle());
+  (function anim(){ ctx.clearRect(0,0,canvas.width,canvas.height); pts.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(anim); })();
 
-  for (let i = 0; i < 400; i++) pts.push(new Particle());
-
-  function anim() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    pts.forEach((p) => {
-      p.update();
-      p.draw();
-    });
-    requestAnimationFrame(anim);
-  }
-  anim();
-
-  // --- ANIMATIONS UI ---
-  window.materialize = (el, delay = 0) => {
-    setTimeout(() => {
+  // ---------- UI MATERIALIZE ----------
+  window.materialize = (el, delay=0) => {
+    setTimeout(()=>{
       const r = el.getBoundingClientRect();
       const pCount = 30;
       const targets = [];
-      for (let i = 0; i < pCount; i++) {
-        targets.push({ x: r.left + (r.width / pCount) * i, y: r.top });
-        targets.push({ x: r.left + (r.width / pCount) * i, y: r.bottom });
-      }
-      pts.forEach((p, index) => {
-        if (targets[index]) p.target = targets[index];
-      });
-      setTimeout(() => {
-        pts.forEach((p) => (p.target = null));
-        el.classList.add("visible");
-      }, 800);
+      for(let i=0;i<pCount;i++){ targets.push({x:r.left+(r.width/pCount)*i,y:r.top}); targets.push({x:r.left+(r.width/pCount)*i,y:r.bottom}); }
+      pts.forEach((p,i)=>{ if(targets[i]) p.target = targets[i]; });
+      setTimeout(()=>{ pts.forEach(p=>p.target=null); el.classList.add("visible"); }, 700);
     }, delay);
   };
 
-  function openPopup(popId, cardId) {
-    const pop = byId(popId);
-    const card = byId(cardId);
-    if (!pop || !card) return;
+  function openPopup(popId, cardId){
+    const pop = byId(popId), card = byId(cardId);
+    if(!pop||!card) return;
     pop.style.display = "flex";
     materialize(card);
   }
-
-  function closePopups() {
-    qsa(".popup-overlay").forEach((p) => (p.style.display = "none"));
-    qsa(".popup-card").forEach((c) => c.classList.remove("visible"));
+  function closePopups(){
+    qsa(".popup-overlay").forEach(p=>p.style.display="none");
+    qsa(".popup-card").forEach(c=>c.classList.remove("visible"));
   }
 
-  // --- POPUPS MESSAGE / CONFIRM ---
-  function showMessage(text, title = "INFO") {
+  // ---------- MESSAGES / CONFIRM POPUPS ----------
+  function showMessage(text, title="INFO"){
     byId("msg-title").innerText = title;
     byId("msg-text").innerText = text;
-    openPopup("pop-message", "card-message");
+    openPopup("pop-message","card-message");
   }
-
-  function showConfirm(text, onYes, title = "CONFIRMATION") {
+  function showConfirm(text, onYes, title="CONFIRMATION"){
     confirmCallback = onYes;
     byId("confirm-title").innerText = title;
     byId("confirm-text").innerText = text;
-    openPopup("pop-confirm", "card-confirm");
+    openPopup("pop-confirm","card-confirm");
   }
 
-  // --- SESSION ---
-  function logout() {
-    localStorage.removeItem("tt_user");
-    location.reload();
+  // ---------- AUTH UI ----------
+  function updateAuthUI(){
+    const title = byId("auth-mode-title"), btn = byId("btn-login"), toggle = byId("auth-toggle");
+    if(authMode==="login"){ title.innerText="Se connecter"; btn.innerText="SE CONNECTER"; toggle.innerText="Vous n'avez pas de compte ? Rejoindre ThinkTalk"; }
+    else { title.innerText="Créer un compte"; btn.innerText="CRÉER UN COMPTE"; toggle.innerText="Vous avez déjà un compte ? Se connecter"; }
   }
 
-  async function deleteProfile() {
-    if (!currentUser) return;
-    showConfirm("Supprimer définitivement le profil et les contacts liés ?", async () => {
-      try {
-        await deleteDoc(doc(db, "users", currentUser));
-        const contactsRef = collection(db, "contacts");
-        const q1 = query(contactsRef, where("owner", "==", currentUser));
-        const q2 = query(contactsRef, where("name", "==", currentUser));
-        const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-        snap1.forEach((d) => deleteDoc(doc(db, "contacts", d.id)));
-        snap2.forEach((d) => deleteDoc(doc(db, "contacts", d.id)));
-        localStorage.removeItem("tt_user");
-        showMessage("Profil supprimé.");
-        setTimeout(() => location.reload(), 800);
-      } catch (e) {
-        console.error(e);
-        showMessage("Erreur lors de la suppression du profil.");
-      }
-    });
-  }
-
-  // --- TABS ---
-  function switchTab(tab) {
-    const appRoot = byId("main-app");
-    appRoot.classList.add("view-blur");
-    qsa(".nav-btn").forEach((b) => b.classList.remove("active"));
-    const btn = qsa(".nav-btn").find((b) => b.dataset.tab === tab);
-    if (btn) btn.classList.add("active");
-    setTimeout(() => {
-      qsa(".view-section").forEach((s) => s.classList.remove("active"));
-      const view = byId("view-" + tab);
-      if (view) view.classList.add("active");
-      appRoot.classList.remove("view-blur");
-      if (tab === "chat") {
-        qsa(".msg-block").forEach((m, i) => {
-          m.classList.remove("visible");
-          materialize(m, i * 80);
-        });
-      }
-    }, 400);
-  }
-
-  // --- AUTH ---
-  function updateAuthUI() {
-    const title = byId("auth-mode-title");
-    const btn = byId("btn-login");
-    const toggle = byId("auth-toggle");
-    if (authMode === "login") {
-      title.innerText = "Se connecter";
-      btn.innerText = "SE CONNECTER";
-      toggle.innerText = "Vous n'avez pas de compte ? Rejoindre ThinkTalk";
-    } else {
-      title.innerText = "Créer un compte";
-      btn.innerText = "CRÉER UN COMPTE";
-      toggle.innerText = "Vous avez déjà un compte ? Se connecter";
-    }
-  }
-
-  async function handleLogin() {
+  async function handleLogin(){
     const p = byId("auth-pseudo").value.trim().toLowerCase();
     const c = byId("auth-code").value.trim();
-    if (!p || !c) {
-      showMessage("Pseudo et code requis.");
-      return;
-    }
+    if(!p||!c){ showMessage("Pseudo et code requis."); return; }
     try {
-      const uRef = doc(db, "users", p);
+      const uRef = doc(db,"users",p);
       const uDoc = await getDoc(uRef);
-      if (authMode === "login") {
-        if (uDoc.exists()) {
-          if (uDoc.data().code === c) {
+      if(authMode==="login"){
+        if(uDoc.exists()){
+          if(uDoc.data().code === c){
             localStorage.setItem("tt_user", p);
-            location.reload();
-          } else {
-            showMessage("Code secret incorrect.");
-          }
-        } else {
-          showMessage("Ce compte n'existe pas.");
-        }
+            currentUser = p;
+            // show app
+            byId("auth-screen").style.display = "none";
+            byId("main-app").style.display = "flex";
+            enterRoom("général");
+          } else showMessage("Code secret incorrect.");
+        } else showMessage("Ce compte n'existe pas.");
       } else {
-        if (uDoc.exists()) {
-          showMessage("Ce pseudo est déjà utilisé.");
-          return;
-        }
+        if(uDoc.exists()){ showMessage("Ce pseudo est déjà utilisé."); return; }
         await setDoc(uRef, { code: c });
         localStorage.setItem("tt_user", p);
-        location.reload();
+        currentUser = p;
+        byId("auth-screen").style.display = "none";
+        byId("main-app").style.display = "flex";
+        enterRoom("général");
       }
-    } catch (e) {
-      console.error(e);
-      showMessage("Erreur de connexion.");
-    }
+    } catch(e){ console.error(e); showMessage("Erreur de connexion."); }
   }
 
-  // --- ROOMS & CHAT ---
-  async function enterRoom(name, isPrivateChat = false) {
-    if (!currentUser) {
-      showMessage("Connecte-toi d'abord.");
-      return;
-    }
+  // ---------- ROOMS / CHAT ----------
+  async function enterRoom(name, isPrivateChat=false){
+    if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
 
-    if (!isPrivateChat) {
-      const rSnap = await getDocs(
-        query(collection(db, "rooms"), where("name", "==", name))
-      );
-      if (!rSnap.empty) {
+    // if room is private (has pass) and user not owner and not in allowedRooms -> ask code
+    if(!isPrivateChat){
+      const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==",name), limit(1)));
+      if(!rSnap.empty){
         const roomDoc = rSnap.docs[0];
         const roomData = roomDoc.data();
         const pass = roomData.pass || "";
         const owner = roomData.owner || null;
-
-        if (pass && pass !== "") {
+        if(pass && pass !== ""){
           const roomKey = name;
           const alreadyAllowed = allowedRooms.includes(roomKey);
           const isOwner = owner === currentUser;
-
-          if (!alreadyAllowed && !isOwner) {
-            // popup pour code
-            let inputCode = "";
+          if(!alreadyAllowed && !isOwner){
+            // show popup with input
             const inputId = "room-pass-input";
-            const html = `
-              <div style="margin-top:10px">
-                <input id="${inputId}" type="password" class="input-box" placeholder="Code du salon">
-              </div>
-            `;
             byId("msg-title").innerText = "Salon privé";
-            byId("msg-text").innerHTML = "Ce salon est privé. Entrez le code :" + html;
-            openPopup("pop-message", "card-message");
+            byId("msg-text").innerHTML = "Ce salon est privé. Entrez le code :\n\n" +
+              `<div style="margin-top:10px"><input id="${inputId}" type="password" class="input-box" placeholder="Code du salon"></div>`;
+            openPopup("pop-message","card-message");
             const okBtn = byId("msg-ok-btn");
-            const oldHandler = okBtn.onclick;
+            const old = okBtn.onclick;
             okBtn.onclick = async () => {
-              const inp = byId(inputId);
-              inputCode = inp.value.trim();
+              const val = byId(inputId).value.trim();
               closePopups();
-              okBtn.onclick = oldHandler || null;
-              if (inputCode !== pass) {
-                showMessage("Code erroné.");
-                return;
-              }
+              okBtn.onclick = old || null;
+              if(val !== pass){ showMessage("Code erroné."); return; }
               allowedRooms.push(roomKey);
               localStorage.setItem("tt_allowedRooms", JSON.stringify(allowedRooms));
               proceedEnter();
@@ -517,29 +386,21 @@
 
     proceedEnter();
 
-    function proceedEnter() {
-      curRoom = isPrivateChat ? [currentUser, name].sort().join("_") : name;
-      byId("chat-header").innerText = isPrivateChat ? "@ " + name : "# " + name;
+    function proceedEnter(){
+      curRoom = isPrivateChat ? [currentUser,name].sort().join("_") : name;
+      byId("chat-header").innerText = (isPrivateChat ? "@ " : "# ") + name;
       switchTab("chat");
 
-      if (unsubChat) unsubChat();
-
-      const qMsg = query(
-        collection(db, "messages"),
-        where("room", "==", curRoom),
-        orderBy("timestamp", "asc")
-      );
-
+      if(unsubChat) unsubChat();
+      const qMsg = query(collection(db,"messages"), where("room","==",curRoom), orderBy("timestamp","asc"));
       unsubChat = onSnapshot(qMsg, (snap) => {
         const box = byId("chat-messages");
         box.innerHTML = "";
         snap.forEach((d) => {
           const m = d.data();
-          const date = m.timestamp?.seconds
-            ? new Date(m.timestamp.seconds * 1000)
-            : new Date();
-          const hh = String(date.getHours()).padStart(2, "0");
-          const mm = String(date.getMinutes()).padStart(2, "0");
+          const date = m.timestamp?.seconds ? new Date(m.timestamp.seconds*1000) : new Date();
+          const hh = String(date.getHours()).padStart(2,"0");
+          const mm = String(date.getMinutes()).padStart(2,"0");
           const timeStr = `${hh}:${mm}`;
 
           const div = document.createElement("div");
@@ -551,7 +412,7 @@
 
           const content = document.createElement("div");
           content.className = "msg-text";
-          if (m.image) {
+          if(m.image){
             const img = document.createElement("img");
             img.src = m.image;
             img.className = "msg-img";
@@ -563,234 +424,236 @@
           div.appendChild(info);
           div.appendChild(content);
 
-          if (m.sender === currentUser) {
-            div.onclick = () => {
-              selectedMsgId = d.id;
-              openPopup("pop-options", "card-options");
-            };
+          if(m.sender === currentUser){
+            div.onclick = () => { selectedMsgId = d.id; openPopup("pop-options","card-options"); };
           }
 
           box.appendChild(div);
-          div.classList.add("visible");
+          // animate
+          setTimeout(()=>div.classList.add("visible"), 20);
         });
+        // scroll to bottom
         box.parentElement.scrollTop = box.parentElement.scrollHeight;
       });
     }
   }
 
-  async function createRoom() {
+  async function createRoom(){
     const name = byId("new-room-name").value.trim();
     const pass = byId("new-room-pass").value.trim();
-    if (!name) return;
-    if (!currentUser) {
-      showMessage("Connecte-toi d'abord.");
-      return;
-    }
+    if(!name) return;
+    if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
     try {
-      await addDoc(collection(db, "rooms"), { name, pass, owner: currentUser });
+      // prevent duplicate room names
+      const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==",name), limit(1)));
+      if(!rSnap.empty){ showMessage("Un salon avec ce nom existe déjà."); return; }
+      await addDoc(collection(db,"rooms"), { name, pass, owner: currentUser });
       closePopups();
       byId("new-room-name").value = "";
       byId("new-room-pass").value = "";
-    } catch (e) {
-      console.error(e);
-      showMessage("Erreur lors de la création du salon.");
-    }
+    } catch(e){ console.error(e); showMessage("Erreur lors de la création du salon."); }
   }
 
-  async function sendMessage() {
-    if (!currentUser) {
-      showMessage("Connecte-toi d'abord.");
-      return;
-    }
+  async function sendMessage(){
+    if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
     const i = byId("chat-input");
     const text = i.value.trim();
-    if (!text) return;
+    if(!text) return;
     try {
-      await addDoc(collection(db, "messages"), {
+      await addDoc(collection(db,"messages"), {
         text,
         room: curRoom,
         sender: currentUser,
         timestamp: serverTimestamp()
       });
       i.value = "";
-    } catch (e) {
-      console.error(e);
-      showMessage("Erreur lors de l'envoi du message.");
-    }
+    } catch(e){ console.error(e); showMessage("Erreur lors de l'envoi du message."); }
   }
 
-  function sendImage(file) {
-    if (!file || !currentUser) return;
+  function sendImage(file){
+    if(!file || !currentUser) return;
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
-        await addDoc(collection(db, "messages"), {
+        await addDoc(collection(db,"messages"), {
           image: ev.target.result,
           room: curRoom,
           sender: currentUser,
           timestamp: serverTimestamp()
         });
-      } catch (err) {
-        console.error(err);
-        showMessage("Erreur lors de l'envoi de l'image.");
-      }
+      } catch(err){ console.error(err); showMessage("Erreur lors de l'envoi de l'image."); }
     };
     reader.readAsDataURL(file);
   }
 
-  async function deleteMessage() {
-    if (!selectedMsgId) return;
-    try {
-      await deleteDoc(doc(db, "messages", selectedMsgId));
-    } catch (e) {
-      console.error(e);
-      showMessage("Impossible de supprimer le message (règles Firestore ?).");
-    }
-    closePopups();
-    selectedMsgId = null;
+  async function deleteMessage(){
+    if(!selectedMsgId) return;
+    try { await deleteDoc(doc(db,"messages",selectedMsgId)); }
+    catch(e){ console.error(e); showMessage("Impossible de supprimer le message (règles Firestore ?)."); }
+    closePopups(); selectedMsgId = null;
   }
 
-  // --- CONTACTS ---
-  async function addContact() {
-    if (!currentUser) {
-      showMessage("Connecte-toi d'abord.");
-      return;
-    }
+  // ---------- CONTACTS ----------
+  async function addContact(){
+    if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
     const name = byId("contact-name-input").value.trim().toLowerCase();
-    if (!name || name === currentUser) return;
+    if(!name || name === currentUser) return;
     try {
-      const uRef = doc(db, "users", name);
+      const uRef = doc(db,"users",name);
       const uDoc = await getDoc(uRef);
-      if (!uDoc.exists()) {
-        showMessage("Ce contact n'existe pas sur ThinkTalk.");
-        return;
-      }
-      await addDoc(collection(db, "contacts"), { owner: currentUser, name });
+      if(!uDoc.exists()){ showMessage("Ce contact n'existe pas sur ThinkTalk."); return; }
+      // prevent duplicates
+      const existing = contactsCache.find(c => c.owner===currentUser && c.name===name);
+      if(existing){ showMessage("Contact déjà ajouté."); byId("contact-name-input").value=""; return; }
+      await addDoc(collection(db,"contacts"), { owner: currentUser, name });
       byId("contact-name-input").value = "";
-    } catch (e) {
-      console.error(e);
-      showMessage("Erreur lors de l'ajout du contact.");
-    }
+    } catch(e){ console.error(e); showMessage("Erreur lors de l'ajout du contact."); }
   }
 
-  // --- SNAPSHOTS ROOMS / CONTACTS / MESSAGES ---
-  function normalize(str) {
-    return (str || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
-  }
+  // ---------- SNAPSHOTS & RENDER ----------
+  function normalize(str){ return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
 
-  function setupMessagesSnapshot() {
-    const qAll = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+  // messages snapshot (global) to build previews (optimized: only last N messages per room)
+  function setupMessagesSnapshot(){
+    // listen to messages collection but keep it efficient by limiting processing
+    const qAll = query(collection(db,"messages"), orderBy("timestamp","asc"));
     onSnapshot(qAll, (snap) => {
       lastMessagesByRoom.clear();
       lastMessagesByDM.clear();
       snap.forEach((d) => {
         const m = d.data();
         const room = m.room;
-        if (!room) return;
+        if(!room) return;
         const entry = { sender: m.sender, text: m.text || (m.image ? "[image]" : "") };
-
-        // DM ou room ?
-        if (room.includes("_") && !room.includes(" ")) {
-          // DM
+        if(room.includes("_") && !room.includes(" ")){
           const arr = lastMessagesByDM.get(room) || [];
           arr.push(entry);
-          if (arr.length > 2) arr.shift();
+          if(arr.length>2) arr.shift();
           lastMessagesByDM.set(room, arr);
         } else {
           const arr = lastMessagesByRoom.get(room) || [];
           arr.push(entry);
-          if (arr.length > 2) arr.shift();
+          if(arr.length>2) arr.shift();
           lastMessagesByRoom.set(room, arr);
         }
       });
-      // refresh tuiles
       renderRoomsTiles();
       renderContactsTiles();
     });
   }
 
-  function renderRoomsTiles() {
+  function renderRoomsTiles(){
     const g = byId("rooms-grid");
-    if (!g) return;
+    if(!g) return;
     g.innerHTML = "";
     const search = normalize(byId("rooms-search").value.trim());
     roomsCache.forEach((r) => {
-      if (!r.name) return;
-      const nameNorm = normalize(r.name);
+      if(!r.name) return;
       const previews = lastMessagesByRoom.get(r.name) || [];
-      const previewText = previews
-        .map((m) => `${m.sender}: ${m.text}`)
-        .join(" • ")
-        .slice(0, 80);
-
-      const haystack = nameNorm + " " + normalize(previewText);
-      if (search && !haystack.includes(search)) return;
+      const previewText = previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
+      const haystack = normalize(r.name) + " " + normalize(previewText);
+      if(search && !haystack.includes(search)) return;
 
       const t = document.createElement("div");
       t.className = "tile";
-      t.innerHTML = `<div><span># ${r.name}</span>${r.pass ? '<span class="lock-badge">🔒</span>' : ""}</div>
-                     <div class="tile-preview">${previewText || ""}</div>`;
+      t.innerHTML = `<div class="title"><span># ${r.name}</span>${r.pass?'<span class="lock-badge">🔒</span>':''}</div>
+                     <div class="tile-preview">${previewText || '<span class="muted">Aucun message</span>'}</div>`;
 
-      // suppression salon (seulement owner)
-      if (r.owner === currentUser) {
+      // delete button (only owner)
+      if(r.owner === currentUser){
         const delBtn = document.createElement("button");
         delBtn.className = "tile-delete-btn";
         delBtn.textContent = "Suppr.";
         delBtn.onclick = (ev) => {
           ev.stopPropagation();
           showConfirm(`Supprimer le salon #${r.name} ?`, async () => {
-            try {
-              await deleteDoc(doc(db, "rooms", r._id));
-            } catch (e) {
-              console.error(e);
-              showMessage("Erreur lors de la suppression du salon.");
-            }
+            try { await deleteDoc(doc(db,"rooms", r._id)); }
+            catch(e){ console.error(e); showMessage("Erreur lors de la suppression du salon."); }
           });
         };
         t.appendChild(delBtn);
       }
 
-      // long press mobile
+      // long press mobile to delete (owner only)
       let pressTimer = null;
       t.addEventListener("pointerdown", (e) => {
-        if (r.owner === currentUser) {
-          pressTimer = setTimeout(() => {
+        if(r.owner === currentUser){
+          pressTimer = setTimeout(()=> {
             showConfirm(`Supprimer le salon #${r.name} ?`, async () => {
-              try {
-                await deleteDoc(doc(db, "rooms", r._id));
-              } catch (e) {
-                console.error(e);
-                showMessage("Erreur lors de la suppression du salon.");
-              }
+              try { await deleteDoc(doc(db,"rooms", r._id)); }
+              catch(e){ console.error(e); showMessage("Erreur lors de la suppression du salon."); }
             });
-          }, 600);
+          }, 650);
         }
       });
-      t.addEventListener("pointerup", () => {
-        if (pressTimer) {
-          clearTimeout(pressTimer);
-          pressTimer = null;
-        }
-      });
-      t.addEventListener("pointerleave", () => {
-        if (pressTimer) {
-          clearTimeout(pressTimer);
-          pressTimer = null;
-        }
-      });
+      t.addEventListener("pointerup", ()=>{ if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; } });
+      t.addEventListener("pointerleave", ()=>{ if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; } });
 
       t.onclick = () => enterRoom(r.name);
       g.appendChild(t);
     });
   }
 
-  let roomsCache = [];
+  function renderContactsTiles(){
+    const g = byId("contacts-grid");
+    if(!g || !currentUser) return;
+    g.innerHTML = "";
+    const search = normalize(byId("contacts-search").value.trim());
+    const list = new Set();
+    contactsCache.forEach((c) => {
+      if(!c.owner || !c.name) return;
+      if(c.owner === currentUser) list.add(c.name);
+      if(c.name === currentUser) list.add(c.owner);
+    });
 
-  function setupRoomsSnapshot() {
-    onSnapshot(collection(db, "rooms"), (snap) => {
+    Array.from(list).forEach((name) => {
+      const dmKey = [currentUser, name].sort().join("_");
+      const previews = lastMessagesByDM.get(dmKey) || [];
+      const previewText = previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
+      const haystack = normalize(name) + " " + normalize(previewText);
+      if(search && !haystack.includes(search)) return;
+
+      const t = document.createElement("div");
+      t.className = "tile";
+      t.innerHTML = `<div class="title"><span>@ ${name}</span></div>
+                     <div class="tile-preview">${previewText || '<span class="muted">Aucun message</span>'}</div>`;
+
+      // find contact object where owner === currentUser
+      const contactObj = contactsCache.find(c => c.owner===currentUser && c.name===name);
+      if(contactObj){
+        const delBtn = document.createElement("button");
+        delBtn.className = "tile-delete-btn";
+        delBtn.textContent = "Suppr.";
+        delBtn.onclick = (ev) => {
+          ev.stopPropagation();
+          showConfirm(`Supprimer le contact @${name} ?`, async () => {
+            try { await deleteDoc(doc(db,"contacts", contactObj._id)); }
+            catch(e){ console.error(e); showMessage("Erreur lors de la suppression du contact."); }
+          });
+        };
+        t.appendChild(delBtn);
+
+        // long press
+        let pressTimer = null;
+        t.addEventListener("pointerdown", () => {
+          pressTimer = setTimeout(()=> {
+            showConfirm(`Supprimer le contact @${name} ?`, async () => {
+              try { await deleteDoc(doc(db,"contacts", contactObj._id)); }
+              catch(e){ console.error(e); showMessage("Erreur lors de la suppression du contact."); }
+            });
+          }, 650);
+        });
+        t.addEventListener("pointerup", ()=>{ if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; } });
+        t.addEventListener("pointerleave", ()=>{ if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; } });
+      }
+
+      t.onclick = () => enterRoom(name, true);
+      g.appendChild(t);
+    });
+  }
+
+  function setupRoomsSnapshot(){
+    onSnapshot(collection(db,"rooms"), (snap) => {
       roomsCache = [];
       snap.forEach((d) => {
         const r = d.data();
@@ -800,91 +663,8 @@
     });
   }
 
-  function renderContactsTiles() {
-    const g = byId("contacts-grid");
-    if (!g || !currentUser) return;
-    g.innerHTML = "";
-    const search = normalize(byId("contacts-search").value.trim());
-    const list = new Set();
-    contactsCache.forEach((c) => {
-      if (!c.owner || !c.name) return;
-      if (c.owner === currentUser) list.add(c.name);
-      if (c.name === currentUser) list.add(c.owner);
-    });
-
-    list.forEach((name) => {
-      const dmKey = [currentUser, name].sort().join("_");
-      const previews = lastMessagesByDM.get(dmKey) || [];
-      const previewText = previews
-        .map((m) => `${m.sender}: ${m.text}`)
-        .join(" • ")
-        .slice(0, 80);
-
-      const haystack = normalize(name) + " " + normalize(previewText);
-      if (search && !haystack.includes(search)) return;
-
-      const t = document.createElement("div");
-      t.className = "tile";
-      t.innerHTML = `<div><span>@ ${name}</span></div>
-                     <div class="tile-preview">${previewText || ""}</div>`;
-
-      // suppression contact (seulement si owner = currentUser)
-      const contactObj = contactsCache.find(
-        (c) => (c.owner === currentUser && c.name === name)
-      );
-      if (contactObj) {
-        const delBtn = document.createElement("button");
-        delBtn.className = "tile-delete-btn";
-        delBtn.textContent = "Suppr.";
-        delBtn.onclick = (ev) => {
-          ev.stopPropagation();
-          showConfirm(`Supprimer le contact @${name} ?`, async () => {
-            try {
-              await deleteDoc(doc(db, "contacts", contactObj._id));
-            } catch (e) {
-              console.error(e);
-              showMessage("Erreur lors de la suppression du contact.");
-            }
-          });
-        };
-        t.appendChild(delBtn);
-
-        let pressTimer = null;
-        t.addEventListener("pointerdown", () => {
-          pressTimer = setTimeout(() => {
-            showConfirm(`Supprimer le contact @${name} ?`, async () => {
-              try {
-                await deleteDoc(doc(db, "contacts", contactObj._id));
-              } catch (e) {
-                console.error(e);
-                showMessage("Erreur lors de la suppression du contact.");
-              }
-            });
-          }, 600);
-        });
-        t.addEventListener("pointerup", () => {
-          if (pressTimer) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-          }
-        });
-        t.addEventListener("pointerleave", () => {
-          if (pressTimer) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-          }
-        });
-      }
-
-      t.onclick = () => enterRoom(name, true);
-      g.appendChild(t);
-    });
-  }
-
-  let contactsCache = [];
-
-  function setupContactsSnapshot() {
-    onSnapshot(collection(db, "contacts"), (snap) => {
+  function setupContactsSnapshot(){
+    onSnapshot(collection(db,"contacts"), (snap) => {
       contactsCache = [];
       snap.forEach((d) => {
         const c = d.data();
@@ -894,141 +674,140 @@
     });
   }
 
-  // --- ACCENT COLOR ---
-  function applyAccent(color) {
+  // ---------- ACCENT COLOR ----------
+  function applyAccent(color){
     document.documentElement.style.setProperty("--accent", color);
     localStorage.setItem("tt_accent", color);
   }
-
-  function initAccent() {
+  function initAccent(){
     const saved = localStorage.getItem("tt_accent");
-    if (saved) applyAccent(saved);
-    const presets = [
-      "#0078d7",
-      "#8e44ad",
-      "#27ae60",
-      "#e67e22",
-      "#e91e63",
-      "#ff4757",
-      "#1abc9c",
-      "#f1c40f",
-      "#3498db",
-      "#9b59b6"
-    ];
+    if(saved) applyAccent(saved);
+    const presets = ["#0078d7","#8e44ad","#27ae60","#e67e22","#e91e63","#ff4757","#1abc9c","#f1c40f","#3498db","#9b59b6"];
     const grid = byId("accent-presets");
+    grid.innerHTML = "";
     presets.forEach((c) => {
       const dot = document.createElement("div");
       dot.className = "color-dot";
       dot.style.background = c;
-      if (saved === c) dot.classList.add("selected");
+      if(saved === c) dot.classList.add("selected");
       dot.onclick = () => {
-        qsa(".color-dot").forEach((d) => d.classList.remove("selected"));
+        qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
         dot.classList.add("selected");
         applyAccent(c);
       };
       grid.appendChild(dot);
     });
-
     byId("btn-more-colors").onclick = () => {
       const adv = byId("advanced-color");
       adv.style.display = adv.style.display === "none" ? "block" : "none";
     };
-
     const picker = byId("accent-picker");
     picker.value = saved || "#0078d7";
-    picker.oninput = () => {
-      applyAccent(picker.value);
-    };
+    picker.oninput = () => applyAccent(picker.value);
   }
 
-  // --- INIT UI & EVENTS ---
-  function initUI() {
-    // nav
-    qsa(".nav-btn").forEach((btn) => {
-      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-    });
-
-    // popups
-    byId("btn-open-session").addEventListener("click", () => openPopup("pop-logout", "card-logout"));
-    byId("btn-open-create").addEventListener("click", () => openPopup("pop-create", "card-create"));
-    byId("btn-open-accent").addEventListener("click", () => openPopup("pop-accent", "card-accent"));
-    qsa("[data-close-popup]").forEach((b) => b.addEventListener("click", closePopups));
-
-    // session
-    byId("btn-logout").addEventListener("click", logout);
-    byId("btn-delete-profile").addEventListener("click", deleteProfile);
-
-    // message popup
-    byId("msg-ok-btn").addEventListener("click", closePopups);
-
-    // confirm popup
-    byId("confirm-yes").addEventListener("click", () => {
-      if (confirmCallback) confirmCallback();
-      confirmCallback = null;
-      closePopups();
-    });
-    byId("confirm-no").addEventListener("click", () => {
-      confirmCallback = null;
-      closePopups();
-    });
-
-    // auth
-    byId("btn-login").addEventListener("click", handleLogin);
-    byId("auth-code").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") handleLogin();
-    });
-    byId("auth-toggle").addEventListener("click", () => {
-      authMode = authMode === "login" ? "register" : "login";
-      updateAuthUI();
-    });
-
-    // rooms
-    byId("btn-do-create").addEventListener("click", createRoom);
-    byId("rooms-search").addEventListener("input", () => {
-      renderRoomsTiles();
-    });
-
-    // chat
-    byId("send-btn").addEventListener("click", sendMessage);
-    byId("chat-input").addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
+  // ---------- ENSURE GENERAL ROOM ----------
+  async function ensureGeneralRoom(){
+    try {
+      const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==","général"), limit(1)));
+      if(rSnap.empty){
+        await addDoc(collection(db,"rooms"), { name: "général", pass: "", owner: "system" });
       }
+    } catch(e){ console.error("ensureGeneralRoom error", e); }
+  }
+
+  // ---------- INIT UI & EVENTS ----------
+  function initUI(){
+    qsa(".nav-btn").forEach((btn)=> btn.addEventListener("click", ()=> switchTab(btn.dataset.tab)));
+    byId("btn-open-session").addEventListener("click", ()=> openPopup("pop-logout","card-logout"));
+    byId("btn-open-create").addEventListener("click", ()=> openPopup("pop-create","card-create"));
+    byId("btn-open-accent").addEventListener("click", ()=> openPopup("pop-accent","card-accent"));
+    qsa("[data-close-popup]").forEach((b)=> b.addEventListener("click", closePopups));
+
+    byId("btn-logout").addEventListener("click", ()=> { localStorage.removeItem("tt_user"); location.reload(); });
+    byId("btn-delete-profile").addEventListener("click", async ()=> {
+      if(!currentUser) return;
+      showConfirm("Supprimer définitivement le profil et les contacts liés ?", async ()=> {
+        try {
+          await deleteDoc(doc(db,"users", currentUser));
+          const contactsRef = collection(db,"contacts");
+          const q1 = query(contactsRef, where("owner","==", currentUser));
+          const q2 = query(contactsRef, where("name","==", currentUser));
+          const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+          snap1.forEach(d => deleteDoc(doc(db,"contacts", d.id)));
+          snap2.forEach(d => deleteDoc(doc(db,"contacts", d.id)));
+          localStorage.removeItem("tt_user");
+          showMessage("Profil supprimé.");
+          setTimeout(()=> location.reload(), 800);
+        } catch(e){ console.error(e); showMessage("Erreur lors de la suppression du profil."); }
+      });
     });
-    byId("btn-attach").addEventListener("click", () => byId("file-input").click());
-    byId("file-input").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) sendImage(file);
-      e.target.value = "";
-    });
+
+    byId("msg-ok-btn").addEventListener("click", closePopups);
+    byId("confirm-yes").addEventListener("click", ()=> { if(confirmCallback) confirmCallback(); confirmCallback=null; closePopups(); });
+    byId("confirm-no").addEventListener("click", ()=> { confirmCallback=null; closePopups(); });
+
+    byId("btn-login").addEventListener("click", handleLogin);
+    byId("auth-code").addEventListener("keydown", (e)=> { if(e.key==="Enter") handleLogin(); });
+    byId("auth-toggle").addEventListener("click", ()=> { authMode = authMode==="login" ? "register" : "login"; updateAuthUI(); });
+
+    byId("btn-do-create").addEventListener("click", createRoom);
+    byId("rooms-search").addEventListener("input", debounce(()=> renderRoomsTiles(), 180));
+
+    byId("send-btn").addEventListener("click", sendMessage);
+    byId("chat-input").addEventListener("keydown", (e)=> { if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
+    byId("btn-attach").addEventListener("click", ()=> byId("file-input").click());
+    byId("file-input").addEventListener("change", (e)=> { const file = e.target.files[0]; if(file) sendImage(file); e.target.value=""; });
     byId("btn-msg-del").addEventListener("click", deleteMessage);
 
-    // contacts
     byId("btn-add-contact").addEventListener("click", addContact);
-    byId("contacts-search").addEventListener("input", () => {
-      renderContactsTiles();
-    });
+    byId("contacts-search").addEventListener("input", debounce(()=> renderContactsTiles(), 180));
 
     initAccent();
     updateAuthUI();
   }
 
-  function initApp() {
+  // ---------- INIT APP ----------
+  async function initApp(){
     initUI();
+    await ensureGeneralRoom();
     setupRoomsSnapshot();
     setupContactsSnapshot();
     setupMessagesSnapshot();
 
-    if (currentUser) {
+    if(currentUser){
       byId("auth-screen").style.display = "none";
-      const appRoot = byId("main-app");
-      appRoot.style.display = "flex";
+      byId("main-app").style.display = "flex";
       enterRoom("général");
+    } else {
+      byId("auth-screen").style.display = "flex";
+      byId("main-app").style.display = "none";
     }
   }
 
   initApp();
+
+  // ---------- TABS ----------
+  function switchTab(tab){
+    const appRoot = byId("main-app");
+    appRoot.classList.add("view-blur");
+    qsa(".nav-btn").forEach(b=>b.classList.remove("active"));
+    const btn = qsa(".nav-btn").find(b=>b.dataset.tab===tab);
+    if(btn) btn.classList.add("active");
+    setTimeout(()=> {
+      qsa(".view-section").forEach(s=>s.classList.remove("active"));
+      const view = byId("view-"+tab);
+      if(view) view.classList.add("active");
+      appRoot.classList.remove("view-blur");
+      if(tab==="chat"){
+        qsa(".msg-block").forEach((m,i)=>{ m.classList.remove("visible"); materialize(m, i*60); });
+      }
+    }, 300);
+  }
+
+  // ---------- CLEANUP ON UNLOAD ----------
+  addEventListener("beforeunload", ()=> { if(unsubChat) unsubChat(); });
 </script>
 </body>
 </html>
+
