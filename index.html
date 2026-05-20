@@ -1,683 +1,274 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>ThinkTalk Messenger</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    :root {
-      --bg: #05060a;
-      --bg2: #0b0d14;
-      --accent: #4f8cff;
-      --accent-soft: #1b2a4f;
-      --text: #f5f7ff;
-      --muted: #8b90a5;
-      --danger: #ff4f6a;
-      --border: #1a1d27;
-      --radius: 14px;
-      --radius-sm: 9px;
-      --shadow-soft: 0 18px 45px rgba(0,0,0,0.55);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body {
-      background: radial-gradient(circle at top, #1b2340 0, #05060a 45%, #020308 100%);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
-      padding: 16px;
-    }
-    .app {
-      width: 100%;
-      max-width: 1200px;
-      background: linear-gradient(145deg, rgba(255,255,255,0.02), rgba(0,0,0,0.7));
-      border-radius: 24px;
-      border: 1px solid rgba(255,255,255,0.04);
-      box-shadow: var(--shadow-soft);
-      display: grid;
-      grid-template-columns: 260px 1fr 260px;
-      overflow: hidden;
-      backdrop-filter: blur(26px);
-    }
-    @media (max-width: 900px) {
-      .app { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
-      .sidebar, .contacts { min-height: 220px; }
-    }
-    .sidebar, .contacts {
-      background: radial-gradient(circle at top left, rgba(79,140,255,0.18), rgba(2,3,8,0.96));
-      border-right: 1px solid var(--border);
-      padding: 14px 14px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .contacts { border-right: none; border-left: 1px solid var(--border); }
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-    .title {
-      font-size: 18px;
-      font-weight: 650;
-      letter-spacing: 0.03em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .title span.logo {
-      width: 22px;
-      height: 22px;
-      border-radius: 9px;
-      background: conic-gradient(from 210deg, #4f8cff, #7b5cff, #4f8cff);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 800;
-      color: #05060a;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.18);
-    }
-    .pill {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.06);
-      color: var(--muted);
-    }
-    .section-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-      margin-top: 4px;
-      margin-bottom: 4px;
-    }
-    .card {
-      background: radial-gradient(circle at top left, rgba(79,140,255,0.18), rgba(2,3,8,0.96));
-      border-radius: var(--radius);
-      border: 1px solid rgba(255,255,255,0.06);
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .field label {
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .field-row {
-      display: flex;
-      gap: 6px;
-    }
-    input, select, button, textarea {
-      border-radius: var(--radius-sm);
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(3,5,12,0.9);
-      color: var(--text);
-      font-size: 13px;
-      padding: 7px 9px;
-      outline: none;
-      transition: border 0.15s, background 0.15s, box-shadow 0.15s, transform 0.08s;
-    }
-    input:focus, textarea:focus, select:focus {
-      border-color: rgba(79,140,255,0.9);
-      box-shadow: 0 0 0 1px rgba(79,140,255,0.5);
-      background: rgba(5,9,20,0.98);
-    }
-    button {
-      cursor: pointer;
-      background: linear-gradient(135deg, #4f8cff, #7b5cff);
-      border: none;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      font-size: 11px;
-      padding: 7px 10px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      box-shadow: 0 10px 25px rgba(79,140,255,0.45);
-    }
-    button.secondary {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: none;
-      text-transform: none;
-      font-size: 12px;
-      letter-spacing: 0.01em;
-    }
-    button:active { transform: translateY(1px) scale(0.99); box-shadow: 0 6px 18px rgba(0,0,0,0.6); }
-    button.danger { background: linear-gradient(135deg, #ff4f6a, #ff7b8a); box-shadow: 0 10px 25px rgba(255,79,106,0.45); }
-    .tag {
-      font-size: 11px;
-      padding: 3px 7px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
-      color: var(--muted);
-    }
-    .main {
-      display: flex;
-      flex-direction: column;
-      border-inline: 1px solid var(--border);
-      background: radial-gradient(circle at top, rgba(79,140,255,0.12), rgba(2,3,8,0.98));
-    }
-    .room-header {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .room-title {
-      font-size: 14px;
-      font-weight: 600;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .room-title span.sub {
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .messages {
-      flex: 1;
-      padding: 10px 12px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      scroll-behavior: smooth;
-    }
-    .msg {
-      max-width: 80%;
-      padding: 7px 9px;
-      border-radius: 12px;
-      background: rgba(9,12,22,0.96);
-      border: 1px solid rgba(255,255,255,0.04);
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      font-size: 13px;
-    }
-    .msg.me { margin-left: auto; background: linear-gradient(135deg, rgba(79,140,255,0.9), rgba(123,92,255,0.9)); border-color: rgba(255,255,255,0.18); }
-    .msg-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .msg-sender { font-weight: 600; color: #cfd5ff; }
-    .msg-text { white-space: pre-wrap; word-wrap: break-word; }
-    .msg-img {
-      margin-top: 4px;
-      border-radius: 10px;
-      max-width: 220px;
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-    .composer {
-      padding: 8px 10px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      background: radial-gradient(circle at bottom, rgba(79,140,255,0.18), rgba(2,3,8,0.98));
-    }
-    .composer-row {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-    .composer-row textarea {
-      flex: 1;
-      resize: none;
-      min-height: 40px;
-      max-height: 90px;
-      font-size: 13px;
-    }
-    .hint {
-      font-size: 11px;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      gap: 6px;
-    }
-    .list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      max-height: 260px;
-      overflow-y: auto;
-    }
-    .item {
-      padding: 6px 7px;
-      border-radius: 9px;
-      border: 1px solid rgba(255,255,255,0.04);
-      background: rgba(3,5,12,0.9);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    .item span.name { font-weight: 500; }
-    .item span.meta { font-size: 11px; color: var(--muted); }
-    .item.active { border-color: rgba(79,140,255,0.9); background: rgba(10,18,40,0.98); }
-    .small {
-      font-size: 11px;
-      color: var(--muted);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>ThinkTalk</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        :root { --accent: #0078d7; --bg: #000; --text: #fff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", sans-serif; }
+        body { background: var(--bg); color: var(--text); overflow: hidden; height: 100svh; position: fixed; width: 100%; }
+        #canvas-dust { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+        .app-root { position: relative; z-index: 1; height: 100%; display: none; flex-direction: column; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s; }
+        .view-blur { filter: blur(25px); transform: translateX(-30px); }
+
+        .tiles-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; transition: 0.5s; }
+        .tile { position: relative; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; height: 110px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; backdrop-filter: blur(10px); transition: transform 0.4s, opacity 0.4s; overflow: hidden; }
+        .tile.visible { opacity: 1; }
+        .lock-badge { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; opacity: 0.5; }
+
+        .msg-block { opacity: 0; transform: translateY(10px); transition: opacity 0.5s 0.8s, transform 0.5s 0.8s; margin-bottom: 20px; max-width: 85%; cursor: pointer; }
+        .msg-block.own { align-self: flex-end; }
+        .msg-block.visible { opacity: 1; transform: translateY(0); }
+        .msg-info { font-size: 0.65rem; color: #888; margin-bottom: 4px; display: flex; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .msg-block.own .msg-info { justify-content: flex-end; color: var(--accent); }
+        .msg-text { background: rgba(0,120,215,0.1); padding: 12px; border-left: 3px solid var(--accent); word-break: break-word; }
+        .msg-block.own .msg-text { border-left: none; border-right: 3px solid #666; background: rgba(255,255,255,0.05); }
+        .msg-img { max-width: 100%; border-radius: 4px; margin-top: 8px; display: block; }
+
+        .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .popup-card { background: #000; border: 2px solid var(--accent); width: 100%; max-width: 320px; padding: 25px; opacity: 0; transition: opacity 0.4s; }
+        .popup-card.visible { opacity: 1; }
+
+        .top-bar { padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 70px; }
+        .top-title { font-size: 2.2rem; font-weight: 100; color: var(--accent); cursor: pointer; }
+        .view-container { flex: 1; overflow-y: auto; padding: 10px 10px 120px 10px; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; display: flex; background: #000; border-top: 1px solid #222; }
+        .nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; cursor: pointer; font-size: 0.8rem; letter-spacing: 1px; }
+        .nav-btn.active { color: #fff; border-top: 3px solid var(--accent); font-weight: bold; }
+        .input-box { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid #333; padding: 12px; color: #fff; outline: none; margin-bottom: 10px; }
+        .btn-full { width: 100%; padding: 15px; background: var(--accent); border: none; color: #fff; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <!-- SIDEBAR GAUCHE -->
-    <aside class="sidebar">
-      <div class="header">
-        <div class="title">
-          <span class="logo">T</span>
-          ThinkTalk
-        </div>
-        <span class="pill">Firebase • Realtime</span>
-      </div>
 
-      <div class="card" id="auth-card">
-        <div class="section-label">Identité</div>
-        <div class="field">
-          <label>Pseudo</label>
-          <input id="username" placeholder/>
-        </div>
-        <div class="field">
-          <label>Code secret</label>
-          <input id="usercode" placeholder="4 chiffres, ex: 1234" />
-        </div>
-        <div class="field-row">
-          <button id="btn-login">Connexion</button>
-          <button class="secondary" id="btn-logout">Déconnexion</button>
-        </div>
-        <div class="small" id="auth-status">Non connecté</div>
-      </div>
+<canvas id="canvas-dust"></canvas>
 
-      <div class="card">
-        <div class="section-label">Salons</div>
-        <div class="field">
-          <label>Nom du salon</label>
-          <input id="room-name" placeholder="général, dev, etc." />
-        </div>
-        <div class="field">
-          <label>Mot de passe (optionnel)</label>
-          <input id="room-pass" placeholder="laisser vide si public" />
-        </div>
-        <div class="field-row">
-          <button id="btn-join-room">Rejoindre / Créer</button>
-          <button class="secondary" id="btn-room-general"># général</button>
-        </div>
-        <div class="list" id="rooms-list"></div>
-      </div>
-    </aside>
+<!-- POPUP SESSION / PROFIL -->
+<div class="popup-overlay" id="pop-logout">
+    <div class="popup-card" id="card-logout">
+        <h3>SESSION</h3>
+        <p style="margin:15px 0">Que voulez-vous faire ?</p>
+        <button class="btn-full" onclick="confirmLogout()">SE DÉCONNECTER</button>
+        <button class="btn-full" style="background:#800;margin-top:10px" onclick="confirmDeleteProfile()">SUPPRIMER LE PROFIL</button>
+        <button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button>
+    </div>
+</div>
 
-    <!-- ZONE CENTRALE -->
-    <main class="main">
-      <div class="room-header">
-        <div class="room-title">
-          <span id="room-title">Aucun salon</span>
-          <span class="sub" id="room-subtitle">Connecte-toi et rejoins un salon pour commencer à discuter.</span>
-        </div>
-        <div class="tag" id="user-tag">Invité</div>
-      </div>
+<!-- POPUP CRÉATION SALON -->
+<div class="popup-overlay" id="pop-create">
+    <div class="popup-card" id="card-create">
+        <h3>NOUVEAU SALON</h3>
+        <input type="text" id="new-room-name" placeholder="Nom du salon..." class="input-box" style="margin-top:15px">
+        <input type="password" id="new-room-pass" placeholder="Code (optionnel)..." class="input-box">
+        <button class="btn-full" id="btn-do-create">CRÉER</button>
+        <button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button>
+    </div>
+</div>
 
-      <div class="messages" id="messages"></div>
+<!-- POPUP OPTIONS MESSAGE -->
+<div class="popup-overlay" id="pop-options">
+    <div class="popup-card" id="card-options">
+        <h3>OPTIONS</h3>
+        <button class="btn-full" style="background:#800;margin-top:20px" id="btn-msg-del">SUPPRIMER</button>
+        <button class="btn-full" style="background:#222;margin-top:10px" onclick="closePopups()">ANNULER</button>
+    </div>
+</div>
 
-      <div class="composer">
-        <div class="composer-row">
-          <textarea id="message-input" placeholder="Écris un message..."></textarea>
-          <button id="btn-send">Envoyer</button>
-        </div>
-        <div class="composer-row">
-          <input type="file" id="image-input" accept="image/*" />
-          <button class="secondary" id="btn-clear-img">Retirer l'image</button>
-        </div>
-        <div class="hint">
-          <span id="composer-hint">Aucun fichier sélectionné.</span>
-          <span>Entrée = envoyer • Shift+Entrée = retour à la ligne</span>
-        </div>
-      </div>
-    </main>
+<!-- ÉCRAN AUTH -->
+<div id="auth-screen" style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; position:relative; z-index:10;">
+    <div style="font-size:3rem; color:var(--accent); text-align:center; margin-bottom:30px; font-weight:100;">thinktalk</div>
+    <div style="width:300px; margin:0 auto;">
+        <input type="text" id="auth-pseudo" class="input-box" placeholder="Pseudo">
+        <input type="password" id="auth-code" class="input-box" placeholder="Code secret">
+        <button class="btn-full" id="btn-login">ENTRER</button>
+    </div>
+</div>
 
-    <!-- SIDEBAR DROITE -->
-    <aside class="contacts">
-      <div class="header">
-        <div class="title" style="font-size:15px;">
-          Contacts
-        </div>
-        <span class="pill">Privés & favoris</span>
-      </div>
+<!-- APP PRINCIPALE -->
+<div class="app-root" id="main-app">
+    <div class="top-bar">
+        <div class="top-title" onclick="openPopup('pop-logout', 'card-logout')">thinktalk</div>
+    </div>
+    <div class="view-container">
+        <!-- HOME / ROOMS -->
+        <section id="view-home" class="view-section active">
+            <div style="display:flex;gap:10px;margin-bottom:20px">
+                <input type="text" id="rooms-search" class="input-box" style="margin:0" placeholder="Chercher...">
+                <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" onclick="openPopup('pop-create', 'card-create')">+</button>
+            </div>
+            <div class="tiles-grid" id="rooms-grid"></div>
+        </section>
 
-      <div class="card">
-        <div class="section-label">Ajouter un contact</div>
-        <div class="field">
-          <label>Pseudo du contact</label>
-          <input id="contact-name" placeholder="ex: Pixel" />
-        </div>
-        <div class="field-row">
-          <button id="btn-add-contact">Ajouter</button>
-        </div>
-      </div>
+        <!-- CHAT -->
+        <section id="view-chat" class="view-section">
+            <div id="chat-header" style="color:var(--accent);margin-bottom:15px;font-weight:bold"># général</div>
+            <div id="chat-messages"></div>
+            <div style="position:fixed;bottom:60px;left:0;right:0;display:flex;background:#000;padding:10px;gap:8px;border-top:1px solid #222">
+                <button onclick="document.getElementById('file-input').click()" style="background:#222;color:#fff;border:none;padding:0 15px;cursor:pointer">📎</button>
+                <input type="file" id="file-input" hidden accept="image/*">
+                <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="Message...">
+                <button id="send-btn" style="background:var(--accent);color:#fff;border:none;padding:0 20px">OK</button>
+            </div>
+        </section>
 
-      <div class="card">
-        <div class="section-label">Liste des contacts</div>
-        <div class="list" id="contacts-list"></div>
-        <div class="small">Clique sur un contact pour ouvrir un salon privé.</div>
-      </div>
-    </aside>
-  </div>
+        <!-- CONTACTS -->
+        <section id="view-contacts" class="view-section">
+            <div style="display:flex;gap:10px;margin-bottom:20px">
+                <input type="text" id="contact-name-input" class="input-box" style="margin:0" placeholder="Pseudo de l'ami...">
+                <button style="background:var(--accent);border:none;color:#fff;padding:0 20px" id="btn-add-contact">+</button>
+            </div>
+            <div class="tiles-grid" id="contacts-grid"></div>
+        </section>
+    </div>
 
-  <script type="module">
-    // --- Firebase imports ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore, doc, setDoc, getDoc, getDocs, addDoc,
-      collection, query, where, orderBy, onSnapshot
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import {
-      getStorage, ref, uploadString, getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+    <nav class="bottom-nav">
+        <div class="nav-btn active" onclick="switchTab('home')">HOME</div>
+        <div class="nav-btn" onclick="switchTab('chat')">CHAT</div>
+        <div class="nav-btn" onclick="switchTab('contacts')">CONTACTS</div>
+    </nav>
+</div>
 
-    // --- Config fournie ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M",
-      authDomain: "thinktalk-b3c85.firebaseapp.com",
-      projectId: "thinktalk-b3c85",
-      storageBucket: "thinktalk-b3c85.firebasestorage.app",
-      messagingSenderId: "752141817301",
-      appId: "1:752141817301:web:28fecaf81db27eb51d595c",
-      measurementId: "G-78QR24ZJC6"
+<script type="module">
+    import { 
+        initializeApp 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { 
+        getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, 
+        serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const cfg = { 
+        apiKey: "AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M",
+        authDomain: "thinktalk-b3c85.firebaseapp.com",
+        projectId: "thinktalk-b3c85",
+        storageBucket: "thinktalk-b3c85.firebasestorage.app",
+        messagingSenderId: "752141817301",
+        appId: "1:752141817301:web:28fecaf81db27eb51d595c" 
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app = initializeApp(cfg);
     const db = getFirestore(app);
-    const storage = getStorage(app);
 
-    // --- État local ---
-    let currentUser = null;      // { name, code }
-    let currentRoom = null;      // string
-    let currentImageData = null; // base64
-    let messagesUnsub = null;
+    let currentUser = localStorage.getItem('tt_user');
+    let curRoom = "général", unsubChat = null, selectedMsgId = null;
 
-    // --- Helpers DOM ---
-    const $ = (id) => document.getElementById(id);
+    // --- MOTEUR PARTICULES ---
+    const canvas = document.getElementById('canvas-dust'), ctx = canvas.getContext('2d');
+    let pts = [], mouse = {x: -1000, y: -1000};
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.onresize = resize; resize();
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
-    const usernameInput = $("username");
-    const usercodeInput = $("usercode");
-    const authStatus = $("auth-status");
-    const userTag = $("user-tag");
-
-    const roomNameInput = $("room-name");
-    const roomPassInput = $("room-pass");
-    const roomsList = $("rooms-list");
-    const roomTitle = $("room-title");
-    const roomSubtitle = $("room-subtitle");
-
-    const messagesEl = $("messages");
-    const msgInput = $("message-input");
-    const imgInput = $("image-input");
-    const composerHint = $("composer-hint");
-
-    const contactNameInput = $("contact-name");
-    const contactsList = $("contacts-list");
-
-    // --- Auth simple (pseudo + code) ---
-    async function login() {
-      const name = usernameInput.value.trim();
-      const code = usercodeInput.value.trim();
-      if (!name || !code) {
-        alert("Pseudo et code sont obligatoires.");
-        return;
-      }
-      currentUser = { name, code };
-      await setDoc(doc(db, "users", name), { code }, { merge: true });
-      authStatus.textContent = `Connecté en tant que ${name}`;
-      userTag.textContent = name;
-      userTag.classList.add("tag");
-      loadContacts();
-      loadRooms();
-      if (!currentRoom) joinRoom("général");
+    class Particle {
+        constructor() { this.init(); this.target = null; }
+        init() { 
+            this.x = Math.random()*canvas.width; 
+            this.y = Math.random()*canvas.height; 
+            this.vx = (Math.random()-0.5)*1.5; 
+            this.vy = (Math.random()-0.5)*1.5; 
+            this.s = Math.random()*2+1; 
+        }
+        update() {
+            if(this.target) { 
+                this.x += (this.target.x - this.x) * 0.15; 
+                this.y += (this.target.y - this.y) * 0.15; 
+            } else {
+                let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.sqrt(dx*dx+dy*dy);
+                if(d < 180) { this.vx += dx*0.002; this.vy += dy*0.002; }
+                this.x += this.vx; this.y += this.vy; this.vx *= 0.99; this.vy *= 0.99;
+                if(this.x<0||this.x>canvas.width) this.vx *= -1; 
+                if(this.y<0||this.y>canvas.height) this.vy *= -1;
+            }
+        }
+        draw() { 
+            ctx.fillStyle = "#0078d7cc"; 
+            ctx.shadowBlur = 8; 
+            ctx.shadowColor = "#0078d7"; 
+            ctx.beginPath(); 
+            ctx.arc(this.x,this.y,this.s,0,Math.PI*2); 
+            ctx.fill(); 
+            ctx.shadowBlur = 0; 
+        }
     }
+    for(let i=0; i<400; i++) pts.push(new Particle());
+    function anim() { 
+        ctx.clearRect(0,0,canvas.width,canvas.height); 
+        pts.forEach(p=>{p.update();p.draw()}); 
+        requestAnimationFrame(anim); 
+    } 
+    anim();
 
-    function logout() {
-      currentUser = null;
-      authStatus.textContent = "Non connecté";
-      userTag.textContent = "Invité";
-      if (messagesUnsub) messagesUnsub();
-      messagesUnsub = null;
-      messagesEl.innerHTML = "";
-      currentRoom = null;
-      roomTitle.textContent = "Aucun salon";
-      roomSubtitle.textContent = "Connecte-toi et rejoins un salon pour commencer à discuter.";
-    }
+    window.materialize = (el, delay = 0) => {
+        setTimeout(() => {
+            const r = el.getBoundingClientRect();
+            const pCount = 30; let targets = [];
+            for(let i=0; i<pCount; i++) { 
+                targets.push({x: r.left + (r.width/pCount)*i, y: r.top}); 
+                targets.push({x: r.left + (r.width/pCount)*i, y: r.bottom}); 
+            }
+            pts.forEach((p, index) => { if(targets[index]) p.target = targets[index]; });
+            setTimeout(() => { 
+                pts.forEach(p => p.target = null); 
+                el.classList.add('visible'); 
+            }, 800);
+        }, delay);
+    };
 
-    // --- Salons ---
-    async function joinRoom(name, pass = "") {
-      if (!currentUser) {
-        alert("Connecte-toi d'abord.");
-        return;
-      }
-      name = name.trim();
-      if (!name) return;
+    window.openPopup = (popId, cardId) => {
+        document.getElementById(popId).style.display = 'flex';
+        materialize(document.getElementById(cardId));
+    };
+    window.closePopups = () => { 
+        document.querySelectorAll('.popup-overlay').forEach(p=>p.style.display='none'); 
+        document.querySelectorAll('.popup-card').forEach(c=>c.classList.remove('visible')); 
+    };
 
-      // Crée / met à jour le salon
-      await setDoc(doc(db, "rooms", name), { pass: pass || "" }, { merge: true });
+    // --- DÉCONNEXION SIMPLE ---
+    window.confirmLogout = () => { 
+        localStorage.removeItem('tt_user'); 
+        location.reload(); 
+    };
 
-      currentRoom = name;
-      roomTitle.textContent = `# ${name}`;
-      roomSubtitle.textContent = pass ? "Salon protégé" : "Salon public";
+    // --- SUPPRESSION DE PROFIL ---
+    window.confirmDeleteProfile = async () => {
+        if(!currentUser) return;
+        const ok = confirm("Supprimer définitivement le profil et les contacts liés ?");
+        if(!ok) return;
 
-      // UI liste
-      Array.from(roomsList.children).forEach(li => {
-        li.classList.toggle("active", li.dataset.room === name);
-      });
+        try {
+            await deleteDoc(doc(db, "users", currentUser));
 
-      // Listener messages
-      if (messagesUnsub) messagesUnsub();
-      const q = query(
-        collection(db, "messages"),
-        where("room", "==", name),
-        orderBy("timestamp", "asc")
-      );
-      messagesUnsub = onSnapshot(q, (snap) => {
-        messagesEl.innerHTML = "";
-        snap.forEach(docSnap => {
-          const m = docSnap.data();
-          renderMessage(m);
-        });
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      });
-    }
+            const contactsRef = collection(db, "contacts");
+            const q1 = query(contactsRef, where("owner", "==", currentUser));
+            const q2 = query(contactsRef, where("name", "==", currentUser));
 
-    function renderMessage(m) {
-      const div = document.createElement("div");
-      div.className = "msg" + (currentUser && m.sender === currentUser.name ? " me" : "");
-      const header = document.createElement("div");
-      header.className = "msg-header";
-      const sender = document.createElement("span");
-      sender.className = "msg-sender";
-      sender.textContent = m.sender || "???";
-      const time = document.createElement("span");
-      time.textContent = m.timestamp?.toDate
-        ? m.timestamp.toDate().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-        : "";
-      header.appendChild(sender);
-      header.appendChild(time);
+            const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+            snap1.forEach(d => deleteDoc(doc(db, "contacts", d.id)));
+            snap2.forEach(d => deleteDoc(doc(db, "contacts", d.id)));
 
-      const text = document.createElement("div");
-      text.className = "msg-text";
-      text.textContent = m.text || "";
+            localStorage.removeItem('tt_user');
+            alert("Profil supprimé.");
+            location.reload();
+        } catch (e) {
+            console.error(e);
+            alert("Erreur lors de la suppression du profil.");
+        }
+    };
 
-      div.appendChild(header);
-      if (m.text) div.appendChild(text);
-
-      if (m.image) {
-        const img = document.createElement("img");
-        img.src = m.image;
-        img.className = "msg-img";
-        div.appendChild(img);
-      }
-
-      messagesEl.appendChild(div);
-    }
-
-    async function sendMessage() {
-      if (!currentUser) {
-        alert("Connecte-toi d'abord.");
-        return;
-      }
-      if (!currentRoom) {
-        alert("Rejoins un salon d'abord.");
-        return;
-      }
-      const text = msgInput.value.trim();
-      if (!text && !currentImageData) return;
-
-      let imageUrl = null;
-      if (currentImageData) {
-        const fileId = `${currentUser.name}_${Date.now()}`;
-        const r = ref(storage, `images/${fileId}.png`);
-        await uploadString(r, currentImageData, "data_url");
-        imageUrl = await getDownloadURL(r);
-      }
-
-      await addDoc(collection(db, "messages"), {
-        room: currentRoom,
-        sender: currentUser.name,
-        text: text || "",
-        image: imageUrl,
-        timestamp: new Date()
-      });
-
-      msgInput.value = "";
-      currentImageData = null;
-      composerHint.textContent = "Aucun fichier sélectionné.";
-      imgInput.value = "";
-    }
-
-    // --- Contacts & MP ---
-    async function addContact() {
-      if (!currentUser) {
-        alert("Connecte-toi d'abord.");
-        return;
-      }
-      const name = contactNameInput.value.trim();
-      if (!name) return;
-      await addDoc(collection(db, "contacts"), {
-        owner: currentUser.name,
-        name
-      });
-      contactNameInput.value = "";
-      loadContacts();
-    }
-
-    async function loadContacts() {
-      if (!currentUser) return;
-      const q = query(
-        collection(db, "contacts"),
-        where("owner", "==", currentUser.name)
-      );
-      const snap = await getDocs(q);
-      contactsList.innerHTML = "";
-      snap.forEach(docSnap => {
-        const c = docSnap.data();
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `<span class="name">${c.name}</span><span class="meta">MP</span>`;
-        div.onclick = () => openPrivateRoom(c.name);
-        contactsList.appendChild(div);
-      });
-    }
-
-    function privateRoomName(a, b) {
-      return ["pm", a, b].sort().join("_");
-    }
-
-    function openPrivateRoom(other) {
-      if (!currentUser) {
-        alert("Connecte-toi d'abord.");
-        return;
-      }
-      const room = privateRoomName(currentUser.name, other);
-      joinRoom(room, "pm");
-      roomSubtitle.textContent = `Salon privé avec ${other}`;
-    }
-
-    // --- Liste des salons (simples) ---
-    async function loadRooms() {
-      const snap = await getDocs(collection(db, "rooms"));
-      roomsList.innerHTML = "";
-      snap.forEach(docSnap => {
-        const r = docSnap.data();
-        const name = docSnap.id;
-        const div = document.createElement("div");
-        div.className = "item";
-        div.dataset.room = name;
-        div.innerHTML = `<span class="name"># ${name}</span><span class="meta">${r.pass ? "🔒" : "Public"}</span>`;
-        div.onclick = () => joinRoom(name, r.pass || "");
-        roomsList.appendChild(div);
-      });
-    }
-
-    // --- Image preview ---
-    imgInput.addEventListener("change", () => {
-      const file = imgInput.files[0];
-      if (!file) {
-        currentImageData = null;
-        composerHint.textContent = "Aucun fichier sélectionné.";
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        currentImageData = e.target.result;
-        composerHint.textContent = `Image prête : ${file.name}`;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    $("btn-clear-img").addEventListener("click", () => {
-      currentImageData = null;
-      imgInput.value = "";
-      composerHint.textContent = "Aucun fichier sélectionné.";
-    });
-
-    // --- Events UI ---
-    $("btn-login").onclick = login;
-    $("btn-logout").onclick = logout;
-    $("btn-join-room").onclick = () => joinRoom(roomNameInput.value, roomPassInput.value);
-    $("btn-room-general").onclick = () => joinRoom("général");
-    $("btn-send").onclick = sendMessage;
-    $("btn-add-contact").onclick = addContact;
-
-    msgInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    // --- Auto: salon général si déjà pseudo en local (optionnel) ---
-    // Tu peux ajouter du localStorage ici si tu veux mémoriser l'utilisateur.
-  </script>
-</body>
-</html>
+    window.switchTab = (tab) => {
+        const appRoot = document.getElementById('main-app'); 
+        appRoot.classList.add('view-blur');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.querySelector(`[onclick="switchTab('${tab}')"]`);
+        if(btn) btn.classList.add('active');
+        setTimeout(() => {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('view-' + tab).classList.add('active');
+            appRoot.classList.remove('view-blur');
+            if(tab === 'chat') { 
+                document.querySelectorAll('.msg-block').forEach((m, i) => { 
+                    m.classList.remove('visible
