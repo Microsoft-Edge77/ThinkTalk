@@ -1,342 +1,75 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>ThinkTalk</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <style>
-    :root { --accent:#0078d7; --bg:#050505; --text:#ffffff; --muted:#888888; }
-
-    * { box-sizing:border-box; margin:0; padding:0; font-family:"Segoe UI",sans-serif; }
-    html,body { height:100%; }
-    body { background:var(--bg); color:var(--text); overflow:hidden; position:fixed; inset:0; width:100%; }
-
-    #canvas-dust { position:fixed; inset:0; z-index:0; pointer-events:none; }
-
-    .hidden { display:none !important; }
-
-    /* AUTH */
-    #auth-screen {
-      height:100vh;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      position:relative;
-      z-index:10;
-      background:radial-gradient(circle at top,#101010,#020202 70%);
-    }
-    #auth-logo {
-      font-size:3rem;
-      color:var(--accent);
-      text-align:center;
-      margin-bottom:10px;
-      font-weight:100;
-      letter-spacing:.12em;
-    }
-    #auth-mode-title {
-      color:var(--muted);
-      margin-bottom:18px;
-      text-transform:uppercase;
-      letter-spacing:.16em;
-      font-size:.8rem;
-    }
-
-    .input-box {
-      width:100%;
-      background:rgba(10,10,10,.95);
-      border:1px solid #222;
-      padding:12px;
-      color:#fff;
-      outline:none;
-      margin-bottom:10px;
-      transition:border-color .15s, box-shadow .15s, background .15s;
-    }
-    .input-box:focus {
-      border-color:var(--accent);
-      box-shadow:0 0 0 1px var(--accent);
-      background:#080808;
-    }
-
-    .btn-full {
-      width:100%;
-      padding:12px;
-      background:var(--accent);
-      border:none;
-      color:#fff;
-      cursor:pointer;
-      font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      transition:background .15s, transform .15s, box-shadow .15s;
-    }
-    .btn-full:hover {
-      background:#1e90ff;
-      transform:translateY(-1px);
-      box-shadow:0 4px 12px rgba(0,0,0,.7);
-    }
-
-    .auth-toggle-link {
-      color:var(--accent);
-      font-size:.9rem;
-      margin-top:12px;
-      text-align:center;
-      cursor:pointer;
-      user-select:none;
-      transition:color .15s;
-    }
-    .auth-toggle-link:hover { color:#1e90ff; }
-
-    /* APP ROOT */
-    .app-root {
-      position:relative;
-      z-index:1;
-      height:100%;
-      display:none;
-      flex-direction:column;
-      transition:filter .35s, transform .35s;
-    }
-    .app-root.switching {
-      filter:blur(10px);
-      transform:translateX(-20px);
-    }
-
-    .top-bar {
-      padding:12px 16px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      height:64px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      background:rgba(10,10,10,.96);
-    }
-    .top-title {
-      font-size:2rem;
-      font-weight:100;
-      color:var(--accent);
-      cursor:pointer;
-      user-select:none;
-      letter-spacing:.08em;
-    }
-    .top-actions { display:flex; gap:10px; align-items:center; }
-    .top-btn {
-      background:#111;
-      border:1px solid #222;
-      color:#fff;
-      padding:8px 10px;
-      font-size:.85rem;
-      cursor:pointer;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      transition:background .15s, border-color .15s, transform .15s;
-    }
-    .top-btn:hover {
-      background:#1a1a1a;
-      border-color:var(--accent);
-      transform:translateY(-1px);
-    }
-
-    .view-container {
-      flex:1;
-      overflow-y:auto;
-      padding:12px 12px 120px;
-      -webkit-overflow-scrolling:touch;
-      background:linear-gradient(to bottom,#050505,#050505 40%,#020202 100%);
-    }
-    .view-section { display:none; }
-    .view-section.active { display:block; }
-
-    .bottom-nav {
-      position:fixed;
-      bottom:0;
-      width:100%;
-      height:60px;
-      display:flex;
-      background:#050505;
-      border-top:1px solid #222;
-      z-index:5;
-    }
-    .nav-btn {
-      flex:1;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#888;
-      cursor:pointer;
-      font-size:.85rem;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      transition:color .15s, background .15s, border-top .15s;
-    }
-    .nav-btn.active {
-      color:#fff;
-      border-top:3px solid var(--accent);
-      background:#0b0b0b;
-      font-weight:700;
-    }
-    .nav-btn:hover {
-      background:#101010;
-      color:#ddd;
-    }
-
-    /* GRID + TILES */
-    .tiles-grid {
-      display:grid;
-      grid-auto-flow:dense;
-      grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-      gap:12px;
-    }
-
-    .tile {
-      position:relative;
-      background:rgba(15,15,15,.9);
-      border:1px solid rgba(255,255,255,.06);
-      padding:14px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      cursor:pointer;
-      backdrop-filter:blur(6px);
-      transition:transform .16s ease-out, box-shadow .16s ease-out, border-color .16s ease-out, background .16s ease-out;
-    }
-    .tile:hover {
-      transform:translateY(-3px);
-      box-shadow:0 6px 18px rgba(0,0,0,.7);
-      border-color:var(--accent);
-      background:rgba(20,20,20,.95);
-    }
-
-    .tile-normal { grid-column:span 1; grid-row:span 1; }
-    .tile-wide   { grid-column:span 2; grid-row:span 1; }
-    .tile-tall   { grid-column:span 1; grid-row:span 2; }
-    .tile-big    { grid-column:span 2; grid-row:span 2; }
-
-    .tile .title { font-weight:600; color:var(--text); font-size:1rem; display:flex; align-items:center; gap:8px; }
-    .lock-badge { font-size:.75rem; opacity:.7; color:var(--muted); }
-    .tile-preview { font-size:.75rem; color:#bdbdbd; margin-top:6px; line-height:1.2; max-height:2.4em; overflow:hidden; white-space:pre-wrap; word-break:break-word; }
-
-    .tile-delete-btn {
-      position:absolute;
-      top:6px;
-      right:6px;
-      font-size:.75rem;
-      background:rgba(180,0,0,.95);
-      color:#fff;
-      border:none;
-      padding:5px 8px;
-      cursor:pointer;
-      z-index:12;
-      box-shadow:0 2px 6px rgba(0,0,0,.6);
-      transition:background .15s, transform .15s;
-    }
-    .tile-delete-btn:hover {
-      background:#ff3333;
-      transform:translateY(-1px);
-    }
-
-    .muted { color:var(--muted); font-size:.85rem; }
-
-    /* CHAT */
-    #chat-header {
-      color:var(--accent);
-      margin-bottom:12px;
-      font-weight:bold;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-    }
-    #chat-messages { padding-bottom:20px; display:flex; flex-direction:column; gap:8px; }
-
-    .msg-block {
-      opacity:0;
-      transform:translateY(10px);
-      transition:opacity .35s ease-out, transform .35s ease-out;
-      max-width:85%;
-      cursor:pointer;
-    }
-    .msg-block.own { align-self:flex-end; }
-    .msg-block.visible { opacity:1; transform:translateY(0); }
-
-    .msg-info {
-      font-size:.68rem;
-      color:var(--muted);
-      margin-bottom:6px;
-      display:flex;
-      gap:8px;
-      text-transform:uppercase;
-      letter-spacing:1px;
-    }
-    .msg-block.own .msg-info { justify-content:flex-end; color:var(--accent); }
-
-    .msg-text {
-      background:rgba(0,0,0,.85);
-      padding:10px 12px;
-      border-left:2px solid var(--accent);
-      word-break:break-word;
-      transition:background .15s, border-color .15s, transform .15s;
-    }
-    .msg-block.own .msg-text {
-      border-left:none;
-      border-right:2px solid #666;
-      background:rgba(20,20,20,.95);
-    }
-    .msg-block:hover .msg-text {
-      background:rgba(25,25,25,.98);
-      transform:translateY(-1px);
-    }
-    .msg-img { max-width:220px; max-height:220px; display:block; }
-
-    /* POPUPS */
-    .popup-overlay {
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.85);
-      z-index:9000;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-    }
-    .popup-card {
-      background:#050505;
-      border:2px solid var(--accent);
-      width:100%;
-      max-width:420px;
-      padding:22px;
-      opacity:0;
-      transform:translateY(10px);
-      transition:opacity .25s ease-out, transform .25s ease-out, box-shadow .25s;
-    }
-    .popup-card.visible {
-      opacity:1;
-      transform:translateY(0);
-      box-shadow:0 10px 30px rgba(0,0,0,.8);
-    }
-    .popup-message-text { margin:12px 0; font-size:.95rem; line-height:1.4; color:#ddd; }
-
-    /* ACCENT PICKER */
-    .color-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:12px 0; }
-    .color-dot {
-      width:34px;
-      height:34px;
-      border:2px solid #222;
-      cursor:pointer;
-      transition:border-color .15s, box-shadow .15s, transform .15s;
-    }
-    .color-dot.selected {
-      border-color:#fff;
-      box-shadow:0 4px 12px rgba(0,0,0,.7);
-      transform:translateY(-1px);
-    }
-    .color-dot:hover { border-color:var(--accent); }
-    .color-picker-input {
-      width:100%;
-      height:44px;
-      padding:0;
-      border:1px solid #222;
-      background:#050505;
-      cursor:pointer;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>ThinkTalk v3.3</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<style>
+:root{--accent:#0078d7;--bg:#050505;--text:#ffffff;--muted:#888888;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",sans-serif;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);overflow:hidden;position:fixed;inset:0;width:100%;}
+#canvas-dust{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.hidden{display:none!important;}
+#auth-screen{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;z-index:10;background:radial-gradient(circle at top,#101010,#020202 70%);}
+#auth-logo{font-size:3rem;color:var(--accent);text-align:center;margin-bottom:10px;font-weight:100;letter-spacing:.12em;}
+#auth-mode-title{color:var(--muted);margin-bottom:18px;text-transform:uppercase;letter-spacing:.16em;font-size:.8rem;}
+.input-box{width:100%;background:rgba(10,10,10,.95);border:1px solid #222;padding:12px;color:#fff;outline:none;margin-bottom:10px;transition:border-color .15s,box-shadow .15s,background .15s;}
+.input-box:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:#080808;}
+.btn-full{width:100%;padding:12px;background:var(--accent);border:none;color:#fff;cursor:pointer;font-weight:700;text-transform:uppercase;letter-spacing:.12em;transition:background .15s,transform .15s,box-shadow .15s;}
+.btn-full:hover{background:#1e90ff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.7);}
+.auth-toggle-link{color:var(--accent);font-size:.9rem;margin-top:12px;text-align:center;cursor:pointer;user-select:none;transition:color .15s;}
+.auth-toggle-link:hover{color:#1e90ff;}
+.app-root{position:relative;z-index:1;height:100%;display:none;flex-direction:column;transition:filter .35s,transform .35s;}
+.app-root.switching{filter:blur(10px);transform:translateX(-20px);}
+.top-bar{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;height:64px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(10,10,10,.96);}
+.top-title{font-size:2rem;font-weight:100;color:var(--accent);cursor:pointer;user-select:none;letter-spacing:.08em;}
+.top-actions{display:flex;gap:10px;align-items:center;}
+.top-btn{background:#111;border:1px solid #222;color:#fff;padding:8px 10px;font-size:.85rem;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;transition:background .15s,border-color .15s,transform .15s;}
+.top-btn:hover{background:#1a1a1a;border-color:var(--accent);transform:translateY(-1px);}
+.view-container{flex:1;overflow-y:auto;padding:12px 12px 120px;-webkit-overflow-scrolling:touch;background:linear-gradient(to bottom,#050505,#050505 40%,#020202 100%);}
+.view-section{display:block;opacity:0;transform:translateX(20px);transition:opacity .35s ease-out,transform .35s ease-out;}
+.view-section.active{opacity:1;transform:translateX(0);}
+.view-section.leaving-left{opacity:0;transform:translateX(-20px);}
+.view-section.entering-right{opacity:0;transform:translateX(20px);}
+.bottom-nav{position:fixed;bottom:0;width:100%;height:60px;display:flex;background:#050505;border-top:1px solid #222;z-index:5;}
+.nav-btn{flex:1;display:flex;align-items:center;justify-content:center;color:#888;cursor:pointer;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;transition:color .15s,background .15s,border-top .15s;}
+.nav-btn.active{color:#fff;border-top:3px solid var(--accent);background:#0b0b0b;font-weight:700;}
+.nav-btn:hover{background:#101010;color:#ddd;}
+.tiles-grid{display:grid;grid-auto-flow:dense;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
+.tile{position:relative;background:rgba(15,15,15,.9);border:1px solid rgba(255,255,255,.06);padding:14px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;backdrop-filter:blur(6px);transition:transform .16s ease-out,box-shadow .16s ease-out,border-color .16s ease-out,background .16s ease-out;}
+.tile:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(0,0,0,.7);border-color:var(--accent);background:rgba(20,20,20,.95);}
+.tile-normal{grid-column:span 1;grid-row:span 1;}
+.tile-wide{grid-column:span 2;grid-row:span 1;}
+.tile-tall{grid-column:span 1;grid-row:span 2;}
+.tile-big{grid-column:span 2;grid-row:span 2;}
+.tile .title{font-weight:600;color:var(--text);font-size:1rem;display:flex;align-items:center;gap:8px;}
+.lock-badge{font-size:.75rem;opacity:.7;color:var(--muted);}
+.tile-preview{font-size:.75rem;color:#bdbdbd;margin-top:6px;line-height:1.2;max-height:2.4em;overflow:hidden;white-space:pre-wrap;word-break:break-word;}
+.tile-delete-btn{position:absolute;top:6px;right:6px;font-size:.75rem;background:rgba(180,0,0,.95);color:#fff;border:none;padding:5px 8px;cursor:pointer;z-index:12;box-shadow:0 2px 6px rgba(0,0,0,.6);transition:background .15s,transform .15s;}
+.tile-delete-btn:hover{background:#ff3333;transform:translateY(-1px);}
+.muted{color:var(--muted);font-size:.85rem;}
+#chat-header{color:var(--accent);margin-bottom:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.12em;}
+#chat-messages{padding-bottom:20px;display:flex;flex-direction:column;gap:8px;}
+.msg-block{opacity:0;transform:translateY(10px);transition:opacity .35s ease-out,transform .35s ease-out;max-width:85%;cursor:pointer;}
+.msg-block.own{align-self:flex-end;}
+.msg-block.visible{opacity:1;transform:translateY(0);}
+.msg-info{font-size:.68rem;color:var(--muted);margin-bottom:6px;display:flex;gap:8px;text-transform:uppercase;letter-spacing:1px;}
+.msg-block.own .msg-info{justify-content:flex-end;color:var(--accent);}
+.msg-text{background:rgba(0,0,0,.85);padding:10px 12px;border-left:2px solid var(--accent);word-break:break-word;transition:background .15s,border-color .15s,transform .15s;}
+.msg-block.own .msg-text{border-left:none;border-right:2px solid #666;background:rgba(20,20,20,.95);}
+.msg-block:hover .msg-text{background:rgba(25,25,25,.98);transform:translateY(-1px);}
+.msg-img{max-width:220px;max-height:220px;display:block;}
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:none;align-items:center;justify-content:center;padding:20px;}
+.popup-card{background:#050505;border:2px solid var(--accent);width:100%;max-width:420px;padding:22px;opacity:0;transform:translateY(10px);transition:opacity .25s ease-out,transform .25s ease-out,box-shadow .25s;}
+.popup-card.visible{opacity:1;transform:translateY(0);box-shadow:0 10px 30px rgba(0,0,0,.8);}
+.popup-message-text{margin:12px 0;font-size:.95rem;line-height:1.4;color:#ddd;}
+.color-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0;}
+.color-dot{width:34px;height:34px;border:2px solid #222;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;}
+.color-dot.selected{border-color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.7);transform:translateY(-1px);}
+.color-dot:hover{border-color:var(--accent);}
+.color-picker-input{width:100%;height:44px;padding:0;border:1px solid #222;background:#050505;cursor:pointer;}
+</style>
 </head>
 <body>
 <canvas id="canvas-dust"></canvas>
@@ -421,7 +154,6 @@
   </div>
 
   <div class="view-container">
-    <!-- HOME -->
     <section id="view-home" class="view-section active">
       <div style="display:flex;gap:10px;margin-bottom:16px">
         <input type="text" id="rooms-search" class="input-box" style="margin:0" placeholder="Chercher un salon...">
@@ -430,7 +162,6 @@
       <div class="tiles-grid" id="rooms-grid"></div>
     </section>
 
-    <!-- CHAT -->
     <section id="view-chat" class="view-section">
       <div id="chat-header"># général</div>
       <div id="chat-messages"></div>
@@ -442,7 +173,6 @@
       </div>
     </section>
 
-    <!-- CONTACTS -->
     <section id="view-contacts" class="view-section">
       <div style="display:flex;gap:10px;margin-bottom:10px">
         <input type="text" id="contact-name-input" class="input-box" style="margin:0" placeholder="Pseudo de l'ami...">
@@ -461,670 +191,311 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import {
-    getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
-    serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc, limit
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import{getFirestore,collection,addDoc,onSnapshot,query,orderBy,where,serverTimestamp,getDocs,deleteDoc,doc,getDoc,setDoc,limit}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const cfg = {
-    apiKey: "AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M",
-    authDomain: "thinktalk-b3c85.firebaseapp.com",
-    projectId: "thinktalk-b3c85",
-    storageBucket: "thinktalk-b3c85.firebasestorage.app",
-    messagingSenderId: "752141817301",
-    appId: "1:752141817301:web:28fecaf81db27eb51d595c"
-  };
-  const app = initializeApp(cfg);
-  const db = getFirestore(app);
+const cfg={apiKey:"AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M",authDomain:"thinktalk-b3c85.firebaseapp.com",projectId:"thinktalk-b3c85",storageBucket:"thinktalk-b3c85.firebasestorage.app",messagingSenderId:"752141817301",appId:"1:752141817301:web:28fecaf81db27eb51d595c"};
+const app=initializeApp(cfg);const db=getFirestore(app);
+const byId=id=>document.getElementById(id);const qsa=sel=>Array.from(document.querySelectorAll(sel));
+const debounce=(fn,wait=200)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),wait);};};
 
-  const byId = (id)=>document.getElementById(id);
-  const qsa = (sel)=>Array.from(document.querySelectorAll(sel));
-  const debounce = (fn,wait=200)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),wait);};};
+let currentUser=localStorage.getItem("tt_user")||null;
+let curRoom="général";let unsubChat=null;let selectedMsgId=null;let selectedMsgSender=null;let authMode="login";let confirmCallback=null;
+let roomsCache=[];let contactsCache=[];const lastMessagesByRoom=new Map();const lastMessagesByDM=new Map();
+let allowedRooms=[];try{allowedRooms=JSON.parse(localStorage.getItem("tt_allowedRooms")||"[]");}catch{allowedRooms=[];}
 
-  let currentUser = localStorage.getItem("tt_user") || null;
-  let curRoom = "général";
-  let unsubChat = null;
-  let selectedMsgId = null;
-  let selectedMsgSender = null;
-  let authMode = "login";
-  let confirmCallback = null;
+const canvas=byId("canvas-dust");const ctx=canvas.getContext("2d");
+let bgParticles=[];let fxBursts=[];const mouse={x:-10000,y:-10000};
+let accentColor=getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()||"#0078d7";
 
-  let roomsCache = [];
-  let contactsCache = [];
-  const lastMessagesByRoom = new Map();
-  const lastMessagesByDM = new Map();
+function resizeCanvas(){canvas.width=innerWidth;canvas.height=innerHeight;}
+addEventListener("resize",resizeCanvas);resizeCanvas();
+addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
 
-  let allowedRooms = [];
-  try { allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]"); } catch { allowedRooms = []; }
+class BgParticle{
+  constructor(){this.init();}
+  init(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.vx=(Math.random()-0.5)*0.3;this.vy=(Math.random()-0.5)*0.3;this.s=Math.random()*1.6+0.7;}
+  update(){const dx=mouse.x-this.x,dy=mouse.y-this.y,d=Math.hypot(dx,dy);if(d<140){this.vx+=(dx/d)*0.01;this.vy+=(dy/d)*0.01;}this.x+=this.vx;this.y+=this.vy;this.vx*=0.99;this.vy*=0.99;if(this.x<-20||this.x>canvas.width+20||this.y<-20||this.y>canvas.height+20){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.vx=(Math.random()-0.5)*0.3;this.vy=(Math.random()-0.5)*0.3;}}
+  draw(){ctx.fillStyle=accentColor+"cc";ctx.shadowBlur=8;ctx.shadowColor=accentColor;ctx.beginPath();ctx.arc(this.x,this.y,this.s,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
+}
+class FxParticle{
+  constructor(x,y){this.x=x+(Math.random()-0.5)*40;this.y=y-Math.random()*40;this.vx=(Math.random()-0.5)*0.6;this.vy=Math.random()*1.5+0.5;this.life=1;this.size=Math.random()*2.2+1;}
+  update(){this.y+=this.vy;this.vy-=0.06;this.x+=this.vx;this.life-=0.03;}
+  draw(){if(this.life<=0)return;ctx.globalAlpha=this.life;ctx.fillStyle=accentColor;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+}
+for(let i=0;i<220;i++)bgParticles.push(new BgParticle());
+(function anim(){ctx.clearRect(0,0,canvas.width,canvas.height);bgParticles.forEach(p=>{p.update();p.draw();});fxBursts=fxBursts.filter(p=>p.life>0);fxBursts.forEach(p=>{p.update();p.draw();});requestAnimationFrame(anim);})();
 
-  /* PARTICULES FOND */
-  const canvas = byId("canvas-dust");
-  const ctx = canvas.getContext("2d");
-  let pts = [];
-  const mouse = { x:-10000, y:-10000 };
-  let accentColor = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#0078d7";
+function teleportMaterialize(el,delay=0){
+  const rect=el.getBoundingClientRect();const cx=rect.left+rect.width/2;const cy=rect.top+rect.height/2;
+  for(let i=0;i<28;i++)fxBursts.push(new FxParticle(cx,cy));
+  el.style.opacity="0";el.style.transform="scale(0.9)";
+  setTimeout(()=>{el.style.transition="opacity .28s ease-out,transform .28s ease-out";el.style.opacity="1";el.style.transform="scale(1)";},delay);
+}
 
-  function resizeCanvas(){ canvas.width = innerWidth; canvas.height = innerHeight; }
-  addEventListener("resize", resizeCanvas);
-  resizeCanvas();
-  addEventListener("mousemove",(e)=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+function openPopup(popId,cardId){const pop=byId(popId),card=byId(cardId);if(!pop||!card)return;pop.style.display="flex";requestAnimationFrame(()=>card.classList.add("visible"));}
+function closePopups(){qsa(".popup-overlay").forEach(p=>p.style.display="none");qsa(".popup-card").forEach(c=>c.classList.remove("visible"));}
+function showMessage(text,title="INFO"){byId("msg-title").innerText=title;byId("msg-text").innerHTML=text.replace(/\n/g,"<br>");openPopup("pop-message","card-message");}
+function showConfirm(text,onYes,title="CONFIRMATION"){confirmCallback=onYes;byId("confirm-title").innerText=title;byId("confirm-text").innerHTML=text.replace(/\n/g,"<br>");openPopup("pop-confirm","card-confirm");}
 
-  class Particle {
-    constructor(){ this.init(); }
-    init(){
-      this.x = Math.random()*canvas.width;
-      this.y = Math.random()*canvas.height;
-      this.vx = (Math.random()-0.5)*0.4;
-      this.vy = (Math.random()-0.5)*0.4;
-      this.s = Math.random()*1.8+0.8;
-    }
-    update(){
-      const dx = mouse.x - this.x;
-      const dy = mouse.y - this.y;
-      const d = Math.hypot(dx,dy);
-      if(d<140){
-        this.vx += (dx/d)*0.01;
-        this.vy += (dy/d)*0.01;
-      }
-      this.x += this.vx;
-      this.y += this.vy;
-      this.vx *= 0.99;
-      this.vy *= 0.99;
-      if(this.x<-20||this.x>canvas.width+20||this.y<-20||this.y>canvas.height+20){
-        this.x = Math.random()*canvas.width;
-        this.y = Math.random()*canvas.height;
-        this.vx = (Math.random()-0.5)*0.4;
-        this.vy = (Math.random()-0.5)*0.4;
-      }
-    }
-    draw(){
-      ctx.fillStyle = accentColor + "cc";
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = accentColor;
-      ctx.beginPath();
-      ctx.arc(this.x,this.y,this.s,0,Math.PI*2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-  }
-  for(let i=0;i<220;i++) pts.push(new Particle());
-  (function anim(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    pts.forEach(p=>{p.update();p.draw();});
-    requestAnimationFrame(anim);
-  })();
+function updateAuthUI(){const t=byId("auth-mode-title"),b=byId("btn-login"),tg=byId("auth-toggle");if(authMode==="login"){t.innerText="Se connecter";b.innerText="SE CONNECTER";tg.innerText="Vous n'avez pas de compte ? Rejoindre ThinkTalk";}else{t.innerText="Créer un compte";b.innerText="CRÉER UN COMPTE";tg.innerText="Vous avez déjà un compte ? Se connecter";}}
 
-  /* MATÉRIALISATION GANONDORF (léger) */
-  function teleportMaterialize(el, delay=0){
-    el.style.opacity="0";
-    el.style.transform="scale(0.9)";
-    setTimeout(()=>{
-      el.style.transition="opacity .28s ease-out, transform .28s ease-out";
-      el.style.opacity="1";
-      el.style.transform="scale(1)";
-    },delay);
-  }
-
-  /* POPUPS */
-  function openPopup(popId,cardId){
-    const pop=byId(popId),card=byId(cardId);
-    if(!pop||!card)return;
-    pop.style.display="flex";
-    requestAnimationFrame(()=>card.classList.add("visible"));
-  }
-  function closePopups(){
-    qsa(".popup-overlay").forEach(p=>p.style.display="none");
-    qsa(".popup-card").forEach(c=>c.classList.remove("visible"));
-  }
-  function showMessage(text,title="INFO"){
-    byId("msg-title").innerText=title;
-    byId("msg-text").innerHTML=text.replace(/\n/g,"<br>");
-    openPopup("pop-message","card-message");
-  }
-  function showConfirm(text,onYes,title="CONFIRMATION"){
-    confirmCallback=onYes;
-    byId("confirm-title").innerText=title;
-    byId("confirm-text").innerHTML=text.replace(/\n/g,"<br>");
-    openPopup("pop-confirm","card-confirm");
-  }
-
-  /* AUTH */
-  function updateAuthUI(){
-    const title=byId("auth-mode-title"),btn=byId("btn-login"),toggle=byId("auth-toggle");
+async function handleLogin(){
+  const p=byId("auth-pseudo").value.trim().toLowerCase(),c=byId("auth-code").value.trim();
+  if(!p||!c){showMessage("Pseudo et code requis.");return;}
+  try{
+    const uRef=doc(db,"users",p),uDoc=await getDoc(uRef);
     if(authMode==="login"){
-      title.innerText="Se connecter";
-      btn.innerText="SE CONNECTER";
-      toggle.innerText="Vous n'avez pas de compte ? Rejoindre ThinkTalk";
+      if(uDoc.exists()){
+        if(uDoc.data().code===c){localStorage.setItem("tt_user",p);currentUser=p;byId("auth-screen").style.display="none";byId("main-app").style.display="flex";enterRoom("général");}
+        else showMessage("Code secret incorrect.");
+      }else showMessage("Ce compte n'existe pas.");
     }else{
-      title.innerText="Créer un compte";
-      btn.innerText="CRÉER UN COMPTE";
-      toggle.innerText="Vous avez déjà un compte ? Se connecter";
+      if(uDoc.exists()){showMessage("Ce pseudo est déjà utilisé.");return;}
+      await setDoc(uRef,{code:c});localStorage.setItem("tt_user",p);currentUser=p;byId("auth-screen").style.display="none";byId("main-app").style.display="flex";enterRoom("général");
     }
-  }
+  }catch(e){console.error(e);showMessage("Erreur de connexion.");}
+}
 
-  async function handleLogin(){
-    const p=byId("auth-pseudo").value.trim().toLowerCase();
-    const c=byId("auth-code").value.trim();
-    if(!p||!c){showMessage("Pseudo et code requis.");return;}
-    try{
-      const uRef=doc(db,"users",p);
-      const uDoc=await getDoc(uRef);
-      if(authMode==="login"){
-        if(uDoc.exists()){
-          if(uDoc.data().code===c){
-            localStorage.setItem("tt_user",p);
-            currentUser=p;
-            byId("auth-screen").style.display="none";
-            byId("main-app").style.display="flex";
-            enterRoom("général");
-          }else showMessage("Code secret incorrect.");
-        }else showMessage("Ce compte n'existe pas.");
-      }else{
-        if(uDoc.exists()){showMessage("Ce pseudo est déjà utilisé.");return;}
-        await setDoc(uRef,{code:c});
-        localStorage.setItem("tt_user",p);
-        currentUser=p;
-        byId("auth-screen").style.display="none";
-        byId("main-app").style.display="flex";
-        enterRoom("général");
-      }
-    }catch(e){console.error(e);showMessage("Erreur de connexion.");}
-  }
-
-  /* ROOMS / CHAT */
-  async function enterRoom(name,isPrivateChat=false){
-    if(!currentUser){showMessage("Connecte-toi d'abord.");return;}
-
-    if(!isPrivateChat){
-      const rSnap=await getDocs(query(collection(db,"rooms"),where("name","==",name),limit(1)));
-      if(!rSnap.empty){
-        const roomDoc=rSnap.docs[0];
-        const roomData=roomDoc.data();
-        const pass=roomData.pass||"";
-        const owner=roomData.owner||null;
-        if(pass && pass!==""){
-          const roomKey=name;
-          const alreadyAllowed=allowedRooms.includes(roomKey);
-          const isOwner=owner===currentUser;
-          if(!alreadyAllowed && !isOwner){
-            const inputId="room-pass-input";
-            byId("msg-title").innerText="Salon privé";
-            byId("msg-text").innerHTML="Ce salon est privé. Entrez le code :<br><br>"+
-              `<input id="${inputId}" type="password" class="input-box" placeholder="Code du salon">`;
-            openPopup("pop-message","card-message");
-            const okBtn=byId("msg-ok-btn");
-            const old=okBtn.onclick;
-            okBtn.onclick=async()=>{
-              const val=byId(inputId).value.trim();
-              closePopups();
-              okBtn.onclick=old||null;
-              if(val!==pass){showMessage("Code erroné.");return;}
-              allowedRooms.push(roomKey);
-              localStorage.setItem("tt_allowedRooms",JSON.stringify(allowedRooms));
-              proceedEnter();
-            };
-            return;
-          }
+async function enterRoom(name,isPrivateChat=false){
+  if(!currentUser){showMessage("Connecte-toi d'abord.");return;}
+  if(!isPrivateChat){
+    const rSnap=await getDocs(query(collection(db,"rooms"),where("name","==",name),limit(1)));
+    if(!rSnap.empty){
+      const roomDoc=rSnap.docs[0],roomData=roomDoc.data(),pass=roomData.pass||"",owner=roomData.owner||null;
+      if(pass&&pass!==""){
+        const roomKey=name,alreadyAllowed=allowedRooms.includes(roomKey),isOwner=owner===currentUser;
+        if(!alreadyAllowed&&!isOwner){
+          const inputId="room-pass-input";
+          byId("msg-title").innerText="Salon privé";
+          byId("msg-text").innerHTML="Ce salon est privé. Entrez le code :<br><br>"+`<input id="${inputId}" type="password" class="input-box" placeholder="Code du salon">`;
+          openPopup("pop-message","card-message");
+          const okBtn=byId("msg-ok-btn"),old=okBtn.onclick;
+          okBtn.onclick=async()=>{const val=byId(inputId).value.trim();closePopups();okBtn.onclick=old||null;if(val!==pass){showMessage("Code erroné.");return;}allowedRooms.push(roomKey);localStorage.setItem("tt_allowedRooms",JSON.stringify(allowedRooms));proceedEnter();};
+          return;
         }
       }
     }
-
-    proceedEnter();
-
-    function proceedEnter(){
-      curRoom=isPrivateChat?[currentUser,name].sort().join("_"):name;
-      byId("chat-header").innerText=(isPrivateChat?"@ ":"# ")+name;
-      switchTab("chat");
-
-      if(unsubChat)unsubChat();
-      const qMsg=query(collection(db,"messages"),where("room","==",curRoom),orderBy("timestamp","asc"));
-      unsubChat=onSnapshot(qMsg,(snap)=>{
-        const box=byId("chat-messages");
-        box.innerHTML="";
-        snap.forEach((d)=>{
-          const m=d.data();
-          const date=m.timestamp?.seconds?new Date(m.timestamp.seconds*1000):new Date();
-          const hh=String(date.getHours()).padStart(2,"0");
-          const mm=String(date.getMinutes()).padStart(2,"0");
-          const timeStr=`${hh}:${mm}`;
-
-          const div=document.createElement("div");
-          const isOwn=m.sender===currentUser;
-          div.className="msg-block"+(isOwn?" own":"");
-
-          const info=document.createElement("div");
-          info.className="msg-info";
-          info.innerHTML=`<span>${m.sender}</span><span>${timeStr}</span>`;
-
-          const content=document.createElement("div");
-          content.className="msg-text";
-          if(m.image){
-            const img=document.createElement("img");
-            img.src=m.image;
-            img.className="msg-img";
-            content.appendChild(img);
-          }else{
-            content.textContent=m.text||"";
-          }
-
-          div.appendChild(info);
-          div.appendChild(content);
-
-          if(isOwn){
-            div.onclick=()=>{
-              selectedMsgId=d.id;
-              selectedMsgSender=m.sender;
-              openPopup("pop-options","card-options");
-            };
-          }
-
-          box.appendChild(div);
-          setTimeout(()=>div.classList.add("visible"),10);
-        });
-        box.parentElement.scrollTop=box.parentElement.scrollHeight;
+  }
+  proceedEnter();
+  function proceedEnter(){
+    curRoom=isPrivateChat?[currentUser,name].sort().join("_"):name;
+    byId("chat-header").innerText=(isPrivateChat?"@ ":"# ")+name;
+    switchTab("chat");
+    if(unsubChat)unsubChat();
+    const qMsg=query(collection(db,"messages"),where("room","==",curRoom),orderBy("timestamp","asc"));
+    unsubChat=onSnapshot(qMsg,snap=>{
+      const box=byId("chat-messages");box.innerHTML="";
+      snap.forEach(d=>{
+        const m=d.data(),date=m.timestamp?.seconds?new Date(m.timestamp.seconds*1000):new Date();
+        const hh=String(date.getHours()).padStart(2,"0"),mm=String(date.getMinutes()).padStart(2,"0"),timeStr=`${hh}:${mm}`;
+        const div=document.createElement("div"),isOwn=m.sender===currentUser;div.className="msg-block"+(isOwn?" own":"");
+        const info=document.createElement("div");info.className="msg-info";info.innerHTML=`<span>${m.sender}</span><span>${timeStr}</span>`;
+        const content=document.createElement("div");content.className="msg-text";
+        if(m.image){const img=document.createElement("img");img.src=m.image;img.className="msg-img";content.appendChild(img);}else content.textContent=m.text||"";
+        div.appendChild(info);div.appendChild(content);
+        if(isOwn){div.onclick=()=>{selectedMsgId=d.id;selectedMsgSender=m.sender;openPopup("pop-options","card-options");};}
+        box.appendChild(div);setTimeout(()=>div.classList.add("visible"),10);
       });
+      box.parentElement.scrollTop=box.parentElement.scrollHeight;
+    });
+  }
+}
+
+async function createRoom(){
+  const name=byId("new-room-name").value.trim(),pass=byId("new-room-pass").value.trim();
+  if(!name)return;if(!currentUser){showMessage("Connecte-toi d'abord.");return;}
+  try{
+    const rSnap=await getDocs(query(collection(db,"rooms"),where("name","==",name),limit(1)));
+    if(!rSnap.empty){showMessage("Un salon avec ce nom existe déjà.");return;}
+    await addDoc(collection(db,"rooms"),{name,pass,owner:currentUser});closePopups();byId("new-room-name").value="";byId("new-room-pass").value="";
+  }catch(e){console.error(e);showMessage("Erreur lors de la création du salon.");}
+}
+
+async function sendMessage(){
+  if(!currentUser){showMessage("Connecte-toi d'abord.");return;}
+  const i=byId("chat-input"),text=i.value.trim();if(!text)return;
+  try{await addDoc(collection(db,"messages"),{text,room:curRoom,sender:currentUser,timestamp:serverTimestamp()});i.value="";}catch(e){console.error(e);showMessage("Erreur lors de l'envoi du message.");}
+}
+
+function sendImage(file){
+  if(!file||!currentUser)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{try{await addDoc(collection(db,"messages"),{image:ev.target.result,room:curRoom,sender:currentUser,timestamp:serverTimestamp()});}catch(err){console.error(err);showMessage("Erreur lors de l'envoi de l'image.");}};
+  reader.readAsDataURL(file);
+}
+
+async function deleteMessage(){
+  if(!selectedMsgId||!selectedMsgSender)return;
+  if(selectedMsgSender!==currentUser){showMessage("Tu ne peux supprimer que tes propres messages.");return;}
+  try{await deleteDoc(doc(db,"messages",selectedMsgId));}catch(e){console.error(e);showMessage("Impossible de supprimer le message (règles Firestore ?).");}
+  closePopups();selectedMsgId=null;selectedMsgSender=null;
+}
+
+async function addContact(){
+  if(!currentUser){showMessage("Connecte-toi d'abord.");return;}
+  const name=byId("contact-name-input").value.trim().toLowerCase();if(!name||name===currentUser)return;
+  try{
+    const uRef=doc(db,"users",name),uDoc=await getDoc(uRef);
+    if(!uDoc.exists()){showMessage("Ce contact n'existe pas sur ThinkTalk.");return;}
+    const existing=contactsCache.find(c=>c.owner===currentUser&&c.name===name);
+    if(existing){showMessage("Contact déjà ajouté.");byId("contact-name-input").value="";return;}
+    await addDoc(collection(db,"contacts"),{owner:currentUser,name});byId("contact-name-input").value="";
+  }catch(e){console.error(e);showMessage("Erreur lors de l'ajout du contact.");}
+}
+
+const normalize=str=>(str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+
+function chooseTileSize(prev){
+  const base=[{type:"normal",weight:50},{type:"wide",weight:30},{type:"tall",weight:15},{type:"big",weight:5}];
+  if(prev==="normal")base.find(x=>x.type==="normal").weight=15;
+  if(prev==="wide")base.find(x=>x.type==="wide").weight=10;
+  if(prev==="tall")base.find(x=>x.type==="tall").weight=10;
+  base.find(x=>x.type==="big").weight=3;
+  const total=base.reduce((a,b)=>a+b.weight,0);let r=Math.random()*total;
+  for(const item of base){if(r<item.weight)return item.type;r-=item.weight;}
+  return"normal";
+}
+
+function setupMessagesSnapshot(){
+  const qAll=query(collection(db,"messages"),orderBy("timestamp","asc"));
+  onSnapshot(qAll,snap=>{
+    lastMessagesByRoom.clear();lastMessagesByDM.clear();
+    snap.forEach(d=>{
+      const m=d.data(),room=m.room;if(!room)return;
+      const entry={sender:m.sender,text:m.text||(m.image?"[image]":"")};
+      if(room.includes("_")&&!room.includes(" ")){const arr=lastMessagesByDM.get(room)||[];arr.push(entry);if(arr.length>2)arr.shift();lastMessagesByDM.set(room,arr);}
+      else{const arr=lastMessagesByRoom.get(room)||[];arr.push(entry);if(arr.length>2)arr.shift();lastMessagesByRoom.set(room,arr);}
+    });
+    renderRoomsTiles();renderContactsTiles();
+  });
+}
+
+function renderRoomsTiles(){
+  const g=byId("rooms-grid");if(!g)return;g.innerHTML="";
+  const search=normalize(byId("rooms-search").value.trim());let prevType=null;
+  roomsCache.forEach(r=>{
+    if(!r.name)return;
+    const previews=lastMessagesByRoom.get(r.name)||[],previewText=previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
+    const haystack=normalize(r.name)+" "+normalize(previewText);if(search&&!haystack.includes(search))return;
+    const t=document.createElement("div"),size=chooseTileSize(prevType);prevType=size;t.className="tile tile-"+size;
+    t.innerHTML=`<div class="title"><span># ${r.name}</span>${r.pass?'<span class="lock-badge">🔒</span>':''}</div><div class="tile-preview">${previewText||'<span class="muted">Aucun message</span>'}</div>`;
+    if(r.owner===currentUser){
+      const delBtn=document.createElement("button");delBtn.className="tile-delete-btn";delBtn.textContent="Suppr.";
+      delBtn.onclick=ev=>{ev.stopPropagation();showConfirm(`Supprimer le salon #${r.name} ?`,async()=>{try{await deleteDoc(doc(db,"rooms",r._id));}catch(e){console.error(e);showMessage("Erreur lors de la suppression du salon.");}});};
+      t.appendChild(delBtn);
+      let pressTimer=null;
+      t.addEventListener("pointerdown",()=>{pressTimer=setTimeout(()=>{showConfirm(`Supprimer le salon #${r.name} ?`,async()=>{try{await deleteDoc(doc(db,"rooms",r._id));}catch(e){console.error(e);showMessage("Erreur lors de la suppression du salon.");}});},650);});
+      t.addEventListener("pointerup",()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}});
+      t.addEventListener("pointerleave",()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}});
     }
-  }
+    t.onclick=()=>enterRoom(r.name);g.appendChild(t);teleportMaterialize(t,0);
+  });
+}
 
-  async function createRoom(){
-    const name=byId("new-room-name").value.trim();
-    const pass=byId("new-room-pass").value.trim();
-    if(!name)return;
-    if(!currentUser){showMessage("Connecte-toi d'abord.");return;}
-    try{
-      const rSnap=await getDocs(query(collection(db,"rooms"),where("name","==",name),limit(1)));
-      if(!rSnap.empty){showMessage("Un salon avec ce nom existe déjà.");return;}
-      await addDoc(collection(db,"rooms"),{name,pass,owner:currentUser});
-      closePopups();
-      byId("new-room-name").value="";
-      byId("new-room-pass").value="";
-    }catch(e){console.error(e);showMessage("Erreur lors de la création du salon.");}
-  }
+function renderContactsTiles(){
+  const g=byId("contacts-grid");if(!g||!currentUser)return;g.innerHTML="";
+  const search=normalize(byId("contacts-search").value.trim());const list=new Set();let prevType=null;
+  contactsCache.forEach(c=>{if(!c.owner||!c.name)return;if(c.owner===currentUser)list.add(c.name);if(c.name===currentUser)list.add(c.owner);});
+  Array.from(list).forEach(name=>{
+    const dmKey=[currentUser,name].sort().join("_"),previews=lastMessagesByDM.get(dmKey)||[],previewText=previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
+    const haystack=normalize(name)+" "+normalize(previewText);if(search&&!haystack.includes(search))return;
+    const t=document.createElement("div"),size=chooseTileSize(prevType);prevType=size;t.className="tile tile-"+size;
+    t.innerHTML=`<div class="title"><span>@ ${name}</span></div><div class="tile-preview">${previewText||'<span class="muted">Aucun message</span>'}</div>`;
+    const contactObj=contactsCache.find(c=>c.owner===currentUser&&c.name===name);
+    if(contactObj){
+      const delBtn=document.createElement("button");delBtn.className="tile-delete-btn";delBtn.textContent="Suppr.";
+      delBtn.onclick=ev=>{ev.stopPropagation();showConfirm(`Supprimer le contact @${name} ?`,async()=>{try{await deleteDoc(doc(db,"contacts",contactObj._id));}catch(e){console.error(e);showMessage("Erreur lors de la suppression du contact.");}});};
+      t.appendChild(delBtn);
+      let pressTimer=null;
+      t.addEventListener("pointerdown",()=>{pressTimer=setTimeout(()=>{showConfirm(`Supprimer le contact @${name} ?`,async()=>{try{await deleteDoc(doc(db,"contacts",contactObj._id));}catch(e){console.error(e);showMessage("Erreur lors de la suppression du contact.");}});},650);});
+      t.addEventListener("pointerup",()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}});
+      t.addEventListener("pointerleave",()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}});
+    }
+    t.onclick=()=>enterRoom(name,true);g.appendChild(t);teleportMaterialize(t,0);
+  });
+}
 
-  async function sendMessage(){
-    if(!currentUser){showMessage("Connecte-toi d'abord.");return;}
-    const i=byId("chat-input");
-    const text=i.value.trim();
-    if(!text)return;
-    try{
-      await addDoc(collection(db,"messages"),{
-        text,
-        room:curRoom,
-        sender:currentUser,
-        timestamp:serverTimestamp()
-      });
-      i.value="";
-    }catch(e){console.error(e);showMessage("Erreur lors de l'envoi du message.");}
-  }
+function setupRoomsSnapshot(){onSnapshot(collection(db,"rooms"),snap=>{roomsCache=[];snap.forEach(d=>{const r=d.data();roomsCache.push({...r,_id:d.id});});renderRoomsTiles();});}
+function setupContactsSnapshot(){onSnapshot(collection(db,"contacts"),snap=>{contactsCache=[];snap.forEach(d=>{const c=d.data();contactsCache.push({...c,_id:d.id});});renderContactsTiles();});}
 
-  function sendImage(file){
-    if(!file||!currentUser)return;
-    const reader=new FileReader();
-    reader.onload=async(ev)=>{
+function applyAccent(color){document.documentElement.style.setProperty("--accent",color);localStorage.setItem("tt_accent",color);accentColor=color;}
+function initAccent(){
+  const saved=localStorage.getItem("tt_accent");if(saved)applyAccent(saved);
+  const presets=["#0078d7","#8e44ad","#27ae60","#e67e22","#e91e63","#ff4757","#1abc9c","#f1c40f","#3498db","#9b59b6"];
+  const grid=byId("accent-presets");grid.innerHTML="";
+  presets.forEach(c=>{const dot=document.createElement("div");dot.className="color-dot";dot.style.background=c;if(saved===c)dot.classList.add("selected");dot.onclick=()=>{qsa(".color-dot").forEach(d=>d.classList.remove("selected"));dot.classList.add("selected");applyAccent(c);};grid.appendChild(dot);});
+  byId("btn-more-colors").onclick=()=>{const adv=byId("advanced-color");adv.style.display=adv.style.display==="none"?"block":"none";};
+  const picker=byId("accent-picker");picker.value=saved||"#0078d7";picker.oninput=()=>applyAccent(picker.value);
+}
+
+async function ensureGeneralRoom(){
+  try{
+    const rSnap=await getDocs(query(collection(db,"rooms"),where("name","==","général"),limit(1)));
+    if(rSnap.empty)await addDoc(collection(db,"rooms"),{name:"général",pass:"",owner:"system"});
+  }catch(e){console.error("ensureGeneralRoom error",e);}
+}
+
+function switchTab(tab){
+  const appRoot=byId("main-app"),currentView=document.querySelector(".view-section.active"),nextView=byId("view-"+tab);
+  if(!nextView||nextView===currentView)return;
+  appRoot.classList.add("switching");
+  if(currentView){currentView.classList.remove("active");currentView.classList.add("leaving-left");}
+  nextView.classList.add("entering-right");
+  qsa(".nav-btn").forEach(b=>b.classList.remove("active"));
+  const btn=qsa(".nav-btn").find(b=>b.dataset.tab===tab);if(btn)btn.classList.add("active");
+  setTimeout(()=>{
+    if(currentView)currentView.classList.remove("leaving-left");
+    nextView.classList.remove("entering-right");nextView.classList.add("active");appRoot.classList.remove("switching");
+    if(tab==="chat"){qsa(".msg-block").forEach((m,i)=>{m.classList.remove("visible");setTimeout(()=>m.classList.add("visible"),i*30);});}
+  },350);
+}
+
+function initUI(){
+  qsa(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>switchTab(btn.dataset.tab)));
+  byId("btn-open-session").addEventListener("click",()=>openPopup("pop-logout","card-logout"));
+  byId("btn-open-create").addEventListener("click",()=>openPopup("pop-create","card-create"));
+  byId("btn-open-accent").addEventListener("click",()=>openPopup("pop-accent","card-accent"));
+  qsa("[data-close-popup]").forEach(b=>b.addEventListener("click",closePopups));
+  byId("btn-logout").addEventListener("click",()=>{localStorage.removeItem("tt_user");location.reload();});
+  byId("btn-delete-profile").addEventListener("click",async()=>{
+    if(!currentUser)return;
+    showConfirm("Supprimer définitivement le profil et les contacts liés ?",async()=>{
       try{
-        await addDoc(collection(db,"messages"),{
-          image:ev.target.result,
-          room:curRoom,
-          sender:currentUser,
-          timestamp:serverTimestamp()
-        });
-      }catch(err){console.error(err);showMessage("Erreur lors de l'envoi de l'image.");}
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function deleteMessage(){
-    if(!selectedMsgId||!selectedMsgSender)return;
-    if(selectedMsgSender!==currentUser){
-      showMessage("Tu ne peux supprimer que tes propres messages.");
-      return;
-    }
-    try{await deleteDoc(doc(db,"messages",selectedMsgId));}
-    catch(e){console.error(e);showMessage("Impossible de supprimer le message (règles Firestore ?).");}
-    closePopups();
-    selectedMsgId=null;
-    selectedMsgSender=null;
-  }
-
-  /* CONTACTS */
-  async function addContact(){
-    if(!currentUser){showMessage("Connecte-toi d'abord.");return;}
-    const name=byId("contact-name-input").value.trim().toLowerCase();
-    if(!name||name===currentUser)return;
-    try{
-      const uRef=doc(db,"users",name);
-      const uDoc=await getDoc(uRef);
-      if(!uDoc.exists()){showMessage("Ce contact n'existe pas sur ThinkTalk.");return;}
-      const existing=contactsCache.find(c=>c.owner===currentUser&&c.name===name);
-      if(existing){showMessage("Contact déjà ajouté.");byId("contact-name-input").value="";return;}
-      await addDoc(collection(db,"contacts"),{owner:currentUser,name});
-      byId("contact-name-input").value="";
-    }catch(e){console.error(e);showMessage("Erreur lors de l'ajout du contact.");}
-  }
-
-  function normalize(str){return(str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
-
-  /* TUILES INTELLIGENTES */
-  function chooseTileSize(prev){
-    const base=[
-      {type:"normal",weight:50},
-      {type:"wide",weight:30},
-      {type:"tall",weight:15},
-      {type:"big",weight:5}
-    ];
-    if(prev==="normal") base.find(x=>x.type==="normal").weight=15;
-    if(prev==="wide")   base.find(x=>x.type==="wide").weight=10;
-    if(prev==="tall")   base.find(x=>x.type==="tall").weight=10;
-    base.find(x=>x.type==="big").weight=3;
-    const total=base.reduce((a,b)=>a+b.weight,0);
-    let r=Math.random()*total;
-    for(const item of base){
-      if(r<item.weight)return item.type;
-      r-=item.weight;
-    }
-    return "normal";
-  }
-
-  /* SNAPSHOT GLOBAL MESSAGES POUR APERÇUS */
-  function setupMessagesSnapshot(){
-    const qAll=query(collection(db,"messages"),orderBy("timestamp","asc"));
-    onSnapshot(qAll,(snap)=>{
-      lastMessagesByRoom.clear();
-      lastMessagesByDM.clear();
-      snap.forEach((d)=>{
-        const m=d.data();
-        const room=m.room;
-        if(!room)return;
-        const entry={sender:m.sender,text:m.text||(m.image?"[image]":"")};
-        if(room.includes("_")&&!room.includes(" ")){
-          const arr=lastMessagesByDM.get(room)||[];
-          arr.push(entry);
-          if(arr.length>2)arr.shift();
-          lastMessagesByDM.set(room,arr);
-        }else{
-          const arr=lastMessagesByRoom.get(room)||[];
-          arr.push(entry);
-          if(arr.length>2)arr.shift();
-          lastMessagesByRoom.set(room,arr);
-        }
-      });
-      renderRoomsTiles();
-      renderContactsTiles();
+        await deleteDoc(doc(db,"users",currentUser));
+        const contactsRef=collection(db,"contacts"),q1=query(contactsRef,where("owner","==",currentUser)),q2=query(contactsRef,where("name","==",currentUser));
+        const[snap1,snap2]=await Promise.all([getDocs(q1),getDocs(q2)]);
+        snap1.forEach(d=>deleteDoc(doc(db,"contacts",d.id)));snap2.forEach(d=>deleteDoc(doc(db,"contacts",d.id)));
+        localStorage.removeItem("tt_user");showMessage("Profil supprimé.");setTimeout(()=>location.reload(),800);
+      }catch(e){console.error(e);showMessage("Erreur lors de la suppression du profil.");}
     });
-  }
+  });
+  byId("msg-ok-btn").addEventListener("click",closePopups);
+  byId("confirm-yes").addEventListener("click",()=>{if(confirmCallback)confirmCallback();confirmCallback=null;closePopups();});
+  byId("confirm-no").addEventListener("click",()=>{confirmCallback=null;closePopups();});
+  byId("btn-login").addEventListener("click",handleLogin);
+  byId("auth-code").addEventListener("keydown",e=>{if(e.key==="Enter")handleLogin();});
+  byId("auth-toggle").addEventListener("click",()=>{authMode=authMode==="login"?"register":"login";updateAuthUI();});
+  byId("btn-do-create").addEventListener("click",createRoom);
+  byId("rooms-search").addEventListener("input",debounce(()=>renderRoomsTiles(),180));
+  byId("send-btn").addEventListener("click",sendMessage);
+  byId("chat-input").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
+  byId("btn-attach").addEventListener("click",()=>byId("file-input").click());
+  byId("file-input").addEventListener("change",e=>{const file=e.target.files[0];if(file)sendImage(file);e.target.value="";});
+  byId("btn-msg-del").addEventListener("click",deleteMessage);
+  byId("btn-add-contact").addEventListener("click",addContact);
+  byId("contacts-search").addEventListener("input",debounce(()=>renderContactsTiles(),180));
+  initAccent();updateAuthUI();
+}
 
-  /* RENDER ROOMS */
-  function renderRoomsTiles(){
-    const g=byId("rooms-grid");
-    if(!g)return;
-    g.innerHTML="";
-    const search=normalize(byId("rooms-search").value.trim());
-    let prevType=null;
-    roomsCache.forEach((r)=>{
-      if(!r.name)return;
-      const previews=lastMessagesByRoom.get(r.name)||[];
-      const previewText=previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
-      const haystack=normalize(r.name)+" "+normalize(previewText);
-      if(search && !haystack.includes(search))return;
-
-      const t=document.createElement("div");
-      const size=chooseTileSize(prevType);
-      prevType=size;
-      t.className="tile tile-"+size;
-      t.innerHTML=`<div class="title"><span># ${r.name}</span>${r.pass?'<span class="lock-badge">🔒</span>':''}</div>
-                   <div class="tile-preview">${previewText||'<span class="muted">Aucun message</span>'}</div>`;
-
-      if(r.owner===currentUser){
-        const delBtn=document.createElement("button");
-        delBtn.className="tile-delete-btn";
-        delBtn.textContent="Suppr.";
-        delBtn.onclick=(ev)=>{
-          ev.stopPropagation();
-          showConfirm(`Supprimer le salon #${r.name} ?`,async()=>{
-            try{await deleteDoc(doc(db,"rooms",r._id));}
-            catch(e){console.error(e);showMessage("Erreur lors de la suppression du salon.");}
-          });
-        };
-        t.appendChild(delBtn);
-
-        let pressTimer=null;
-        t.addEventListener("pointerdown",()=>{
-          pressTimer=setTimeout(()=>{
-            showConfirm(`Supprimer le salon #${r.name} ?`,async()=>{
-              try{await deleteDoc(doc(db,"rooms",r._id));}
-              catch(e){console.error(e);showMessage("Erreur lors de la suppression du salon.");}
-            });
-          },650);
-        });
-        t.addEventListener("pointerup",()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}});
-        t.addEventListener("pointerleave",()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}});
-      }
-
-      t.onclick=()=>enterRoom(r.name);
-      g.appendChild(t);
-      teleportMaterialize(t,0);
-    });
-  }
-
-  /* RENDER CONTACTS */
-  function renderContactsTiles(){
-    const g=byId("contacts-grid");
-    if(!g||!currentUser)return;
-    g.innerHTML="";
-    const search=normalize(byId("contacts-search").value.trim());
-    const list=new Set();
-    contactsCache.forEach((c)=>{
-      if(!c.owner||!c.name)return;
-      if(c.owner===currentUser)list.add(c.name);
-      if(c.name===currentUser)list.add(c.owner);
-    });
-
-    let prevType=null;
-    Array.from(list).forEach((name)=>{
-      const dmKey=[currentUser,name].sort().join("_");
-      const previews=lastMessagesByDM.get(dmKey)||[];
-      const previewText=previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
-      const haystack=normalize(name)+" "+normalize(previewText);
-      if(search && !haystack.includes(search))return;
-
-      const t=document.createElement("div");
-      const size=chooseTileSize(prevType);
-      prevType=size;
-      t.className="tile tile-"+size;
-      t.innerHTML=`<div class="title"><span>@ ${name}</span></div>
-                   <div class="tile-preview">${previewText||'<span class="muted">Aucun message</span>'}</div>`;
-
-      const contactObj=contactsCache.find(c=>c.owner===currentUser&&c.name===name);
-      if(contactObj){
-        const delBtn=document.createElement("button");
-        delBtn.className="tile-delete-btn";
-        delBtn.textContent="Suppr.";
-        delBtn.onclick=(ev)=>{
-          ev.stopPropagation();
-          showConfirm(`Supprimer le contact @${name} ?`,async()=>{
-            try{await deleteDoc(doc(db,"contacts",contactObj._id));}
-            catch(e){console.error(e);showMessage("Erreur lors de la suppression du contact.");}
-          });
-        };
-        t.appendChild(delBtn);
-
-        let pressTimer=null;
-        t.addEventListener("pointerdown",()=>{
-          pressTimer=setTimeout(()=>{
-            showConfirm(`Supprimer le contact @${name} ?`,async()=>{
-              try{await deleteDoc(doc(db,"contacts",contactObj._id));}
-              catch(e){console.error(e);showMessage("Erreur lors de la suppression du contact.");}
-            });
-          },650);
-        });
-        t.addEventListener("pointerup",()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}});
-        t.addEventListener("pointerleave",()=>{if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}});
-      }
-
-      t.onclick=()=>enterRoom(name,true);
-      g.appendChild(t);
-      teleportMaterialize(t,0);
-    });
-  }
-
-  /* SNAPSHOTS ROOMS / CONTACTS */
-  function setupRoomsSnapshot(){
-    onSnapshot(collection(db,"rooms"),(snap)=>{
-      roomsCache=[];
-      snap.forEach((d)=>{
-        const r=d.data();
-        roomsCache.push({...r,_id:d.id});
-      });
-      renderRoomsTiles();
-    });
-  }
-
-  function setupContactsSnapshot(){
-    onSnapshot(collection(db,"contacts"),(snap)=>{
-      contactsCache=[];
-      snap.forEach((d)=>{
-        const c=d.data();
-        contactsCache.push({...c,_id:d.id});
-      });
-      renderContactsTiles();
-    });
-  }
-
-  /* ACCENT COLOR */
-  function applyAccent(color){
-    document.documentElement.style.setProperty("--accent",color);
-    localStorage.setItem("tt_accent",color);
-    accentColor=color;
-  }
-  function initAccent(){
-    const saved=localStorage.getItem("tt_accent");
-    if(saved)applyAccent(saved);
-    const presets=["#0078d7","#8e44ad","#27ae60","#e67e22","#e91e63","#ff4757","#1abc9c","#f1c40f","#3498db","#9b59b6"];
-    const grid=byId("accent-presets");
-    grid.innerHTML="";
-    presets.forEach((c)=>{
-      const dot=document.createElement("div");
-      dot.className="color-dot";
-      dot.style.background=c;
-      if(saved===c)dot.classList.add("selected");
-      dot.onclick=()=>{
-        qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
-        dot.classList.add("selected");
-        applyAccent(c);
-      };
-      grid.appendChild(dot);
-    });
-    byId("btn-more-colors").onclick=()=>{
-      const adv=byId("advanced-color");
-      adv.style.display=adv.style.display==="none"?"block":"none";
-    };
-    const picker=byId("accent-picker");
-    picker.value=saved||"#0078d7";
-    picker.oninput=()=>applyAccent(picker.value);
-  }
-
-  async function ensureGeneralRoom(){
-    try{
-      const rSnap=await getDocs(query(collection(db,"rooms"),where("name","==","général"),limit(1)));
-      if(rSnap.empty){
-        await addDoc(collection(db,"rooms"),{name:"général",pass:"",owner:"system"});
-      }
-    }catch(e){console.error("ensureGeneralRoom error",e);}
-  }
-
-  /* UI INIT */
-  function initUI(){
-    qsa(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>switchTab(btn.dataset.tab)));
-    byId("btn-open-session").addEventListener("click",()=>openPopup("pop-logout","card-logout"));
-    byId("btn-open-create").addEventListener("click",()=>openPopup("pop-create","card-create"));
-    byId("btn-open-accent").addEventListener("click",()=>openPopup("pop-accent","card-accent"));
-    qsa("[data-close-popup]").forEach(b=>b.addEventListener("click",closePopups));
-
-    byId("btn-logout").addEventListener("click",()=>{localStorage.removeItem("tt_user");location.reload();});
-    byId("btn-delete-profile").addEventListener("click",async()=>{
-      if(!currentUser)return;
-      showConfirm("Supprimer définitivement le profil et les contacts liés ?",async()=>{
-        try{
-          await deleteDoc(doc(db,"users",currentUser));
-          const contactsRef=collection(db,"contacts");
-          const q1=query(contactsRef,where("owner","==",currentUser));
-          const q2=query(contactsRef,where("name","==",currentUser));
-          const [snap1,snap2]=await Promise.all([getDocs(q1),getDocs(q2)]);
-          snap1.forEach(d=>deleteDoc(doc(db,"contacts",d.id)));
-          snap2.forEach(d=>deleteDoc(doc(db,"contacts",d.id)));
-          localStorage.removeItem("tt_user");
-          showMessage("Profil supprimé.");
-          setTimeout(()=>location.reload(),800);
-        }catch(e){console.error(e);showMessage("Erreur lors de la suppression du profil.");}
-      });
-    });
-
-    byId("msg-ok-btn").addEventListener("click",closePopups);
-    byId("confirm-yes").addEventListener("click",()=>{if(confirmCallback)confirmCallback();confirmCallback=null;closePopups();});
-    byId("confirm-no").addEventListener("click",()=>{confirmCallback=null;closePopups();});
-
-    byId("btn-login").addEventListener("click",handleLogin);
-    byId("auth-code").addEventListener("keydown",(e)=>{if(e.key==="Enter")handleLogin();});
-    byId("auth-toggle").addEventListener("click",()=>{authMode=authMode==="login"?"register":"login";updateAuthUI();});
-
-    byId("btn-do-create").addEventListener("click",createRoom);
-    byId("rooms-search").addEventListener("input",debounce(()=>renderRoomsTiles(),180));
-
-    byId("send-btn").addEventListener("click",sendMessage);
-    byId("chat-input").addEventListener("keydown",(e)=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
-    byId("btn-attach").addEventListener("click",()=>byId("file-input").click());
-    byId("file-input").addEventListener("change",(e)=>{const file=e.target.files[0];if(file)sendImage(file);e.target.value="";});
-    byId("btn-msg-del").addEventListener("click",deleteMessage);
-
-    byId("btn-add-contact").addEventListener("click",addContact);
-    byId("contacts-search").addEventListener("input",debounce(()=>renderContactsTiles(),180));
-
-    initAccent();
-    updateAuthUI();
-  }
-
-  async function initApp(){
-    initUI();
-    await ensureGeneralRoom();
-    setupRoomsSnapshot();
-    setupContactsSnapshot();
-    setupMessagesSnapshot();
-
-    renderRoomsTiles();
-    renderContactsTiles();
-
-    if(currentUser){
-      byId("auth-screen").style.display="none";
-      byId("main-app").style.display="flex";
-      enterRoom("général");
-    }else{
-      byId("auth-screen").style.display="flex";
-      byId("main-app").style.display="none";
-    }
-  }
-
-  initApp();
-
-  /* TRANSITION ONGLET (ancienne style slide+blur) */
-  function switchTab(tab){
-    const appRoot=byId("main-app");
-    appRoot.classList.add("switching");
-    qsa(".nav-btn").forEach(b=>b.classList.remove("active"));
-    const btn=qsa(".nav-btn").find(b=>b.dataset.tab===tab);
-    if(btn)btn.classList.add("active");
-    setTimeout(()=>{
-      qsa(".view-section").forEach(s=>s.classList.remove("active"));
-      const view=byId("view-"+tab);
-      if(view)view.classList.add("active");
-      appRoot.classList.remove("switching");
-      if(tab==="chat"){
-        qsa(".msg-block").forEach((m,i)=>{m.classList.remove("visible");setTimeout(()=>m.classList.add("visible"),i*30);});
-      }
-    },260);
-  }
-
-  addEventListener("beforeunload",()=>{if(unsubChat)unsubChat();});
+async function initApp(){
+  initUI();await ensureGeneralRoom();setupRoomsSnapshot();setupContactsSnapshot();setupMessagesSnapshot();
+  renderRoomsTiles();renderContactsTiles();
+  if(currentUser){byId("auth-screen").style.display="none";byId("main-app").style.display="flex";enterRoom("général");}
+  else{byId("auth-screen").style.display="flex";byId("main-app").style.display="none";}
+}
+initApp();
+addEventListener("beforeunload",()=>{if(unsubChat)unsubChat();});
 </script>
 </body>
 </html>
