@@ -4,23 +4,114 @@
   <meta charset="UTF-8" />
   <title>ThinkTalk</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+
   <style>
-    :root { --accent:#0078d7; --bg:#000; --text:#fff; --muted:#888; }
-    * { box-sizing:border-box; margin:0; padding:0; font-family:"Segoe UI",sans-serif; }
-    html,body { height:100%; }
-    body { background:var(--bg); color:var(--text); overflow:hidden; position:fixed; inset:0; width:100%; }
-    #canvas-dust { position:fixed; inset:0; z-index:0; pointer-events:none; }
+    :root {
+      --accent: #ff4500;
+      --bg: #000;
+      --text: #fff;
+      --muted: #888;
+    }
 
-    .app-root { position:relative; z-index:1; height:100%; display:none; flex-direction:column; transition:transform .45s cubic-bezier(.4,0,.2,1), filter .45s; }
-    .view-blur { filter:blur(20px); transform:translateX(-20px); }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", sans-serif;
+    }
 
-    .tiles-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-    @media(min-width:900px){ .tiles-grid{ grid-template-columns:repeat(3,1fr); } }
-    .tile { position:relative; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); padding:14px; height:130px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; backdrop-filter:blur(8px); transition:transform .18s, box-shadow .18s; overflow:hidden; border-radius:8px; }
-    .tile:hover { transform:translateY(-4px); box-shadow:0 6px 18px rgba(0,0,0,.6); }
-    .tile .title { font-weight:600; color:var(--text); font-size:1rem; display:flex; align-items:center; gap:8px; }
-    .lock-badge { font-size:.75rem; opacity:.6; color:var(--muted); }
-    .tile-preview { font-size:.75rem; color:#bdbdbd; margin-top:6px; line-height:1.2; max-height:2.4em; overflow:hidden; white-space:pre-wrap; word-break:break-word; }
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+    }
+
+    #canvas-dust {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .app-root {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      transition: transform .45s cubic-bezier(.4,0,.2,1), filter .45s;
+    }
+
+    .view-blur {
+      filter: blur(20px);
+      transform: translateX(-20px);
+    }
+
+    .tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 12px;
+    }
+
+    @media(min-width:900px){
+      .tiles-grid {
+        grid-template-columns: repeat(3,1fr);
+      }
+    }
+
+    .tile {
+      position: relative;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.06);
+      padding: 14px;
+      height: 130px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: transform .18s, box-shadow .18s;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    .tile:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 18px rgba(0,0,0,.6);
+    }
+
+    .tile .title {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lock-badge {
+      font-size: .75rem;
+      opacity: .6;
+      color: var(--muted);
+    }
+
+    .tile-preview {
+      font-size: .75rem;
+      color: #bdbdbd;
+      margin-top: 6px;
+      line-height: 1.2;
+      max-height: 2.4em;
+      overflow: hidden;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
     .tile-delete-btn {
       position: absolute;
@@ -37,94 +128,295 @@
       box-shadow: 0 2px 6px rgba(0,0,0,.5);
     }
 
-    .msg-block { opacity:0; transform:translateY(10px); transition:opacity .45s .1s, transform .45s .1s; margin-bottom:16px; max-width:85%; cursor:pointer; }
-    .msg-block.own { align-self:flex-end; }
-    .msg-block.visible { opacity:1; transform:translateY(0); }
-    .msg-info { font-size:.68rem; color:var(--muted); margin-bottom:6px; display:flex; gap:8px; text-transform:uppercase; letter-spacing:1px; }
-    .msg-block.own .msg-info { justify-content:flex-end; color:var(--accent); }
-    .msg-text { background:rgba(0,120,215,.08); padding:12px; border-left:3px solid var(--accent); word-break:break-word; border-radius:6px; }
-    .msg-block.own .msg-text { border-left:none; border-right:3px solid #666; background:rgba(255,255,255,.03); }
+    .msg-block {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .45s .1s, transform .45s .1s;
+      margin-bottom: 16px;
+      max-width: 85%;
+      cursor: pointer;
+    }
 
-    .msg-img { max-width:100%; border-radius:6px; display:block; }
+    .msg-block.own {
+      align-self: flex-end;
+    }
 
-    .popup-overlay { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9000; display:none; align-items:center; justify-content:center; padding:20px; }
-    .popup-card { background:#000; border:2px solid var(--accent); width:100%; max-width:420px; padding:22px; opacity:0; transition:opacity .28s; border-radius:10px; }
-    .popup-card.visible { opacity:1; }
+    .msg-block.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-    .top-bar { padding:12px 16px; display:flex; justify-content:space-between; align-items:center; height:64px; border-bottom:1px solid rgba(255,255,255,.03); }
-    .top-title { font-size:2rem; font-weight:100; color:var(--accent); cursor:pointer; user-select:none; }
-    .top-actions { display:flex; gap:10px; align-items:center; }
-    .top-btn { background:#111; border:1px solid #222; color:#fff; padding:8px 10px; font-size:.85rem; cursor:pointer; border-radius:6px; }
+    .msg-info {
+      font-size: .68rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
 
-    .view-container { flex:1; overflow-y:auto; padding:12px 12px 120px; -webkit-overflow-scrolling:touch; }
-    .view-section { display:none; }
-    .view-section.active { display:block; }
-    .bottom-nav { position:fixed; bottom:0; width:100%; height:60px; display:flex; background:#000; border-top:1px solid #222; z-index:5; }
-    .nav-btn { flex:1; display:flex; align-items:center; justify-content:center; color:#888; cursor:pointer; font-size:.85rem; letter-spacing:1px; }
-    .nav-btn.active { color:#fff; border-top:3px solid var(--accent); font-weight:700; }
+    .msg-block.own .msg-info {
+      justify-content: flex-end;
+      color: var(--accent);
+    }
 
-    .input-box { width:100%; background:rgba(255,255,255,.06); border:1px solid #222; padding:12px; color:#fff; outline:none; margin-bottom:10px; border-radius:8px; }
-    .btn-full { width:100%; padding:12px; background:var(--accent); border:none; color:#fff; cursor:pointer; font-weight:700; text-transform:uppercase; border-radius:8px; }
+    .msg-text {
+      background: rgba(0,120,215,.08);
+      padding: 12px;
+      border-left: 3px solid var(--accent);
+      word-break: break-word;
+      border-radius: 6px;
+    }
 
-    .auth-toggle-link { color:var(--accent); font-size:.9rem; margin-top:12px; text-align:center; cursor:pointer; user-select:none; }
+    .msg-block.own .msg-text {
+      border-left: none;
+      border-right: 3px solid #666;
+      background: rgba(255,255,255,.03);
+    }
 
-    .color-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:12px 0; }
-    .color-dot { width:34px; height:34px; border-radius:50%; border:2px solid #222; cursor:pointer; }
-    .color-dot.selected { border-color:#fff; box-shadow:0 4px 12px rgba(0,0,0,.6); }
+    .msg-img {
+      max-width: 100%;
+      border-radius: 6px;
+      display: block;
+    }
 
-    .color-picker-input { width:100%; height:44px; padding:0; border:none; background:transparent; cursor:pointer; }
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      z-index: 9000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
 
-    .popup-message-text { margin:12px 0; font-size:.95rem; line-height:1.4; color:#ddd; }
+    .popup-card {
+      background: #000;
+      border: 2px solid var(--accent);
+      width: 100%;
+      max-width: 420px;
+      padding: 22px;
+      opacity: 0;
+      transition: opacity .28s;
+      border-radius: 10px;
+    }
 
-    /* small helpers */
-    .muted { color:var(--muted); font-size:.85rem; }
-    .hidden { display:none !important; }
+    .popup-card.visible {
+      opacity: 1;
+    }
 
-    /* auth card transition (Windows 11 style) */
+    .top-bar {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 64px;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+    }
+
+    .top-title {
+      font-size: 2rem;
+      font-weight: 100;
+      color: var(--accent);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .top-btn {
+      background: #111;
+      border: 1px solid #222;
+      color: #fff;
+      padding: 8px 10px;
+      font-size: .85rem;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .view-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 12px 120px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .view-section {
+      display: none;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 60px;
+      display: flex;
+      background: #000;
+      border-top: 1px solid #222;
+      z-index: 5;
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      cursor: pointer;
+      font-size: .85rem;
+      letter-spacing: 1px;
+    }
+
+    .nav-btn.active {
+      color: #fff;
+      border-top: 3px solid var(--accent);
+      font-weight: 700;
+    }
+
+    .input-box {
+      width: 100%;
+      background: rgba(255,255,255,.06);
+      border: 1px solid #222;
+      padding: 12px;
+      color: #fff;
+      outline: none;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+
+    .btn-full {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      text-transform: uppercase;
+      border-radius: 8px;
+    }
+
+    .auth-toggle-link {
+      color: var(--accent);
+      font-size: .9rem;
+      margin-top: 12px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(5,1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .color-dot {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid #222;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .color-dot::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+    }
+
+    .color-dot.selected {
+      border-color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,.6);
+    }
+
+    .color-picker-input {
+      width: 100%;
+      height: 44px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .popup-message-text {
+      margin: 12px 0;
+      font-size: .95rem;
+      line-height: 1.4;
+      color: #ddd;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
     #auth-card {
-      background:rgba(0,0,0,.7);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:14px;
-      padding:20px 22px 18px;
-      backdrop-filter:blur(18px);
-      box-shadow:0 18px 40px rgba(0,0,0,.7);
-      transition:transform .35s ease, opacity .35s ease, filter .35s ease;
-      transform:scale(.98);
-      opacity:.9;
-      filter:blur(1px);
-    }
-    #auth-card.auth-active {
-      transform:scale(1);
-      opacity:1;
-      filter:blur(0);
-    }
-    #auth-card.auth-switching {
-      transform:scale(.96);
-      opacity:.3;
-      filter:blur(4px);
+      background: rgba(0,0,0,.7);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 14px;
+      padding: 20px 22px 18px;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 40px rgba(0,0,0,.7);
+      transition: transform .35s ease, opacity .35s ease, filter .35s ease;
+      transform: scale(.98);
+      opacity: .9;
+      filter: blur(1px);
     }
 
-    /* chat background */
+    #auth-card.auth-active {
+      transform: scale(1);
+      opacity: 1;
+      filter: blur(0);
+    }
+
+    #auth-card.auth-switching {
+      transform: scale(.96);
+      opacity: .3;
+      filter: blur(4px);
+    }
+
     #view-chat {
-      background-size:cover;
-      background-position:center;
-      background-repeat:no-repeat;
-      position:relative;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
     }
+
     #view-chat::before {
-      content:"";
-      position:absolute;
-      inset:0;
-      background:linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.4));
-      pointer-events:none;
-      z-index:0;
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.4));
+      pointer-events: none;
+      z-index: 0;
     }
+
     #chat-messages {
-      position:relative;
-      z-index:1;
+      position: relative;
+      z-index: 1;
     }
   </style>
 </head>
+
 <body>
 
 <canvas id="canvas-dust"></canvas>
@@ -206,6 +498,7 @@
     <div class="top-title" id="btn-open-session">ThinkTalk</div>
     <div class="top-actions">
       <button class="top-btn" id="btn-open-accent">Accent color</button>
+      <button class="top-btn" id="btn-wallpaper">Wallpaper</button>
     </div>
   </div>
 
@@ -226,7 +519,6 @@
       <div style="position:fixed;bottom:60px;left:0;right:0;display:flex;background:#000;padding:10px;gap:8px;border-top:1px solid #222;z-index:2">
         <button id="btn-attach" style="background:#222;color:#fff;border:none;padding:0 14px;cursor:pointer;border-radius:8px">📎</button>
         <input type="file" id="file-input" hidden accept="image/*">
-        <button id="btn-bg" style="background:#222;color:#fff;border:none;padding:0 14px;cursor:pointer;border-radius:8px">🖼</button>
         <input type="file" id="bg-file-input" hidden accept="image/*">
         <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="Message...">
         <button id="send-btn" style="background:var(--accent);color:#fff;border:none;padding:0 18px;border-radius:8px">OK</button>
@@ -258,7 +550,6 @@
     serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc, limit, updateDoc
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // ---------- CONFIG FIREBASE ----------
   const cfg = {
     apiKey: "AIzaSyCv4nD9Nyez5ERGvW47q-6O-TA96zWJn0M",
     authDomain: "thinktalk-b3c85.firebaseapp.com",
@@ -270,32 +561,27 @@
   const app = initializeApp(cfg);
   const db = getFirestore(app);
 
-  // ---------- HELPERS ----------
   const byId = (id) => document.getElementById(id);
   const qsa = (sel) => Array.from(document.querySelectorAll(sel));
   const debounce = (fn, wait=200) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
   const getAccent = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
 
-  // ---------- STATE ----------
   let currentUser = localStorage.getItem("tt_user") || null;
   let curRoom = "général";
   let unsubChat = null;
   let selectedMsgId = null;
-  let authMode = "login"; // "login" | "register"
+  let authMode = "login";
   let confirmCallback = null;
   let isPrivateCurrent = false;
 
-  // caches & maps
   let roomsCache = [];
   let contactsCache = [];
   const lastMessagesByRoom = new Map();
   const lastMessagesByDM = new Map();
 
-  // allowed rooms (local)
   let allowedRooms = [];
   try { allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]"); } catch { allowedRooms = []; }
 
-  // ---------- PARTICLES ----------
   const canvas = byId("canvas-dust");
   const ctx = canvas.getContext("2d");
   let pts = [];
@@ -334,8 +620,8 @@
       if(this.y<0||this.y>canvas.height) this.vy*=-1;
     }
     draw(){
-      const accent = getAccent() || "#0078d7";
-      const hex = accent.startsWith("#") ? accent : "#0078d7";
+      const accent = getAccent() || "#ff4500";
+      const hex = accent.startsWith("#") ? accent : "#ff4500";
       ctx.fillStyle = hex.length===7 ? hex+"cc" : hex;
       ctx.shadowBlur=8;
       ctx.shadowColor=hex;
@@ -348,7 +634,6 @@
   for(let i=0;i<380;i++) pts.push(new Particle());
   (function anim(){ ctx.clearRect(0,0,canvas.width,canvas.height); pts.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(anim); })();
 
-  // ---------- UI MATERIALIZE ----------
   window.materialize = (el, delay=0) => {
     setTimeout(()=>{
       const r = el.getBoundingClientRect();
@@ -371,7 +656,6 @@
     qsa(".popup-card").forEach(c=>c.classList.remove("visible"));
   }
 
-  // ---------- MESSAGES / CONFIRM POPUPS ----------
   function showMessage(text, title="INFO"){
     byId("msg-title").innerText = title;
     byId("msg-text").innerText = text;
@@ -384,7 +668,6 @@
     openPopup("pop-confirm","card-confirm");
   }
 
-  // ---------- AUTH UI ----------
   function updateAuthUI(){
     const title = byId("auth-mode-title"), btn = byId("btn-login"), toggle = byId("auth-toggle");
     const card = byId("auth-card");
@@ -433,7 +716,6 @@
     } catch(e){ console.error(e); showMessage("Erreur de connexion."); }
   }
 
-  // ---------- CHAT BACKGROUND ----------
   async function loadChatBackground(roomName, isPrivateChat){
     const view = byId("view-chat");
     if(!view) return;
@@ -496,9 +778,8 @@
         await setDoc(doc(db,"dmBackgrounds", dmKey), { background: dataUrl });
       } else {
         const r = roomsCache.find(r=>r.name===curRoom);
-        if(r && r._id){
-          await updateDoc(doc(db,"rooms", r._id), { background: dataUrl });
-        }
+        if(!r){ showMessage("Salon introuvable."); return; }
+        await setDoc(doc(db,"rooms", r._id), { ...r, background: dataUrl });
       }
       await loadChatBackground(isPrivateCurrent ? curRoom.split("_").find(n=>n!==currentUser) : curRoom, isPrivateCurrent);
     } catch(e){
@@ -507,7 +788,6 @@
     }
   }
 
-  // ---------- ROOMS / CHAT ----------
   async function enterRoom(name, isPrivateChat=false){
     if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
 
@@ -654,7 +934,6 @@
     closePopups(); selectedMsgId = null;
   }
 
-  // ---------- CONTACTS ----------
   async function addContact(){
     if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
     const name = byId("contact-name-input").value.trim().toLowerCase();
@@ -670,7 +949,6 @@
     } catch(e){ console.error(e); showMessage("Erreur lors de l'ajout du contact."); }
   }
 
-  // ---------- SNAPSHOTS & RENDER ----------
   function normalize(str){ return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
 
   function setupMessagesSnapshot(){
@@ -732,7 +1010,7 @@
       }
 
       let pressTimer = null;
-      t.addEventListener("pointerdown", (e) => {
+      t.addEventListener("pointerdown", () => {
         if(r.owner === currentUser){
           pressTimer = setTimeout(()=> {
             showConfirm(`Supprimer le salon #${r.name} ?`, async () => {
@@ -822,7 +1100,6 @@
       contactsCache = [];
       snap.forEach((d) => {
         const c = d.data();
-        // auto-correction simple : si name === currentUser et owner !== currentUser, inverser
         if(c && c.name === currentUser && c.owner && c.owner !== currentUser){
           const newData = { owner: c.name, name: c.owner };
           setDoc(doc(db,"contacts", d.id), newData);
@@ -835,11 +1112,31 @@
     });
   }
 
-  // ---------- ACCENT COLOR ----------
   function applyAccent(color){
     document.documentElement.style.setProperty("--accent", color);
     localStorage.setItem("tt_accent", color);
   }
+
+  let neonInterval = null;
+  const neonCycle = ["#ff0033","#ff4500","#ff8800","#ffcc00","#ff8800","#ff4500"];
+  let neonIndex = 0;
+  let neonActive = false;
+
+  function startNeonCycle(){
+    if(neonInterval) clearInterval(neonInterval);
+    neonActive = true;
+    neonInterval = setInterval(()=>{
+      neonIndex = (neonIndex+1) % neonCycle.length;
+      applyAccent(neonCycle[neonIndex]);
+    }, 250);
+  }
+
+  function stopNeonCycle(){
+    neonActive = false;
+    if(neonInterval) clearInterval(neonInterval);
+    neonInterval = null;
+  }
+
   function initAccent(){
     const saved = localStorage.getItem("tt_accent");
     if(saved) applyAccent(saved);
@@ -850,8 +1147,8 @@
       const dot = document.createElement("div");
       dot.className = "color-dot";
       dot.style.background = c;
-      if(saved === c) dot.classList.add("selected");
       dot.onclick = () => {
+        stopNeonCycle();
         qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
         dot.classList.add("selected");
         applyAccent(c);
@@ -863,32 +1160,32 @@
       adv.style.display = adv.style.display === "none" ? "block" : "none";
     };
     const picker = byId("accent-picker");
-    picker.value = saved || "#0078d7";
-    picker.oninput = () => applyAccent(picker.value);
+    picker.value = saved || "#ff4500";
+    picker.oninput = () => { stopNeonCycle(); applyAccent(picker.value); };
 
-    const neonSets = {
-      rouge: ["#ff0033","#ff3355","#ff6677","#ff99aa"],
-      bleu: ["#00eaff","#33f1ff","#66f6ff","#99faff"],
-      vert: ["#39ff14","#66ff4d","#8cff80","#b3ffb3"],
-      violet: ["#b300ff","#c233ff","#d266ff","#e299ff"]
-    };
+    const neonDefs = [
+      { colors:["#ff0033","#ff8800"], label:"Rouge/Orange" },
+      { colors:["#00eaff","#33f1ff"], label:"Bleu/Cyan" },
+      { colors:["#39ff14","#b3ff00"], label:"Vert/Jaune" },
+      { colors:["#b300ff","#ff00ff"], label:"Violet/Rose" }
+    ];
     byId("btn-neon-colors").onclick = () => {
       grid.innerHTML = "";
-      Object.values(neonSets).flat().forEach((c)=>{
+      neonDefs.forEach((n,idx)=>{
         const dot = document.createElement("div");
         dot.className = "color-dot";
-        dot.style.background = c;
+        dot.style.background = `radial-gradient(circle at 30% 30%, ${n.colors[0]}, ${n.colors[1]})`;
         dot.onclick = () => {
           qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
           dot.classList.add("selected");
-          applyAccent(c);
+          neonIndex = 0;
+          startNeonCycle();
         };
         grid.appendChild(dot);
       });
     };
   }
 
-  // ---------- ENSURE GENERAL ROOM ----------
   async function ensureGeneralRoom(){
     try {
       const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==","général"), limit(1)));
@@ -898,7 +1195,6 @@
     } catch(e){ console.error("ensureGeneralRoom error", e); }
   }
 
-  // ---------- INIT UI & EVENTS ----------
   function initUI(){
     qsa(".nav-btn").forEach((btn)=> btn.addEventListener("click", ()=> switchTab(btn.dataset.tab)));
     byId("btn-open-session").addEventListener("click", ()=> openPopup("pop-logout","card-logout"));
@@ -942,7 +1238,7 @@
     byId("file-input").addEventListener("change", (e)=> { const file = e.target.files[0]; if(file) sendImage(file); e.target.value=""; });
     byId("btn-msg-del").addEventListener("click", deleteMessage);
 
-    byId("btn-bg").addEventListener("click", ()=> byId("bg-file-input").click());
+    byId("btn-wallpaper").addEventListener("click", ()=> byId("bg-file-input").click());
     byId("bg-file-input").addEventListener("change", async (e)=> {
       const file = e.target.files[0];
       if(file) await setBackgroundForCurrentChat(file);
@@ -956,7 +1252,6 @@
     updateAuthUI();
   }
 
-  // ---------- INIT APP ----------
   async function initApp(){
     initUI();
     await ensureGeneralRoom();
@@ -976,7 +1271,6 @@
 
   initApp();
 
-  // ---------- TABS ----------
   function switchTab(tab){
     const appRoot = byId("main-app");
     appRoot.classList.add("view-blur");
@@ -994,7 +1288,6 @@
     }, 300);
   }
 
-  // ---------- CLEANUP ON UNLOAD ----------
   addEventListener("beforeunload", ()=> { if(unsubChat) unsubChat(); });
 </script>
 </body>
