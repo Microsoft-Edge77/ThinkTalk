@@ -45,6 +45,8 @@
     .msg-text { background:rgba(0,120,215,.08); padding:12px; border-left:3px solid var(--accent); word-break:break-word; border-radius:6px; }
     .msg-block.own .msg-text { border-left:none; border-right:3px solid #666; background:rgba(255,255,255,.03); }
 
+    .msg-img { max-width:100%; border-radius:6px; display:block; }
+
     .popup-overlay { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9000; display:none; align-items:center; justify-content:center; padding:20px; }
     .popup-card { background:#000; border:2px solid var(--accent); width:100%; max-width:420px; padding:22px; opacity:0; transition:opacity .28s; border-radius:10px; }
     .popup-card.visible { opacity:1; }
@@ -77,6 +79,50 @@
     /* small helpers */
     .muted { color:var(--muted); font-size:.85rem; }
     .hidden { display:none !important; }
+
+    /* auth card transition (Windows 11 style) */
+    #auth-card {
+      background:rgba(0,0,0,.7);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:14px;
+      padding:20px 22px 18px;
+      backdrop-filter:blur(18px);
+      box-shadow:0 18px 40px rgba(0,0,0,.7);
+      transition:transform .35s ease, opacity .35s ease, filter .35s ease;
+      transform:scale(.98);
+      opacity:.9;
+      filter:blur(1px);
+    }
+    #auth-card.auth-active {
+      transform:scale(1);
+      opacity:1;
+      filter:blur(0);
+    }
+    #auth-card.auth-switching {
+      transform:scale(.96);
+      opacity:.3;
+      filter:blur(4px);
+    }
+
+    /* chat background */
+    #view-chat {
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      position:relative;
+    }
+    #view-chat::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.4));
+      pointer-events:none;
+      z-index:0;
+    }
+    #chat-messages {
+      position:relative;
+      z-index:1;
+    }
   </style>
 </head>
 <body>
@@ -117,6 +163,7 @@
     <h3>COULEUR D'ACCENT</h3>
     <div class="color-grid" id="accent-presets"></div>
     <button class="btn-full" id="btn-more-colors" style="margin-top:8px;background:#222;">PLUS DE COULEURS</button>
+    <button class="btn-full" id="btn-neon-colors" style="margin-top:8px;background:#222;">COULEURS NÉON</button>
     <div id="advanced-color" style="display:none;margin-top:12px;">
       <input type="color" id="accent-picker" class="color-picker-input">
     </div>
@@ -143,9 +190,9 @@
 
 <!-- AUTH -->
 <div id="auth-screen" style="height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;z-index:10;">
-  <div style="font-size:3rem;color:var(--accent);text-align:center;margin-bottom:10px;font-weight:100;">thinktalk</div>
+  <div style="font-size:3rem;color:var(--accent);text-align:center;margin-bottom:10px;font-weight:100;">ThinkTalk</div>
   <div id="auth-mode-title" style="color:var(--muted);margin-bottom:18px;">Se connecter</div>
-  <div style="width:320px;margin:0 auto;">
+  <div id="auth-card" class="auth-active" style="width:320px;margin:0 auto;">
     <input type="text" id="auth-pseudo" class="input-box" placeholder="Pseudo">
     <input type="password" id="auth-code" class="input-box" placeholder="Code secret">
     <button class="btn-full" id="btn-login">SE CONNECTER</button>
@@ -156,7 +203,7 @@
 <!-- APP -->
 <div class="app-root" id="main-app">
   <div class="top-bar">
-    <div class="top-title" id="btn-open-session">thinktalk</div>
+    <div class="top-title" id="btn-open-session">ThinkTalk</div>
     <div class="top-actions">
       <button class="top-btn" id="btn-open-accent">Accent color</button>
     </div>
@@ -174,11 +221,13 @@
 
     <!-- CHAT -->
     <section id="view-chat" class="view-section">
-      <div id="chat-header" style="color:var(--accent);margin-bottom:12px;font-weight:bold"># général</div>
+      <div id="chat-header" style="color:var(--accent);margin-bottom:12px;font-weight:bold;position:relative;z-index:1"># général</div>
       <div id="chat-messages" style="padding-bottom:20px;"></div>
-      <div style="position:fixed;bottom:60px;left:0;right:0;display:flex;background:#000;padding:10px;gap:8px;border-top:1px solid #222">
+      <div style="position:fixed;bottom:60px;left:0;right:0;display:flex;background:#000;padding:10px;gap:8px;border-top:1px solid #222;z-index:2">
         <button id="btn-attach" style="background:#222;color:#fff;border:none;padding:0 14px;cursor:pointer;border-radius:8px">📎</button>
         <input type="file" id="file-input" hidden accept="image/*">
+        <button id="btn-bg" style="background:#222;color:#fff;border:none;padding:0 14px;cursor:pointer;border-radius:8px">🖼</button>
+        <input type="file" id="bg-file-input" hidden accept="image/*">
         <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="Message...">
         <button id="send-btn" style="background:var(--accent);color:#fff;border:none;padding:0 18px;border-radius:8px">OK</button>
       </div>
@@ -206,7 +255,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import {
     getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
-    serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc, limit
+    serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc, limit, updateDoc
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   // ---------- CONFIG FIREBASE ----------
@@ -225,6 +274,7 @@
   const byId = (id) => document.getElementById(id);
   const qsa = (sel) => Array.from(document.querySelectorAll(sel));
   const debounce = (fn, wait=200) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
+  const getAccent = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
 
   // ---------- STATE ----------
   let currentUser = localStorage.getItem("tt_user") || null;
@@ -233,6 +283,7 @@
   let selectedMsgId = null;
   let authMode = "login"; // "login" | "register"
   let confirmCallback = null;
+  let isPrivateCurrent = false;
 
   // caches & maps
   let roomsCache = [];
@@ -244,7 +295,7 @@
   let allowedRooms = [];
   try { allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]"); } catch { allowedRooms = []; }
 
-  // ---------- PARTICLES (unchanged, optimized) ----------
+  // ---------- PARTICLES ----------
   const canvas = byId("canvas-dust");
   const ctx = canvas.getContext("2d");
   let pts = [];
@@ -257,16 +308,42 @@
 
   class Particle {
     constructor(){ this.init(); this.target=null; }
-    init(){ this.x=Math.random()*canvas.width; this.y=Math.random()*canvas.height; this.vx=(Math.random()-0.5)*1.5; this.vy=(Math.random()-0.5)*1.5; this.s=Math.random()*2+1; }
+    init(){
+      this.x=Math.random()*canvas.width;
+      this.y=Math.random()*canvas.height;
+      this.vx=(Math.random()-0.5)*1.2;
+      this.vy=(Math.random()-0.5)*1.2;
+      this.s=Math.random()*2+1;
+    }
     update(){
-      if(this.target){ this.x+=(this.target.x-this.x)*0.15; this.y+=(this.target.y-this.y)*0.15; return; }
+      if(this.target){
+        this.x+=(this.target.x-this.x)*0.15;
+        this.y+=(this.target.y-this.y)*0.15;
+        return;
+      }
       const dx=mouse.x-this.x, dy=mouse.y-this.y, d=Math.hypot(dx,dy);
-      if(d<180){ this.vx+=dx*0.002; this.vy+=dy*0.002; }
-      this.x+=this.vx; this.y+=this.vy; this.vx*=0.99; this.vy*=0.99;
+      if(d<100){
+        this.vx-=dx*0.0003;
+        this.vy-=dy*0.0003;
+      }
+      this.x+=this.vx;
+      this.y+=this.vy;
+      this.vx*=0.99;
+      this.vy*=0.99;
       if(this.x<0||this.x>canvas.width) this.vx*=-1;
       if(this.y<0||this.y>canvas.height) this.vy*=-1;
     }
-    draw(){ ctx.fillStyle="#0078d7cc"; ctx.shadowBlur=8; ctx.shadowColor="#0078d7"; ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; }
+    draw(){
+      const accent = getAccent() || "#0078d7";
+      const hex = accent.startsWith("#") ? accent : "#0078d7";
+      ctx.fillStyle = hex.length===7 ? hex+"cc" : hex;
+      ctx.shadowBlur=8;
+      ctx.shadowColor=hex;
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.s,0,Math.PI*2);
+      ctx.fill();
+      ctx.shadowBlur=0;
+    }
   }
   for(let i=0;i<380;i++) pts.push(new Particle());
   (function anim(){ ctx.clearRect(0,0,canvas.width,canvas.height); pts.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(anim); })();
@@ -310,8 +387,21 @@
   // ---------- AUTH UI ----------
   function updateAuthUI(){
     const title = byId("auth-mode-title"), btn = byId("btn-login"), toggle = byId("auth-toggle");
-    if(authMode==="login"){ title.innerText="Se connecter"; btn.innerText="SE CONNECTER"; toggle.innerText="Vous n'avez pas de compte ? Rejoindre ThinkTalk"; }
-    else { title.innerText="Créer un compte"; btn.innerText="CRÉER UN COMPTE"; toggle.innerText="Vous avez déjà un compte ? Se connecter"; }
+    const card = byId("auth-card");
+    card.classList.add("auth-switching");
+    if(authMode==="login"){
+      title.innerText="Se connecter";
+      btn.innerText="SE CONNECTER";
+      toggle.innerText="Vous n'avez pas de compte ? Rejoindre ThinkTalk";
+    } else {
+      title.innerText="Créer un compte";
+      btn.innerText="CRÉER UN COMPTE";
+      toggle.innerText="Vous avez déjà un compte ? Se connecter";
+    }
+    setTimeout(()=>{
+      card.classList.remove("auth-switching");
+      card.classList.add("auth-active");
+    }, 200);
   }
 
   async function handleLogin(){
@@ -326,7 +416,6 @@
           if(uDoc.data().code === c){
             localStorage.setItem("tt_user", p);
             currentUser = p;
-            // show app
             byId("auth-screen").style.display = "none";
             byId("main-app").style.display = "flex";
             enterRoom("général");
@@ -344,11 +433,84 @@
     } catch(e){ console.error(e); showMessage("Erreur de connexion."); }
   }
 
+  // ---------- CHAT BACKGROUND ----------
+  async function loadChatBackground(roomName, isPrivateChat){
+    const view = byId("view-chat");
+    if(!view) return;
+    try {
+      if(isPrivateChat){
+        const dmKey = curRoom;
+        const bgRef = doc(db,"dmBackgrounds", dmKey);
+        const bgDoc = await getDoc(bgRef);
+        if(bgDoc.exists() && bgDoc.data().background){
+          view.style.backgroundImage = `url(${bgDoc.data().background})`;
+        } else {
+          view.style.backgroundImage = "none";
+        }
+      } else {
+        const r = roomsCache.find(r=>r.name===roomName);
+        if(r && r.background){
+          view.style.backgroundImage = `url(${r.background})`;
+        } else {
+          view.style.backgroundImage = "none";
+        }
+      }
+    } catch(e){
+      console.error(e);
+      view.style.backgroundImage = "none";
+    }
+  }
+
+  function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
+    return new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onload = e=>{
+        const img = new Image();
+        img.onload = ()=>{
+          let w = img.width;
+          let h = img.height;
+          const ratio = Math.min(maxW/w, maxH/h, 1);
+          w = Math.round(w*ratio);
+          h = Math.round(h*ratio);
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          const cctx = c.getContext("2d");
+          cctx.drawImage(img,0,0,w,h);
+          const data = c.toDataURL("image/jpeg", quality);
+          resolve(data);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function setBackgroundForCurrentChat(file){
+    if(!file || !currentUser) return;
+    try {
+      const dataUrl = await compressImageToBase64(file, 900, 700, 0.1);
+      if(isPrivateCurrent){
+        const dmKey = curRoom;
+        await setDoc(doc(db,"dmBackgrounds", dmKey), { background: dataUrl });
+      } else {
+        const r = roomsCache.find(r=>r.name===curRoom);
+        if(r && r._id){
+          await updateDoc(doc(db,"rooms", r._id), { background: dataUrl });
+        }
+      }
+      await loadChatBackground(isPrivateCurrent ? curRoom.split("_").find(n=>n!==currentUser) : curRoom, isPrivateCurrent);
+    } catch(e){
+      console.error(e);
+      showMessage("Erreur lors de la mise à jour du fond d'écran.");
+    }
+  }
+
   // ---------- ROOMS / CHAT ----------
   async function enterRoom(name, isPrivateChat=false){
     if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
 
-    // if room is private (has pass) and user not owner and not in allowedRooms -> ask code
     if(!isPrivateChat){
       const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==",name), limit(1)));
       if(!rSnap.empty){
@@ -361,7 +523,6 @@
           const alreadyAllowed = allowedRooms.includes(roomKey);
           const isOwner = owner === currentUser;
           if(!alreadyAllowed && !isOwner){
-            // show popup with input
             const inputId = "room-pass-input";
             byId("msg-title").innerText = "Salon privé";
             byId("msg-text").innerHTML = "Ce salon est privé. Entrez le code :\n\n" +
@@ -388,6 +549,7 @@
 
     function proceedEnter(){
       curRoom = isPrivateChat ? [currentUser,name].sort().join("_") : name;
+      isPrivateCurrent = isPrivateChat;
       byId("chat-header").innerText = (isPrivateChat ? "@ " : "# ") + name;
       switchTab("chat");
 
@@ -429,12 +591,12 @@
           }
 
           box.appendChild(div);
-          // animate
           setTimeout(()=>div.classList.add("visible"), 20);
         });
-        // scroll to bottom
         box.parentElement.scrollTop = box.parentElement.scrollHeight;
       });
+
+      loadChatBackground(name, isPrivateChat);
     }
   }
 
@@ -444,7 +606,6 @@
     if(!name) return;
     if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
     try {
-      // prevent duplicate room names
       const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==",name), limit(1)));
       if(!rSnap.empty){ showMessage("Un salon avec ce nom existe déjà."); return; }
       await addDoc(collection(db,"rooms"), { name, pass, owner: currentUser });
@@ -502,7 +663,6 @@
       const uRef = doc(db,"users",name);
       const uDoc = await getDoc(uRef);
       if(!uDoc.exists()){ showMessage("Ce contact n'existe pas sur ThinkTalk."); return; }
-      // prevent duplicates
       const existing = contactsCache.find(c => c.owner===currentUser && c.name===name);
       if(existing){ showMessage("Contact déjà ajouté."); byId("contact-name-input").value=""; return; }
       await addDoc(collection(db,"contacts"), { owner: currentUser, name });
@@ -513,9 +673,7 @@
   // ---------- SNAPSHOTS & RENDER ----------
   function normalize(str){ return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
 
-  // messages snapshot (global) to build previews (optimized: only last N messages per room)
   function setupMessagesSnapshot(){
-    // listen to messages collection but keep it efficient by limiting processing
     const qAll = query(collection(db,"messages"), orderBy("timestamp","asc"));
     onSnapshot(qAll, (snap) => {
       lastMessagesByRoom.clear();
@@ -559,7 +717,6 @@
       t.innerHTML = `<div class="title"><span># ${r.name}</span>${r.pass?'<span class="lock-badge">🔒</span>':''}</div>
                      <div class="tile-preview">${previewText || '<span class="muted">Aucun message</span>'}</div>`;
 
-      // delete button (only owner)
       if(r.owner === currentUser){
         const delBtn = document.createElement("button");
         delBtn.className = "tile-delete-btn";
@@ -574,7 +731,6 @@
         t.appendChild(delBtn);
       }
 
-      // long press mobile to delete (owner only)
       let pressTimer = null;
       t.addEventListener("pointerdown", (e) => {
         if(r.owner === currentUser){
@@ -618,7 +774,6 @@
       t.innerHTML = `<div class="title"><span>@ ${name}</span></div>
                      <div class="tile-preview">${previewText || '<span class="muted">Aucun message</span>'}</div>`;
 
-      // find contact object where owner === currentUser
       const contactObj = contactsCache.find(c => c.owner===currentUser && c.name===name);
       if(contactObj){
         const delBtn = document.createElement("button");
@@ -633,7 +788,6 @@
         };
         t.appendChild(delBtn);
 
-        // long press
         let pressTimer = null;
         t.addEventListener("pointerdown", () => {
           pressTimer = setTimeout(()=> {
@@ -668,7 +822,14 @@
       contactsCache = [];
       snap.forEach((d) => {
         const c = d.data();
-        contactsCache.push({ ...c, _id: d.id });
+        // auto-correction simple : si name === currentUser et owner !== currentUser, inverser
+        if(c && c.name === currentUser && c.owner && c.owner !== currentUser){
+          const newData = { owner: c.name, name: c.owner };
+          setDoc(doc(db,"contacts", d.id), newData);
+          contactsCache.push({ ...newData, _id: d.id });
+        } else {
+          contactsCache.push({ ...c, _id: d.id });
+        }
       });
       renderContactsTiles();
     });
@@ -704,6 +865,27 @@
     const picker = byId("accent-picker");
     picker.value = saved || "#0078d7";
     picker.oninput = () => applyAccent(picker.value);
+
+    const neonSets = {
+      rouge: ["#ff0033","#ff3355","#ff6677","#ff99aa"],
+      bleu: ["#00eaff","#33f1ff","#66f6ff","#99faff"],
+      vert: ["#39ff14","#66ff4d","#8cff80","#b3ffb3"],
+      violet: ["#b300ff","#c233ff","#d266ff","#e299ff"]
+    };
+    byId("btn-neon-colors").onclick = () => {
+      grid.innerHTML = "";
+      Object.values(neonSets).flat().forEach((c)=>{
+        const dot = document.createElement("div");
+        dot.className = "color-dot";
+        dot.style.background = c;
+        dot.onclick = () => {
+          qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
+          dot.classList.add("selected");
+          applyAccent(c);
+        };
+        grid.appendChild(dot);
+      });
+    };
   }
 
   // ---------- ENSURE GENERAL ROOM ----------
@@ -760,6 +942,13 @@
     byId("file-input").addEventListener("change", (e)=> { const file = e.target.files[0]; if(file) sendImage(file); e.target.value=""; });
     byId("btn-msg-del").addEventListener("click", deleteMessage);
 
+    byId("btn-bg").addEventListener("click", ()=> byId("bg-file-input").click());
+    byId("bg-file-input").addEventListener("change", async (e)=> {
+      const file = e.target.files[0];
+      if(file) await setBackgroundForCurrentChat(file);
+      e.target.value="";
+    });
+
     byId("btn-add-contact").addEventListener("click", addContact);
     byId("contacts-search").addEventListener("input", debounce(()=> renderContactsTiles(), 180));
 
@@ -810,4 +999,3 @@
 </script>
 </body>
 </html>
-
