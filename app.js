@@ -5,7 +5,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
-  serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc, limit, updateDoc
+  serverTimestamp, getDocs, deleteDoc, doc, getDoc, setDoc, limit
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ============================================================
@@ -54,7 +54,7 @@ let allowedRooms = [];
 try { allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]"); } catch { allowedRooms = []; }
 
 /* ============================================================
-   PARTICLES (ENCAPSULÉES)
+   PARTICLES
 ============================================================ */
 
 (function initParticles(){
@@ -222,7 +222,7 @@ async function handleLogin(){
 }
 
 /* ============================================================
-   BACKGROUND CHAT (CORRIGÉ)
+   BACKGROUND CHAT
 ============================================================ */
 
 async function loadChatBackground(roomName, isPrivateChat){
@@ -309,9 +309,8 @@ async function setBackgroundForCurrentChat(file){
     showMessage("Erreur lors de la mise à jour du fond d'écran.");
   }
 }
-
 /* ============================================================
-   ENTER ROOM (CORRIGÉ PRIVÉ + MASQUAGE)
+   ENTER ROOM (PRIVÉ + PUBLIC)
 ============================================================ */
 
 async function enterRoom(name, isPrivateChat=false){
@@ -506,7 +505,7 @@ async function deleteMessage(){
 }
 
 /* ============================================================
-   CONTACTS + SUGGESTIONS (NOUVEAU)
+   CONTACTS + SUGGESTIONS
 ============================================================ */
 
 async function suggestUsers(prefix){
@@ -525,4 +524,449 @@ function renderSuggestions(list){
     const div = document.createElement("div");
     div.className = "suggest-item";
     div.textContent = name;
-    div.onclick = () =>
+    div.onclick = () => {
+      byId("contact-name-input").value = name;
+      box.innerHTML = "";
+    };
+    box.appendChild(div);
+  });
+}
+
+async function addContact(){
+  if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
+  const name = byId("contact-name-input").value.trim().toLowerCase();
+  if(!name || name === currentUser) return;
+
+  try {
+    const uRef = doc(db,"users",name);
+    const uDoc = await getDoc(uRef);
+
+    if(!uDoc.exists()){
+      showMessage("Ce contact n'existe pas sur ThinkTalk.");
+      return;
+    }
+
+    const existing = contactsCache.find(c => c.owner===currentUser && c.name===name);
+    if(existing){
+      showMessage("Contact déjà ajouté.");
+      byId("contact-name-input").value="";
+      return;
+    }
+
+    await addDoc(collection(db,"contacts"), { owner: currentUser, name });
+    byId("contact-name-input").value = "";
+
+  } catch(e){
+    console.error(e);
+    showMessage("Erreur lors de l'ajout du contact.");
+  }
+}
+
+/* ============================================================
+   SNAPSHOTS (MESSAGES / ROOMS / CONTACTS)
+============================================================ */
+
+function normalize(str){
+  return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+function setupMessagesSnapshot(){
+  const qAll = query(collection(db,"messages"), orderBy("timestamp","asc"));
+
+  onSnapshot(qAll, (snap) => {
+    lastMessagesByRoom.clear();
+    lastMessagesByDM.clear();
+
+    snap.forEach((d) => {
+      const m = d.data();
+      const room = m.room;
+      if(!room) return;
+
+      const entry = { sender: m.sender, text: m.text || (m.image ? "[image]" : "") };
+
+      if(room.includes("_") && !room.includes(" ")){
+        const arr = lastMessagesByDM.get(room) || [];
+        arr.push(entry);
+        if(arr.length>2) arr.shift();
+        lastMessagesByDM.set(room, arr);
+      } else {
+        const arr = lastMessagesByRoom.get(room) || [];
+        arr.push(entry);
+        if(arr.length>2) arr.shift();
+        lastMessagesByRoom.set(room, arr);
+      }
+    });
+
+    renderRoomsTiles();
+    renderContactsTiles();
+  });
+}
+/* ============================================================
+   ROOMS & CONTACTS TILES
+============================================================ */
+
+function renderRoomsTiles(){
+  const g = byId("rooms-grid");
+  if(!g) return;
+
+  g.innerHTML = "";
+  const search = normalize(byId("rooms-search").value.trim());
+
+  roomsCache.forEach((r) => {
+    if(!r.name) return;
+
+    // Masquer les salons privés si pas de recherche
+    if(r.pass && !search) return;
+
+    const previews = lastMessagesByRoom.get(r.name) || [];
+    const previewText = previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
+
+    const haystack = normalize(r.name) + " " + normalize(previewText);
+    if(search && !haystack.includes(search)) return;
+
+    const t = document.createElement("div");
+    t.className = "tile";
+    t.innerHTML = `
+      <div class="title">
+        <span># ${r.name}</span>
+        ${r.pass ? '<span class="lock-badge">🔒</span>' : ''}
+      </div>
+      <div class="tile-preview">${previewText || '<span class="muted">Aucun message</span>'}</div>
+    `;
+
+    if(r.owner === currentUser){
+      const delBtn = document.createElement("button");
+      delBtn.className = "tile-delete-btn";
+      delBtn.textContent = "Suppr.";
+      delBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        showConfirm(`Supprimer le salon #${r.name} ?`, async () => {
+          try { await deleteDoc(doc(db,"rooms", r._id)); }
+          catch(e){ console.error(e); showMessage("Erreur lors de la suppression du salon."); }
+        });
+      };
+      t.appendChild(delBtn);
+    }
+
+    t.onclick = () => enterRoom(r.name);
+    g.appendChild(t);
+  });
+}
+
+function renderContactsTiles(){
+  const g = byId("contacts-grid");
+  if(!g || !currentUser) return;
+
+  g.innerHTML = "";
+  const search = normalize(byId("contacts-search").value.trim());
+
+  const list = new Set();
+  contactsCache.forEach((c) => {
+    if(!c.owner || !c.name) return;
+    if(c.owner === currentUser) list.add(c.name);
+    if(c.name === currentUser) list.add(c.owner);
+  });
+
+  Array.from(list).forEach((name) => {
+    const dmKey = [currentUser, name].sort().join("_");
+    const previews = lastMessagesByDM.get(dmKey) || [];
+    const previewText = previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
+
+    const haystack = normalize(name) + " " + normalize(previewText);
+    if(search && !haystack.includes(search)) return;
+
+    const t = document.createElement("div");
+    t.className = "tile";
+    t.innerHTML = `
+      <div class="title"><span>@ ${name}</span></div>
+      <div class="tile-preview">${previewText || '<span class="muted">Aucun message</span>'}</div>
+    `;
+
+    const contactObj = contactsCache.find(c => c.owner===currentUser && c.name===name);
+
+    if(contactObj){
+      const delBtn = document.createElement("button");
+      delBtn.className = "tile-delete-btn";
+      delBtn.textContent = "Suppr.";
+      delBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        showConfirm(`Supprimer le contact @${name} ?`, async () => {
+          try { await deleteDoc(doc(db,"contacts", contactObj._id)); }
+          catch(e){ console.error(e); showMessage("Erreur lors de la suppression du contact."); }
+        });
+      };
+      t.appendChild(delBtn);
+    }
+
+    t.onclick = () => enterRoom(name, true);
+    g.appendChild(t);
+  });
+}
+
+/* ============================================================
+   SNAPSHOTS ROOMS + CONTACTS
+============================================================ */
+
+function setupRoomsSnapshot(){
+  onSnapshot(collection(db,"rooms"), (snap) => {
+    roomsCache = [];
+    snap.forEach((d) => {
+      const r = d.data();
+      roomsCache.push({ ...r, _id: d.id });
+    });
+    renderRoomsTiles();
+  });
+}
+
+function setupContactsSnapshot(){
+  onSnapshot(collection(db,"contacts"), (snap) => {
+    contactsCache = [];
+    snap.forEach((d) => {
+      const c = d.data();
+
+      if(c && c.name === currentUser && c.owner && c.owner !== currentUser){
+        const newData = { owner: c.name, name: c.owner };
+        setDoc(doc(db,"contacts", d.id), newData);
+        contactsCache.push({ ...newData, _id: d.id });
+      } else {
+        contactsCache.push({ ...c, _id: d.id });
+      }
+    });
+
+    renderContactsTiles();
+  });
+}
+
+/* ============================================================
+   ACCENT + NÉONS (CORRIGÉ)
+============================================================ */
+
+let neonInterval = null;
+let neonCycle = [];
+let neonIndex = 0;
+
+function startNeonCycle(){
+  if(neonInterval) clearInterval(neonInterval);
+
+  neonInterval = setInterval(()=>{
+    neonIndex = (neonIndex+1) % neonCycle.length;
+    applyAccent(neonCycle[neonIndex]);
+  }, 250);
+}
+
+function stopNeonCycle(){
+  if(neonInterval) clearInterval(neonInterval);
+  neonInterval = null;
+}
+
+function applyAccent(color){
+  document.documentElement.style.setProperty("--accent", color);
+  localStorage.setItem("tt_accent", color);
+}
+
+function initAccent(){
+  const saved = localStorage.getItem("tt_accent");
+  if(saved) applyAccent(saved);
+
+  const presets = ["#0078d7","#8e44ad","#27ae60","#e67e22","#e91e63","#ff4757","#1abc9c","#f1c40f","#3498db","#9b59b6"];
+  const grid = byId("accent-presets");
+  grid.innerHTML = "";
+
+  presets.forEach((c) => {
+    const dot = document.createElement("div");
+    dot.className = "color-dot";
+    dot.style.background = c;
+
+    dot.onclick = () => {
+      stopNeonCycle();
+      qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
+      dot.classList.add("selected");
+      applyAccent(c);
+    };
+
+    grid.appendChild(dot);
+  });
+
+  byId("btn-more-colors").onclick = () => {
+    byId("advanced-color").classList.toggle("hidden");
+  };
+
+  const picker = byId("accent-picker");
+  picker.value = saved || "#0078d7";
+  picker.oninput = () => { stopNeonCycle(); applyAccent(picker.value); };
+
+  const neonDefs = [
+    { cycle:["#ff0033","#ff8800","#ffcc00"] },
+    { cycle:["#00eaff","#33f1ff","#0099ff"] },
+    { cycle:["#39ff14","#b3ff00","#ccff33"] },
+    { cycle:["#b300ff","#ff00ff","#ff66ff"] }
+  ];
+
+  byId("btn-neon-colors").onclick = () => {
+    grid.innerHTML = "";
+
+    neonDefs.forEach((n)=>{
+      const dot = document.createElement("div");
+      dot.className = "color-dot";
+      dot.style.background = `radial-gradient(circle at 30% 30%, ${n.cycle[0]}, ${n.cycle[1]})`;
+
+      dot.onclick = () => {
+        stopNeonCycle();
+        neonCycle = n.cycle;
+        neonIndex = 0;
+        startNeonCycle();
+      };
+
+      grid.appendChild(dot);
+    });
+  };
+}
+
+/* ============================================================
+   UI + INIT
+============================================================ */
+
+async function ensureGeneralRoom(){
+  try {
+    const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==","général"), limit(1)));
+    if(rSnap.empty){
+      await addDoc(collection(db,"rooms"), { name: "général", pass: "", owner: "system" });
+    }
+  } catch(e){
+    console.error("ensureGeneralRoom error", e);
+  }
+}
+
+function initUI(){
+  qsa(".nav-btn").forEach((btn)=> btn.addEventListener("click", ()=> switchTab(btn.dataset.tab)));
+
+  byId("btn-open-session").addEventListener("click", ()=> openPopup("pop-logout","card-logout"));
+  byId("btn-open-create").addEventListener("click", ()=> openPopup("pop-create","card-create"));
+  byId("btn-open-accent").addEventListener("click", ()=> openPopup("pop-accent","card-accent"));
+
+  qsa("[data-close-popup]").forEach((b)=> b.addEventListener("click", closePopups));
+
+  byId("btn-logout").addEventListener("click", ()=> {
+    localStorage.removeItem("tt_user");
+    location.reload();
+  });
+
+  byId("btn-delete-profile").addEventListener("click", async ()=> {
+    if(!currentUser) return;
+
+    showConfirm("Supprimer définitivement le profil et les contacts liés ?", async ()=> {
+      try {
+        await deleteDoc(doc(db,"users", currentUser));
+
+        const contactsRef = collection(db,"contacts");
+        const q1 = query(contactsRef, where("owner","==", currentUser));
+        const q2 = query(contactsRef, where("name","==", currentUser));
+
+        const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+        snap1.forEach(d => deleteDoc(doc(db,"contacts", d.id)));
+        snap2.forEach(d => deleteDoc(doc(db,"contacts", d.id)));
+
+        localStorage.removeItem("tt_user");
+        showMessage("Profil supprimé.");
+        setTimeout(()=> location.reload(), 800);
+
+      } catch(e){
+        console.error(e);
+        showMessage("Erreur lors de la suppression du profil.");
+      }
+    });
+  });
+
+  byId("msg-ok-btn").addEventListener("click", closePopups);
+  byId("confirm-yes").addEventListener("click", ()=> { if(confirmCallback) confirmCallback(); confirmCallback=null; closePopups(); });
+  byId("confirm-no").addEventListener("click", ()=> { confirmCallback=null; closePopups(); });
+
+  byId("btn-login").addEventListener("click", handleLogin);
+  byId("auth-code").addEventListener("keydown", (e)=> { if(e.key==="Enter") handleLogin(); });
+  byId("auth-toggle").addEventListener("click", ()=> { authMode = authMode==="login" ? "register" : "login"; updateAuthUI(); });
+
+  byId("btn-do-create").addEventListener("click", createRoom);
+  byId("rooms-search").addEventListener("input", debounce(()=> renderRoomsTiles(), 180));
+
+  byId("send-btn").addEventListener("click", sendMessage);
+  byId("chat-input").addEventListener("keydown", (e)=> { if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
+
+  byId("btn-attach").addEventListener("click", ()=> byId("file-input").click());
+  byId("file-input").addEventListener("change", (e)=> {
+    const file = e.target.files[0];
+    if(file) sendImage(file);
+    e.target.value="";
+  });
+
+  byId("btn-msg-del").addEventListener("click", deleteMessage);
+
+  byId("btn-wallpaper").addEventListener("click", ()=> byId("bg-file-input").click());
+  byId("bg-file-input").addEventListener("change", async (e)=> {
+    const file = e.target.files[0];
+    if(file) await setBackgroundForCurrentChat(file);
+    e.target.value="";
+  });
+
+  byId("btn-add-contact").addEventListener("click", addContact);
+
+  byId("contact-name-input").addEventListener("input", debounce(async (e)=>{
+    const val = e.target.value.trim().toLowerCase();
+    const suggestions = await suggestUsers(val);
+    renderSuggestions(suggestions);
+  }, 200));
+
+  byId("contacts-search").addEventListener("input", debounce(()=> renderContactsTiles(), 180));
+
+  initAccent();
+  updateAuthUI();
+}
+
+async function initApp(){
+  initUI();
+  await ensureGeneralRoom();
+
+  setupRoomsSnapshot();
+  setupContactsSnapshot();
+  setupMessagesSnapshot();
+
+  if(currentUser){
+    byId("auth-screen").style.display = "none";
+    byId("main-app").style.display = "flex";
+    enterRoom("général");
+  } else {
+    byId("auth-screen").style.display = "flex";
+    byId("main-app").style.display = "none";
+  }
+}
+
+initApp();
+
+/* ============================================================
+   SWITCH TAB
+============================================================ */
+
+function switchTab(tab){
+  const appRoot = byId("main-app");
+  appRoot.classList.add("view-blur");
+
+  qsa(".nav-btn").forEach(b=>b.classList.remove("active"));
+  const btn = qsa(".nav-btn").find(b=>b.dataset.tab===tab);
+  if(btn) btn.classList.add("active");
+
+  setTimeout(()=> {
+    qsa(".view-section").forEach(s=>s.classList.remove("active"));
+    const view = byId("view-"+tab);
+    if(view) view.classList.add("active");
+
+    // Wallpaper uniquement dans CHAT
+    byId("btn-wallpaper").style.display = (tab === "chat") ? "block" : "none";
+
+    appRoot.classList.remove("view-blur");
+
+    if(tab==="chat"){
+      qsa(".msg-block").forEach((m,i)=>{ m.classList.remove("visible"); materialize(m, i*60); });
+    }
+  }, 300);
+}
+
+addEventListener("beforeunload", ()=> { if(unsubChat) unsubChat(); });
