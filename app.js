@@ -220,37 +220,10 @@ async function handleLogin(){
     showMessage("Erreur de connexion.");
   }
 }
+
 /* ============================================================
-   BACKGROUND CHAT
+   WALLPAPER (BASE64 + COMPRESSION FORTE)
 ============================================================ */
-
-async function loadChatBackground(roomName, isPrivateChat){
-  const view = byId("view-chat");
-  if(!view) return;
-
-  try {
-    if(isPrivateChat){
-      const dmKey = curRoom;
-      const bgRef = doc(db,"dmBackgrounds", dmKey);
-      const bgDoc = await getDoc(bgRef);
-      if(bgDoc.exists() && bgDoc.data().background){
-        view.style.backgroundImage = `url(${bgDoc.data().background})`;
-      } else {
-        view.style.backgroundImage = "none";
-      }
-    } else {
-      const r = roomsCache.find(r=>r.name===roomName);
-      if(r && r.background){
-        view.style.backgroundImage = `url(${r.background})`;
-      } else {
-        view.style.backgroundImage = "none";
-      }
-    }
-  } catch(e){
-    console.error(e);
-    view.style.backgroundImage = "none";
-  }
-}
 
 function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
   return new Promise((resolve,reject)=>{
@@ -267,7 +240,7 @@ function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
         c.width = w; c.height = h;
         const cctx = c.getContext("2d");
         cctx.drawImage(img,0,0,w,h);
-        const data = c.toDataURL("image/jpeg", quality);
+        const data = c.toDataURL("image/jpeg", quality); // JPEG très compressé
         resolve(data);
       };
       img.onerror = reject;
@@ -278,24 +251,46 @@ function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
   });
 }
 
+async function loadChatBackground(roomName, isPrivateChat){
+  const view = byId("view-chat");
+  if(!view) return;
+
+  try {
+    if(isPrivateChat){
+      const dmKey = curRoom; // ex: "alice_bob"
+      const bgRef = doc(db,"dmBackgrounds", dmKey);
+      const bgDoc = await getDoc(bgRef);
+      if(bgDoc.exists() && bgDoc.data().background){
+        view.style.backgroundImage = `url(${bgDoc.data().background})`;
+      } else {
+        view.style.backgroundImage = "none";
+      }
+    } else {
+      const bgRef = doc(db,"roomBackgrounds", roomName); // clé = nom du salon
+      const bgDoc = await getDoc(bgRef);
+      if(bgDoc.exists() && bgDoc.data().background){
+        view.style.backgroundImage = `url(${bgDoc.data().background})`;
+      } else {
+        view.style.backgroundImage = "none";
+      }
+    }
+  } catch(e){
+    console.error(e);
+    view.style.backgroundImage = "none";
+  }
+}
+
 async function setBackgroundForCurrentChat(file){
   if(!file || !currentUser) return;
 
   try {
-    const dataUrl = await compressImageToBase64(file);
+    const dataUrl = await compressImageToBase64(file, 900, 700, 0.1);
 
     if(isPrivateCurrent){
-      const dmKey = curRoom;
+      const dmKey = curRoom; // ex: "alice_bob"
       await setDoc(doc(db,"dmBackgrounds", dmKey), { background: dataUrl });
     } else {
-      const r = roomsCache.find(r=>r.name===curRoom);
-
-      if(!r){
-        showMessage("Le salon n'est pas encore chargé. Réessaie dans 1 seconde.");
-        return;
-      }
-
-      await setDoc(doc(db,"rooms", r._id), { ...r, background: dataUrl });
+      await setDoc(doc(db,"roomBackgrounds", curRoom), { background: dataUrl });
     }
 
     await loadChatBackground(
@@ -503,6 +498,7 @@ async function deleteMessage(){
   closePopups();
   selectedMsgId = null;
 }
+
 /* ============================================================
    CONTACTS + SUGGESTIONS
 ============================================================ */
