@@ -562,7 +562,7 @@ async function addContact(){
 }
 
 /* ============================================================
-   SNAPSHOTS
+   SNAPSHOTS (MESSAGES / ROOMS / CONTACTS)
 ============================================================ */
 
 function normalize(str){
@@ -600,6 +600,10 @@ function setupMessagesSnapshot(){
     renderContactsTiles();
   });
 }
+
+/* ============================================================
+   RENDER ROOMS
+============================================================ */
 
 function renderRoomsTiles(){
   const g = byId("rooms-grid");
@@ -648,6 +652,10 @@ function renderRoomsTiles(){
   });
 }
 
+/* ============================================================
+   RENDER CONTACTS
+============================================================ */
+
 function renderContactsTiles(){
   const g = byId("contacts-grid");
   if(!g || !currentUser) return;
@@ -695,6 +703,41 @@ function renderContactsTiles(){
 
     t.onclick = () => enterRoom(name, true);
     g.appendChild(t);
+  });
+}
+
+/* ============================================================
+   SNAPSHOT ROOMS + CONTACTS
+============================================================ */
+
+function setupRoomsSnapshot(){
+  onSnapshot(collection(db,"rooms"), (snap) => {
+    roomsCache = [];
+    snap.forEach((d) => {
+      const r = d.data();
+      roomsCache.push({ ...r, _id: d.id });
+    });
+    renderRoomsTiles();
+  });
+}
+
+function setupContactsSnapshot(){
+  onSnapshot(collection(db,"contacts"), (snap) => {
+    contactsCache = [];
+
+    snap.forEach((d) => {
+      const c = d.data();
+
+      if(c && c.name === currentUser && c.owner && c.owner !== currentUser){
+        const newData = { owner: c.name, name: c.owner };
+        setDoc(doc(db,"contacts", d.id), newData);
+        contactsCache.push({ ...newData, _id: d.id });
+      } else {
+        contactsCache.push({ ...c, _id: d.id });
+      }
+    });
+
+    renderContactsTiles();
   });
 }
 
