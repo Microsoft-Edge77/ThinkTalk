@@ -220,7 +220,6 @@ async function handleLogin(){
     showMessage("Erreur de connexion.");
   }
 }
-
 /* ============================================================
    BACKGROUND CHAT
 ============================================================ */
@@ -309,6 +308,7 @@ async function setBackgroundForCurrentChat(file){
     showMessage("Erreur lors de la mise à jour du fond d'écran.");
   }
 }
+
 /* ============================================================
    ENTER ROOM (PRIVÉ + PUBLIC)
 ============================================================ */
@@ -503,7 +503,6 @@ async function deleteMessage(){
   closePopups();
   selectedMsgId = null;
 }
-
 /* ============================================================
    CONTACTS + SUGGESTIONS
 ============================================================ */
@@ -563,7 +562,7 @@ async function addContact(){
 }
 
 /* ============================================================
-   SNAPSHOTS (MESSAGES / ROOMS / CONTACTS)
+   SNAPSHOTS
 ============================================================ */
 
 function normalize(str){
@@ -601,9 +600,6 @@ function setupMessagesSnapshot(){
     renderContactsTiles();
   });
 }
-/* ============================================================
-   ROOMS & CONTACTS TILES
-============================================================ */
 
 function renderRoomsTiles(){
   const g = byId("rooms-grid");
@@ -615,7 +611,6 @@ function renderRoomsTiles(){
   roomsCache.forEach((r) => {
     if(!r.name) return;
 
-    // Masquer les salons privés si pas de recherche
     if(r.pass && !search) return;
 
     const previews = lastMessagesByRoom.get(r.name) || [];
@@ -704,46 +699,13 @@ function renderContactsTiles(){
 }
 
 /* ============================================================
-   SNAPSHOTS ROOMS + CONTACTS
-============================================================ */
-
-function setupRoomsSnapshot(){
-  onSnapshot(collection(db,"rooms"), (snap) => {
-    roomsCache = [];
-    snap.forEach((d) => {
-      const r = d.data();
-      roomsCache.push({ ...r, _id: d.id });
-    });
-    renderRoomsTiles();
-  });
-}
-
-function setupContactsSnapshot(){
-  onSnapshot(collection(db,"contacts"), (snap) => {
-    contactsCache = [];
-    snap.forEach((d) => {
-      const c = d.data();
-
-      if(c && c.name === currentUser && c.owner && c.owner !== currentUser){
-        const newData = { owner: c.name, name: c.owner };
-        setDoc(doc(db,"contacts", d.id), newData);
-        contactsCache.push({ ...newData, _id: d.id });
-      } else {
-        contactsCache.push({ ...c, _id: d.id });
-      }
-    });
-
-    renderContactsTiles();
-  });
-}
-
-/* ============================================================
    ACCENT + NÉONS (CORRIGÉ)
 ============================================================ */
 
 let neonInterval = null;
 let neonCycle = [];
 let neonIndex = 0;
+let neonMode = false;
 
 function startNeonCycle(){
   if(neonInterval) clearInterval(neonInterval);
@@ -766,34 +728,19 @@ function applyAccent(color){
 
 function initAccent(){
   const saved = localStorage.getItem("tt_accent");
-  if(saved) applyAccent(saved);
 
-  const presets = ["#0078d7","#8e44ad","#27ae60","#e67e22","#e91e63","#ff4757","#1abc9c","#f1c40f","#3498db","#9b59b6"];
-  const grid = byId("accent-presets");
-  grid.innerHTML = "";
+  if(saved === "#e67e22"){
+    localStorage.removeItem("tt_accent");
+  }
 
-  presets.forEach((c) => {
-    const dot = document.createElement("div");
-    dot.className = "color-dot";
-    dot.style.background = c;
+  const effective = localStorage.getItem("tt_accent") || "#0078d7";
+  applyAccent(effective);
 
-    dot.onclick = () => {
-      stopNeonCycle();
-      qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
-      dot.classList.add("selected");
-      applyAccent(c);
-    };
-
-    grid.appendChild(dot);
-  });
-
-  byId("btn-more-colors").onclick = () => {
-    byId("advanced-color").classList.toggle("hidden");
-  };
-
-  const picker = byId("accent-picker");
-  picker.value = saved || "#0078d7";
-  picker.oninput = () => { stopNeonCycle(); applyAccent(picker.value); };
+  const presets = [
+    "#0078d7","#8e44ad","#27ae60","#e67e22",
+    "#e91e63","#ff4757","#1abc9c","#f1c40f",
+    "#3498db","#9b59b6"
+  ];
 
   const neonDefs = [
     { cycle:["#ff0033","#ff8800","#ffcc00"] },
@@ -802,7 +749,35 @@ function initAccent(){
     { cycle:["#b300ff","#ff00ff","#ff66ff"] }
   ];
 
-  byId("btn-neon-colors").onclick = () => {
+  const grid = byId("accent-presets");
+  const picker = byId("accent-picker");
+
+  function renderPresetDots(){
+    neonMode = false;
+    stopNeonCycle();
+    grid.innerHTML = "";
+
+    presets.forEach((c) => {
+      const dot = document.createElement("div");
+      dot.className = "color-dot";
+      dot.style.background = c;
+
+      if(c === effective) dot.classList.add("selected");
+
+      dot.onclick = () => {
+        stopNeonCycle();
+        neonMode = false;
+        qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
+        dot.classList.add("selected");
+        applyAccent(c);
+      };
+
+      grid.appendChild(dot);
+    });
+  }
+
+  function renderNeonDots(){
+    neonMode = true;
     grid.innerHTML = "";
 
     neonDefs.forEach((n)=>{
@@ -811,7 +786,6 @@ function initAccent(){
       dot.style.background = `radial-gradient(circle at 30% 30%, ${n.cycle[0]}, ${n.cycle[1]})`;
 
       dot.onclick = () => {
-        stopNeonCycle();
         neonCycle = n.cycle;
         neonIndex = 0;
         startNeonCycle();
@@ -819,6 +793,27 @@ function initAccent(){
 
       grid.appendChild(dot);
     });
+  }
+
+  renderPresetDots();
+
+  byId("btn-more-colors").onclick = () => {
+    byId("advanced-color").classList.toggle("hidden");
+  };
+
+  picker.value = effective;
+  picker.oninput = () => {
+    stopNeonCycle();
+    neonMode = false;
+    applyAccent(picker.value);
+  };
+
+  byId("btn-neon-colors").onclick = () => {
+    if(neonMode){
+      renderPresetDots();
+    } else {
+      renderNeonDots();
+    }
   };
 }
 
@@ -958,7 +953,6 @@ function switchTab(tab){
     const view = byId("view-"+tab);
     if(view) view.classList.add("active");
 
-    // Wallpaper uniquement dans CHAT
     byId("btn-wallpaper").style.display = (tab === "chat") ? "block" : "none";
 
     appRoot.classList.remove("view-blur");
