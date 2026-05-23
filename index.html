@@ -11,6 +11,7 @@
 
 <body>
 
+<!-- PARTICLES -->
 <canvas id="canvas-dust"></canvas>
 
 <!-- POPUPS -->
@@ -89,14 +90,17 @@
 
 <!-- APP -->
 <div class="app-root" id="main-app">
+
+  <!-- TOP BAR -->
   <div class="top-bar">
     <div class="top-title" id="btn-open-session">ThinkTalk</div>
     <div class="top-actions">
-      <button class="top-btn" id="btn-open-accent">Accent color</button>
+      <button class="top-btn" id="btn-open-accent">Accent</button>
       <button class="top-btn" id="btn-wallpaper">Wallpaper</button>
     </div>
   </div>
 
+  <!-- VIEWS -->
   <div class="view-container">
 
     <!-- HOME -->
@@ -110,7 +114,10 @@
 
     <!-- CHAT -->
     <section id="view-chat" class="view-section">
+
+      <!-- Wallpaper is applied HERE -->
       <div id="chat-header" class="chat-header"># général</div>
+
       <div id="chat-messages" class="chat-messages"></div>
 
       <div class="chat-input-bar">
@@ -137,6 +144,7 @@
 
   </div>
 
+  <!-- NAV -->
   <nav class="bottom-nav">
     <div class="nav-btn active" data-tab="home">HOME</div>
     <div class="nav-btn" data-tab="chat">CHAT</div>
