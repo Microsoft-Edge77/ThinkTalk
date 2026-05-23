@@ -4,15 +4,14 @@
 
 :root {
   --accent: #0078d7;
-  --bg: #000;
   --text: #fff;
-  --muted: #888;
+  --muted: #aaa;
 }
 
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
   font-family: "Segoe UI", sans-serif;
 }
 
@@ -22,14 +21,16 @@ html, body {
 }
 
 body {
-  background: var(--bg);
+  background: rgba(10,10,10,0.55);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
   color: var(--text);
   overflow: hidden;
-  position: relative; /* IMPORTANT : libère le wallpaper */
+  position: relative;
 }
 
 /* ===========================
-   CANVAS
+   CANVAS (PARTICULES)
 =========================== */
 
 #canvas-dust {
@@ -49,7 +50,7 @@ body {
   height: 100%;
   display: none;
   flex-direction: column;
-  transition: transform .45s cubic-bezier(.4,0,.2,1), filter .45s;
+  transition: transform .45s, filter .45s;
 }
 
 .view-blur {
@@ -58,7 +59,7 @@ body {
 }
 
 /* ===========================
-   GRID & TILES
+   GRID & TILES (VERRE POLI)
 =========================== */
 
 .tiles-grid {
@@ -68,35 +69,29 @@ body {
 }
 
 @media(min-width:900px){
-  .tiles-grid {
-    grid-template-columns: repeat(3,1fr);
-  }
+  .tiles-grid { grid-template-columns: repeat(3,1fr); }
 }
 
 .tile {
-  position: relative;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(14px) saturate(130%);
   padding: 14px;
   height: 130px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
   transition: transform .18s, box-shadow .18s;
-  overflow: hidden;
-  border-radius: 10px;
 }
 
 .tile:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(0,0,0,.6);
+  box-shadow: 0 6px 18px rgba(0,0,0,.5);
 }
 
 .tile .title {
   font-weight: 600;
-  color: var(--text);
   font-size: 1rem;
   display: flex;
   align-items: center;
@@ -105,13 +100,13 @@ body {
 
 .lock-badge {
   font-size: .75rem;
-  opacity: .6;
+  opacity: .7;
   color: var(--muted);
 }
 
 .tile-preview {
   font-size: .75rem;
-  color: #bdbdbd;
+  color: #ccc;
   margin-top: 6px;
   line-height: 1.2;
   max-height: 2.4em;
@@ -136,20 +131,15 @@ body {
 }
 
 /* ===========================
-   MESSAGES
+   MESSAGES (VERRE POLI)
 =========================== */
 
 .msg-block {
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity .45s .1s, transform .45s .1s;
+  transition: opacity .45s, transform .45s;
   margin-bottom: 16px;
   max-width: 85%;
-  cursor: pointer;
-}
-
-.msg-block.own {
-  align-self: flex-end;
 }
 
 .msg-block.visible {
@@ -173,18 +163,18 @@ body {
 }
 
 .msg-text {
-  background: rgba(0,120,215,.08);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
   padding: 12px;
   border-left: 3px solid var(--accent);
+  border-radius: 8px;
   word-break: break-word;
-  border-radius: 6px;
-  backdrop-filter: blur(6px);
 }
 
 .msg-block.own .msg-text {
   border-left: none;
   border-right: 3px solid #666;
-  background: rgba(255,255,255,.05);
+  background: rgba(255,255,255,0.05);
 }
 
 .msg-img {
@@ -194,29 +184,28 @@ body {
 }
 
 /* ===========================
-   POPUPS
+   POPUPS (VERRE POLI SOMBRE)
 =========================== */
 
 .popup-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.85);
-  z-index: 9000;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(12px);
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  z-index: 9000;
 }
 
 .popup-card {
-  background: #000;
+  background: rgba(20,20,20,0.55);
+  backdrop-filter: blur(18px);
   border: 2px solid var(--accent);
-  width: 100%;
-  max-width: 420px;
   padding: 22px;
+  border-radius: 12px;
   opacity: 0;
-  transition: opacity .28s;
-  border-radius: 10px;
+  transition: opacity .3s;
 }
 
 .popup-card.visible {
@@ -230,17 +219,12 @@ body {
   color: #ddd;
 }
 
-.muted {
-  color: var(--muted);
-  font-size: .85rem;
-}
-
 .hidden {
   display: none !important;
 }
 
 /* ===========================
-   AUTH
+   AUTH (VERRE POLI PROFOND)
 =========================== */
 
 .auth-screen {
@@ -253,31 +237,15 @@ body {
   z-index:10;
 }
 
-.auth-title {
-  font-size:3rem;
-  color:var(--accent);
-  text-align:center;
-  margin-bottom:10px;
-  font-weight:100;
-}
-
-.auth-subtitle {
-  color:var(--muted);
-  margin-bottom:18px;
-}
-
 .auth-card {
-  background: rgba(0,0,0,.7);
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 14px;
-  padding: 20px 22px 18px;
-  backdrop-filter: blur(18px);
-  box-shadow: 0 18px 40px rgba(0,0,0,.7);
-  transition: transform .35s ease, opacity .35s ease, filter .35s ease;
-  transform: scale(.98);
-  opacity: .9;
-  filter: blur(1px);
-  width:320px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 22px;
+  width: 320px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.6);
+  transition: transform .35s, opacity .35s, filter .35s;
 }
 
 .auth-active {
@@ -292,27 +260,22 @@ body {
   filter: blur(4px);
 }
 
-.auth-toggle-link {
-  color: var(--accent);
-  font-size: .9rem;
-  margin-top: 12px;
-  text-align: center;
-  cursor: pointer;
-  user-select: none;
-}
-
 /* ===========================
-   TOP BAR
+   TOP BAR & NAV (VERRE POLI)
 =========================== */
+
+.top-bar, .bottom-nav {
+  background: rgba(20,20,20,0.55);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255,255,255,0.08);
+}
 
 .top-bar {
   padding: 12px 16px;
+  height: 64px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 64px;
-  border-bottom: 1px solid rgba(255,255,255,.05);
-  backdrop-filter: blur(10px);
 }
 
 .top-title {
@@ -320,47 +283,7 @@ body {
   font-weight: 100;
   color: var(--accent);
   cursor: pointer;
-  user-select: none;
 }
-
-.top-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.top-btn {
-  background: #111;
-  border: 1px solid #222;
-  color: #fff;
-  padding: 8px 10px;
-  font-size: .85rem;
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-/* ===========================
-   VIEW CONTAINER
-=========================== */
-
-.view-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 12px 120px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.view-section {
-  display: none;
-}
-
-.view-section.active {
-  display: block;
-}
-
-/* ===========================
-   BOTTOM NAV
-=========================== */
 
 .bottom-nav {
   position: fixed;
@@ -368,9 +291,6 @@ body {
   width: 100%;
   height: 60px;
   display: flex;
-  background: rgba(0,0,0,.85);
-  border-top: 1px solid #222;
-  backdrop-filter: blur(10px);
   z-index: 5;
 }
 
@@ -379,7 +299,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #888;
+  color: #bbb;
   cursor: pointer;
   font-size: .85rem;
   letter-spacing: 1px;
@@ -397,13 +317,13 @@ body {
 
 .input-box {
   width: 100%;
-  background: rgba(255,255,255,.06);
-  border: 1px solid #222;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(12px);
   padding: 12px;
   color: #fff;
-  outline: none;
-  margin-bottom: 10px;
   border-radius: 8px;
+  margin-bottom: 10px;
 }
 
 .btn-full {
@@ -414,18 +334,15 @@ body {
   color: #fff;
   cursor: pointer;
   font-weight: 700;
-  text-transform: uppercase;
   border-radius: 8px;
 }
 
 .btn-full.neutral {
-  background: #222;
-  margin-top: 10px;
+  background: rgba(255,255,255,0.12);
 }
 
 .btn-full.danger {
   background: #800;
-  margin-top: 10px;
 }
 
 .btn-icon {
@@ -438,16 +355,15 @@ body {
 }
 
 .btn-attach {
-  background:#222;
-  color:#fff;
-  border:none;
-  padding:0 14px;
-  cursor:pointer;
-  border-radius:8px;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  padding: 0 14px;
+  border-radius: 8px;
 }
 
 /* ===========================
-   CHAT
+   CHAT (VERRE POLI + WALLPAPER)
 =========================== */
 
 #view-chat {
@@ -456,13 +372,15 @@ body {
   background-repeat: no-repeat;
   position: relative;
   min-height: 100%;
+  background-color: rgba(10,10,10,0.35);
+  backdrop-filter: blur(18px) saturate(140%);
 }
 
 #view-chat::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,.25));
+  background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.15));
   pointer-events: none;
   z-index: 0;
 }
@@ -482,17 +400,17 @@ body {
 }
 
 .chat-input-bar {
-  position:fixed;
-  bottom:60px;
-  left:0;
-  right:0;
-  display:flex;
-  background:rgba(0,0,0,.85);
-  padding:10px;
-  gap:8px;
-  border-top:1px solid #222;
-  backdrop-filter: blur(10px);
-  z-index:2;
+  position: fixed;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  background: rgba(10,10,10,0.55);
+  backdrop-filter: blur(18px);
+  padding: 10px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  z-index: 2;
 }
 
 /* ===========================
@@ -510,10 +428,8 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 2px solid #222;
+  border: 2px solid rgba(255,255,255,0.2);
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
 }
 
 .color-dot.selected {
@@ -524,10 +440,8 @@ body {
 .color-picker-input {
   width: 100%;
   height: 44px;
-  padding: 0;
-  border: none;
   background: transparent;
-  cursor: pointer;
+  border: none;
 }
 
 /* ===========================
@@ -536,8 +450,9 @@ body {
 
 .suggestions {
   margin-top: 6px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid #222;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -546,11 +461,11 @@ body {
   padding: 10px;
   cursor: pointer;
   color: #fff;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
 }
 
 .suggest-item:hover {
-  background: rgba(255,255,255,.1);
+  background: rgba(255,255,255,0.12);
 }
 
 /* ===========================
