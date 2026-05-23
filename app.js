@@ -1,5 +1,5 @@
 /* ============================================================
-   IMPORTS FIREBASE
+   FIREBASE IMPORTS
 ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -54,7 +54,7 @@ let allowedRooms = [];
 try { allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]"); } catch { allowedRooms = []; }
 
 /* ============================================================
-   PARTICLES
+   PARTICLES (EFFET COPILOT+)
 ============================================================ */
 
 (function initParticles(){
@@ -98,10 +98,9 @@ try { allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]")
     }
     draw(){
       const accent = getAccent() || "#0078d7";
-      const hex = accent.startsWith("#") ? accent : "#0078d7";
-      ctx.fillStyle = hex.length===7 ? hex+"cc" : hex;
+      ctx.fillStyle = accent + "cc";
       ctx.shadowBlur=8;
-      ctx.shadowColor=hex;
+      ctx.shadowColor=accent;
       ctx.beginPath();
       ctx.arc(this.x,this.y,this.s,0,Math.PI*2);
       ctx.fill();
@@ -222,7 +221,7 @@ async function handleLogin(){
 }
 
 /* ============================================================
-   WALLPAPER (BASE64 + COMPRESSION FORTE)
+   WALLPAPER — VERSION 100% LOCALSTORAGE
 ============================================================ */
 
 function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
@@ -240,7 +239,7 @@ function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
         c.width = w; c.height = h;
         const cctx = c.getContext("2d");
         cctx.drawImage(img,0,0,w,h);
-        const data = c.toDataURL("image/jpeg", quality); // JPEG très compressé
+        const data = c.toDataURL("image/jpeg", quality);
         resolve(data);
       };
       img.onerror = reject;
@@ -251,31 +250,23 @@ function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
   });
 }
 
-async function loadChatBackground(roomName, isPrivateChat){
+function loadChatBackground(roomName, isPrivateChat){
   const view = byId("view-chat");
   if(!view) return;
 
-  try {
-    if(isPrivateChat){
-      const dmKey = curRoom; // ex: "alice_bob"
-      const bgRef = doc(db,"dmBackgrounds", dmKey);
-      const bgDoc = await getDoc(bgRef);
-      if(bgDoc.exists() && bgDoc.data().background){
-        view.style.backgroundImage = `url(${bgDoc.data().background})`;
-      } else {
-        view.style.backgroundImage = "none";
-      }
-    } else {
-      const bgRef = doc(db,"roomBackgrounds", roomName); // clé = nom du salon
-      const bgDoc = await getDoc(bgRef);
-      if(bgDoc.exists() && bgDoc.data().background){
-        view.style.backgroundImage = `url(${bgDoc.data().background})`;
-      } else {
-        view.style.backgroundImage = "none";
-      }
-    }
-  } catch(e){
-    console.error(e);
+  view.style.backgroundSize = "cover";
+  view.style.backgroundPosition = "center";
+  view.style.backgroundRepeat = "no-repeat";
+
+  const key = isPrivateChat
+    ? "tt_wallpaper_dm_" + curRoom
+    : "tt_wallpaper_room_" + roomName;
+
+  const dataUrl = localStorage.getItem(key);
+
+  if(dataUrl){
+    view.style.backgroundImage = `url(${dataUrl})`;
+  } else {
     view.style.backgroundImage = "none";
   }
 }
@@ -286,12 +277,11 @@ async function setBackgroundForCurrentChat(file){
   try {
     const dataUrl = await compressImageToBase64(file, 900, 700, 0.1);
 
-    if(isPrivateCurrent){
-      const dmKey = curRoom; // ex: "alice_bob"
-      await setDoc(doc(db,"dmBackgrounds", dmKey), { background: dataUrl });
-    } else {
-      await setDoc(doc(db,"roomBackgrounds", curRoom), { background: dataUrl });
-    }
+    const key = isPrivateCurrent
+      ? "tt_wallpaper_dm_" + curRoom
+      : "tt_wallpaper_room_" + curRoom;
+
+    localStorage.setItem(key, dataUrl);
 
     await loadChatBackground(
       isPrivateCurrent ? curRoom.split("_").find(n=>n!==currentUser) : curRoom,
@@ -303,9 +293,8 @@ async function setBackgroundForCurrentChat(file){
     showMessage("Erreur lors de la mise à jour du fond d'écran.");
   }
 }
-
 /* ============================================================
-   ENTER ROOM (PRIVÉ + PUBLIC)
+   ENTER ROOM (PUBLIC + PRIVÉ)
 ============================================================ */
 
 async function enterRoom(name, isPrivateChat=false){
@@ -738,7 +727,7 @@ function setupContactsSnapshot(){
 }
 
 /* ============================================================
-   ACCENT + NÉONS (CORRIGÉ)
+   ACCENT + NÉONS
 ============================================================ */
 
 let neonInterval = null;
@@ -880,7 +869,7 @@ function initUI(){
 
   qsa("[data-close-popup]").forEach((b)=> b.addEventListener("click", closePopups));
 
-  byId("btn-logout").addEventListener("click", ()=> {
+    byId("btn-logout").addEventListener("click", ()=> {
     localStorage.removeItem("tt_user");
     location.reload();
   });
@@ -954,6 +943,10 @@ function initUI(){
   initAccent();
   updateAuthUI();
 }
+
+/* ============================================================
+   INIT APP
+============================================================ */
 
 async function initApp(){
   initUI();
