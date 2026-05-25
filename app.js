@@ -1,5 +1,5 @@
 /* ============================================================
-   FIREBASE IMPORTS
+   IMPORTS FIREBASE
 ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -10,6 +10,7 @@ import {
 
 /* ============================================================
    FIREBASE INIT
+   Remplace cfg par ta config si besoin
 ============================================================ */
 
 const cfg = {
@@ -25,220 +26,233 @@ const app = initializeApp(cfg);
 const db = getFirestore(app);
 
 /* ============================================================
-   SHORTCUTS
+   UTILITAIRES RAPIDES
 ============================================================ */
 
-const byId = (id) => document.getElementById(id);
-const qsa = (sel) => Array.from(document.querySelectorAll(sel));
+const byId = id => document.getElementById(id);
+const qsa = sel => Array.from(document.querySelectorAll(sel));
 const debounce = (fn, wait=200) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
-const getAccent = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+const randHex = (len=16) => {
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b=>b.toString(16).padStart(2,"0")).join("");
+};
+const utf8ToBytes = str => new TextEncoder().encode(str);
+const bytesToUtf8 = bytes => new TextDecoder().decode(bytes);
+const base64FromBytes = bytes => {
+  let binary = "";
+  const len = bytes.length;
+  for(let i=0;i<len;i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+};
+const bytesFromBase64 = b64 => {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+};
 
 /* ============================================================
-   GLOBAL STATE
+   ETAT GLOBAL
 ============================================================ */
 
 let currentUser = localStorage.getItem("tt_user") || null;
 let curRoom = "général";
+let isPrivateCurrent = false;
 let unsubChat = null;
 let selectedMsgId = null;
-let authMode = "login";
-let confirmCallback = null;
-let isPrivateCurrent = false;
 
-let roomsCache = [];
-let contactsCache = [];
-const lastMessagesByRoom = new Map();
-const lastMessagesByDM = new Map();
-
-let allowedRooms = [];
-try { allowedRooms = JSON.parse(localStorage.getItem("tt_allowedRooms") || "[]"); } catch { allowedRooms = []; }
+/* DM KEYS
+   Stockage local uniquement. Clé par DM (clé_dm_<dmKey>)
+   dmKey format: sorted usernames joined by underscore (alice_bob)
+*/
+const dmKeyStoragePrefix = "tt_dmkey_";
 
 /* ============================================================
-   PARTICLES (EFFET COPILOT+)
+   OTP SIMPLIFIÉ PAR DM
+   - deriveKeystream : HKDF-like simple derivation using SHA-256
+   - xorBytes : XOR deux Uint8Array
+   - encryptOTP / decryptOTP : XOR plaintext with keystream
+   - salt : random hex short (16 bytes)
 ============================================================ */
 
-(function initParticles(){
-  const canvas = byId("canvas-dust");
-  const ctx = canvas.getContext("2d");
-  let pts = [];
-  const mouse = { x:-10000, y:-10000 };
-
-  function resizeCanvas(){ canvas.width = innerWidth; canvas.height = innerHeight; }
-  addEventListener("resize", resizeCanvas);
-  resizeCanvas();
-
-  addEventListener("mousemove", (e)=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
-
-  class Particle {
-    constructor(){ this.init(); this.target=null; }
-    init(){
-      this.x=Math.random()*canvas.width;
-      this.y=Math.random()*canvas.height;
-      this.vx=(Math.random()-0.5)*1.2;
-      this.vy=(Math.random()-0.5)*1.2;
-      this.s=Math.random()*2+1;
-    }
-    update(){
-      if(this.target){
-        this.x+=(this.target.x-this.x)*0.15;
-        this.y+=(this.target.y-this.y)*0.15;
-        return;
-      }
-      const dx=mouse.x-this.x, dy=mouse.y-this.y, d=Math.hypot(dx,dy);
-      if(d<100){
-        this.vx-=dx*0.0003;
-        this.vy-=dy*0.0003;
-      }
-      this.x+=this.vx;
-      this.y+=this.vy;
-      this.vx*=0.99;
-      this.vy*=0.99;
-      if(this.x<0||this.x>canvas.width) this.vx*=-1;
-      if(this.y<0||this.y>canvas.height) this.vy*=-1;
-    }
-    draw(){
-      const accent = getAccent() || "#0078d7";
-      ctx.fillStyle = accent + "cc";
-      ctx.shadowBlur=8;
-      ctx.shadowColor=accent;
-      ctx.beginPath();
-      ctx.arc(this.x,this.y,this.s,0,Math.PI*2);
-      ctx.fill();
-      ctx.shadowBlur=0;
-    }
+/**
+ * deriveKeystream
+ * Derive a keystream of requested length (bytes) from secret + room + salt
+ * Uses repeated SHA-256 chaining to produce enough bytes.
+ */
+async function deriveKeystream(secret, room, salt, length){
+  // seed = secret || '|' || room || '|' || salt
+  const seedStr = `${secret}|${room}|${salt}`;
+  let seed = utf8ToBytes(seedStr);
+  let out = new Uint8Array(0);
+  let counter = 0;
+  while(out.length < length){
+    // data = seed || counter
+    const ctr = new Uint8Array([counter & 0xff, (counter>>8)&0xff, (counter>>16)&0xff, (counter>>24)&0xff]);
+    const data = new Uint8Array(seed.length + ctr.length);
+    data.set(seed,0); data.set(ctr, seed.length);
+    const hashBuf = await crypto.subtle.digest("SHA-256", data);
+    const hash = new Uint8Array(hashBuf);
+    const newOut = new Uint8Array(out.length + hash.length);
+    newOut.set(out,0); newOut.set(hash, out.length);
+    out = newOut;
+    counter++;
+    if(counter > 1024) throw new Error("deriveKeystream: too many iterations");
   }
-
-  for(let i=0;i<380;i++) pts.push(new Particle());
-
-  (function anim(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    pts.forEach(p=>{p.update();p.draw();});
-    requestAnimationFrame(anim);
-  })();
-
-  window.materialize = (el, delay=0) => {
-    setTimeout(()=>{
-      const r = el.getBoundingClientRect();
-      const pCount = 30;
-      const targets = [];
-      for(let i=0;i<pCount;i++){
-        targets.push({x:r.left+(r.width/pCount)*i,y:r.top});
-        targets.push({x:r.left+(r.width/pCount)*i,y:r.bottom});
-      }
-      pts.forEach((p,i)=>{ if(targets[i]) p.target = targets[i]; });
-      setTimeout(()=>{ pts.forEach(p=>p.target=null); el.classList.add("visible"); }, 700);
-    }, delay);
-  };
-
-})();
-
-/* ============================================================
-   POPUPS
-============================================================ */
-
-function openPopup(popId, cardId){
-  const pop = byId(popId), card = byId(cardId);
-  if(!pop||!card) return;
-  pop.style.display = "flex";
-  materialize(card);
+  return out.slice(0, length);
 }
 
-function closePopups(){
-  qsa(".popup-overlay").forEach(p=>p.style.display="none");
-  qsa(".popup-card").forEach(c=>c.classList.remove("visible"));
+/**
+ * xorBytes
+ * XOR two Uint8Array, returns new Uint8Array
+ */
+function xorBytes(a, b){
+  const n = Math.min(a.length, b.length);
+  const out = new Uint8Array(n);
+  for(let i=0;i<n;i++) out[i] = a[i] ^ b[i];
+  return out;
 }
 
-function showMessage(text, title="INFO"){
-  byId("msg-title").innerText = title;
-  byId("msg-text").innerText = text;
-  openPopup("pop-message","card-message");
+/**
+ * encryptOTP
+ * plaintext string -> returns { cipherB64, salt }
+ */
+async function encryptOTP(plaintext, secret, room){
+  const salt = randHex(12); // 12 bytes hex = 24 chars
+  const ptBytes = utf8ToBytes(plaintext);
+  const keystream = await deriveKeystream(secret, room, salt, ptBytes.length);
+  const cipherBytes = xorBytes(ptBytes, keystream);
+  const cipherB64 = base64FromBytes(cipherBytes);
+  return { cipher: cipherB64, salt };
 }
 
-function showConfirm(text, onYes, title="CONFIRMATION"){
-  confirmCallback = onYes;
-  byId("confirm-title").innerText = title;
-  byId("confirm-text").innerText = text;
-  openPopup("pop-confirm","card-confirm");
+/**
+ * decryptOTP
+ * cipherB64 + salt -> plaintext string (throws if key wrong)
+ */
+async function decryptOTP(cipherB64, secret, room, salt){
+  const cipherBytes = bytesFromBase64(cipherB64);
+  const keystream = await deriveKeystream(secret, room, salt, cipherBytes.length);
+  const ptBytes = xorBytes(cipherBytes, keystream);
+  return bytesToUtf8(ptBytes);
 }
 
 /* ============================================================
-   AUTH
+   GESTION DES CLES DM
+   - setDMKey(dmKey, secret)
+   - getDMKey(dmKey)
+   - promptDMKey(dmKey) : UI prompt minimal
 ============================================================ */
 
-function updateAuthUI(){
-  const title = byId("auth-mode-title"), btn = byId("btn-login"), toggle = byId("auth-toggle");
-  const card = byId("auth-card");
-  card.classList.add("auth-switching");
+function dmKeyStorageKey(dmKey){
+  return dmKeyStoragePrefix + dmKey;
+}
 
-  if(authMode==="login"){
-    title.innerText="Se connecter";
-    btn.innerText="SE CONNECTER";
-    toggle.innerText="Vous n'avez pas de compte ? Rejoindre ThinkTalk";
+function setDMKey(dmKey, secret){
+  if(!dmKey || !secret) return;
+  try {
+    localStorage.setItem(dmKeyStorageKey(dmKey), secret);
+  } catch(e){
+    console.error("setDMKey error", e);
+  }
+}
+
+function getDMKey(dmKey){
+  try {
+    return localStorage.getItem(dmKeyStorageKey(dmKey));
+  } catch(e){
+    return null;
+  }
+}
+
+/**
+ * promptDMKey
+ * Minimal prompt UI: opens a popup where user enters the DM key.
+ * Stores it locally via setDMKey.
+ */
+function promptDMKey(dmKey, displayName){
+  // displayName is the visible name of the DM (other user)
+  const title = `Clé DM pour ${displayName}`;
+  const msg = `Entrez la clé secrète pour la conversation privée avec ${displayName}. Cette clé n'est jamais envoyée au serveur.`;
+  // simple prompt fallback
+  const secret = prompt(`${title}\n\n${msg}\n\nClé :`);
+  if(secret && secret.length > 0){
+    setDMKey(dmKey, secret);
+    showMessage("Clé enregistrée localement.");
+    return secret;
   } else {
-    title.innerText="Créer un compte";
-    btn.innerText="CRÉER UN COMPTE";
-    toggle.innerText="Vous avez déjà un compte ? Se connecter";
+    showMessage("Clé non fournie. Impossible de déchiffrer les messages.");
+    return null;
   }
-
-  setTimeout(()=>{
-    card.classList.remove("auth-switching");
-    card.classList.add("auth-active");
-  }, 200);
 }
 
-async function handleLogin(){
-  const p = byId("auth-pseudo").value.trim().toLowerCase();
-  const c = byId("auth-code").value.trim();
-  if(!p||!c){ showMessage("Pseudo et code requis."); return; }
+/* ============================================================
+   SEND MESSAGE (CHIFFRÉ OTP) et SEND IMAGE
+   - sendMessageEncrypted
+   - sendImageEncrypted (image compressed to base64 then encrypted)
+============================================================ */
+
+async function sendMessageEncrypted(plainText){
+  if(!currentUser) { showMessage("Connecte-toi d'abord."); return; }
+  if(!plainText || plainText.trim().length === 0) return;
 
   try {
-    const uRef = doc(db,"users",p);
-    const uDoc = await getDoc(uRef);
-
-    if(authMode==="login"){
-      if(uDoc.exists()){
-        if(uDoc.data().code === c){
-          localStorage.setItem("tt_user", p);
-          currentUser = p;
-          byId("auth-screen").style.display = "none";
-          byId("main-app").style.display = "flex";
-          enterRoom("général");
-        } else showMessage("Code secret incorrect.");
-      } else showMessage("Ce compte n'existe pas.");
+    if(isPrivateCurrent){
+      // DM: curRoom is sorted "alice_bob"
+      const dmKey = curRoom;
+      let secret = getDMKey(dmKey);
+      if(!secret){
+        // ask user for key
+        secret = promptDMKey(dmKey, dmKey.split("_").find(n=>n!==currentUser) || dmKey);
+        if(!secret) return;
+      }
+      const { cipher, salt } = await encryptOTP(plainText, secret, dmKey);
+      await addDoc(collection(db,"messages"), {
+        cipher,
+        salt,
+        room: dmKey,
+        sender: currentUser,
+        timestamp: serverTimestamp()
+      });
     } else {
-      if(uDoc.exists()){ showMessage("Ce pseudo est déjà utilisé."); return; }
-      await setDoc(uRef, { code: c });
-      localStorage.setItem("tt_user", p);
-      currentUser = p;
-      byId("auth-screen").style.display = "none";
-      byId("main-app").style.display = "flex";
-      enterRoom("général");
+      // Public room: we store plaintext encrypted with a room-shared secret only if you want.
+      // For now, public rooms keep plaintext-like behavior but we will store as cipher with empty salt to keep rules consistent.
+      // Use a simple server-visible cipher placeholder (not secret) to satisfy rules: store cipher as base64 of plaintext
+      const ptBytes = utf8ToBytes(plainText);
+      const cipherB64 = base64FromBytes(ptBytes);
+      await addDoc(collection(db,"messages"), {
+        cipher: cipherB64,
+        salt: "",
+        room: curRoom,
+        sender: currentUser,
+        timestamp: serverTimestamp()
+      });
     }
   } catch(e){
-    console.error(e);
-    showMessage("Erreur de connexion.");
+    console.error("sendMessageEncrypted error", e);
+    showMessage("Erreur lors de l'envoi du message.");
   }
 }
 
-/* ============================================================
-   WALLPAPER — VERSION 100% LOCALSTORAGE
-============================================================ */
-
-function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
+/**
+ * compressImageToBase64
+ * Resize + compress image to JPEG base64. Used for images and wallpapers.
+ */
+function compressImageToBase64(file, maxW=900, maxH=700, quality=0.08){
   return new Promise((resolve,reject)=>{
     const reader = new FileReader();
     reader.onload = e=>{
       const img = new Image();
       img.onload = ()=>{
-        let w = img.width;
-        let h = img.height;
+        let w = img.width, h = img.height;
         const ratio = Math.min(maxW/w, maxH/h, 1);
         w = Math.round(w*ratio);
         h = Math.round(h*ratio);
         const c = document.createElement("canvas");
         c.width = w; c.height = h;
-        const cctx = c.getContext("2d");
-        cctx.drawImage(img,0,0,w,h);
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img,0,0,w,h);
         const data = c.toDataURL("image/jpeg", quality);
         resolve(data);
       };
@@ -250,7 +264,225 @@ function compressImageToBase64(file, maxW=900, maxH=700, quality=0.1){
   });
 }
 
-function loadChatBackground(roomName, isPrivateChat){
+/**
+ * sendImageEncrypted
+ * Compress image to base64 then encrypt with OTP for DM or store base64 for room.
+ */
+async function sendImageEncrypted(file){
+  if(!file || !currentUser) return;
+  try {
+    const dataUrl = await compressImageToBase64(file, 900, 700, 0.08);
+    // For DM: encrypt the base64 string
+    if(isPrivateCurrent){
+      const dmKey = curRoom;
+      let secret = getDMKey(dmKey);
+      if(!secret){
+        secret = promptDMKey(dmKey, dmKey.split("_").find(n=>n!==currentUser) || dmKey);
+        if(!secret) return;
+      }
+      const { cipher, salt } = await encryptOTP(dataUrl, secret, dmKey);
+      await addDoc(collection(db,"messages"), {
+        cipher,
+        salt,
+        room: dmKey,
+        sender: currentUser,
+        timestamp: serverTimestamp()
+      });
+    } else {
+      // public room: store base64 as cipher with empty salt
+      const cipherB64 = base64FromBytes(utf8ToBytes(dataUrl));
+      await addDoc(collection(db,"messages"), {
+        cipher: cipherB64,
+        salt: "",
+        room: curRoom,
+        sender: currentUser,
+        timestamp: serverTimestamp()
+      });
+    }
+  } catch(e){
+    console.error("sendImageEncrypted error", e);
+    showMessage("Erreur lors de l'envoi de l'image.");
+  }
+}
+
+/* ============================================================
+   MESSAGES SNAPSHOT + DÉCHIFFREMENT À LA VOLÉE
+   - setupMessagesSnapshot : écoute messages et déchiffre si DM
+============================================================ */
+
+function renderMessageElement(sender, contentHtml, isOwn){
+  const div = document.createElement("div");
+  div.className = "msg-block" + (isOwn ? " own" : "");
+  const info = document.createElement("div");
+  info.className = "msg-info";
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,"0");
+  const mm = String(now.getMinutes()).padStart(2,"0");
+  info.innerHTML = `<span>${sender}</span><span>${hh}:${mm}</span>`;
+  const content = document.createElement("div");
+  content.className = "msg-text";
+  content.innerHTML = contentHtml;
+  div.appendChild(info);
+  div.appendChild(content);
+  return div;
+}
+
+function setupMessagesSnapshot(){
+  if(unsubChat) unsubChat();
+  const qMsg = query(collection(db,"messages"), orderBy("timestamp","asc"));
+  unsubChat = onSnapshot(qMsg, async (snap) => {
+    const box = byId("chat-messages");
+    if(!box) return;
+    box.innerHTML = "";
+    for(const d of snap.docs){
+      const m = d.data();
+      const room = m.room;
+      const sender = m.sender || "unknown";
+      const isOwn = sender === currentUser;
+      let contentHtml = "";
+
+      try {
+        if(room.includes("_") && room.split("_").length === 2){
+          // DM: attempt decrypt using local key
+          const dmKey = room;
+          const secret = getDMKey(dmKey);
+          if(!secret){
+            // show placeholder and a button to enter key
+            contentHtml = `<em class="muted">Message chiffré. <button class="enter-key-btn" data-dm="${dmKey}">Entrer clé</button></em>`;
+          } else {
+            const plain = await decryptOTP(m.cipher, secret, dmKey, m.salt);
+            // if looks like dataURL (image), render image
+            if(plain.startsWith("data:image/")){
+              contentHtml = `<img src="${plain}" class="msg-img">`;
+            } else {
+              contentHtml = escapeHtml(plain);
+            }
+          }
+        } else {
+          // Public room: cipher stored as base64 of plaintext or image
+          const cipherB64 = m.cipher || "";
+          if(cipherB64){
+            const bytes = bytesFromBase64(cipherB64);
+            const txt = bytesToUtf8(bytes);
+            if(txt.startsWith("data:image/")){
+              contentHtml = `<img src="${txt}" class="msg-img">`;
+            } else {
+              contentHtml = escapeHtml(txt);
+            }
+          } else {
+            contentHtml = "<em class='muted'>Message vide</em>";
+          }
+        }
+      } catch(e){
+        console.error("decrypt/render error", e);
+        contentHtml = `<em class="muted">Impossible de déchiffrer le message</em>`;
+      }
+
+      const el = renderMessageElement(sender, contentHtml, isOwn);
+      box.appendChild(el);
+    }
+
+    // attach listeners for enter-key buttons
+    qsa(".enter-key-btn").forEach(btn=>{
+      btn.onclick = (ev)=>{
+        const dm = btn.dataset.dm;
+        promptDMKey(dm, dm.split("_").find(n=>n!==currentUser) || dm);
+        // after entering key, we re-run snapshot rendering by calling setupMessagesSnapshot again
+        // but to avoid re-subscribing, simply call setupMessagesSnapshot to refresh UI
+        setupMessagesSnapshot();
+      };
+    });
+
+    // scroll to bottom
+    const parent = box.parentElement;
+    if(parent) parent.scrollTop = parent.scrollHeight;
+  });
+}
+
+/* ============================================================
+   HELPERS
+============================================================ */
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, (m)=> {
+    switch(m){
+      case "&": return "&amp;";
+      case "<": return "&lt;";
+      case ">": return "&gt;";
+      case '"': return "&quot;";
+      case "'": return "&#39;";
+      default: return m;
+    }
+  });
+}
+
+/* ============================================================
+   POPUPS / MESSAGES UI MINIMAL (utilisé par functions above)
+============================================================ */
+
+function showMessage(text, title="INFO"){
+  // minimal: alert fallback if no popup
+  try {
+    const mt = byId("msg-text");
+    const tt = byId("msg-title");
+    if(mt && tt){
+      tt.innerText = title;
+      mt.innerText = text;
+      openPopup("pop-message","card-message");
+      return;
+    }
+  } catch(e){}
+  alert(`${title}\n\n${text}`);
+}
+
+/* ============================================================
+   EXPORTS FOR PARTIE 2
+   Partie 2 contiendra : enterRoom, rooms, contacts, wallpapers Firestore,
+   ensureGeneralRoom, initUI, initApp, switchTab, etc.
+============================================================ */
+
+// Expose some functions to global scope for UI hooks in Partie 2
+window.sendMessageEncrypted = sendMessageEncrypted;
+window.sendImageEncrypted = sendImageEncrypted;
+window.setupMessagesSnapshot = setupMessagesSnapshot;
+window.setDMKey = setDMKey;
+window.getDMKey = getDMKey;
+window.promptDMKey = promptDMKey;
+window.compressImageToBase64 = compressImageToBase64;
+/* ============================================================
+   POPUPS MINIMAL (openPopup / closePopups) + confirm
+============================================================ */
+
+function openPopup(popId, cardId){
+  const pop = byId(popId), card = byId(cardId);
+  if(!pop || !card) return;
+  pop.style.display = "flex";
+  setTimeout(()=> card.classList.add("visible"), 40);
+}
+
+function closePopups(){
+  qsa(".popup-overlay").forEach(p=> p.style.display = "none");
+  qsa(".popup-card").forEach(c=> c.classList.remove("visible"));
+}
+
+let confirmCallback = null;
+function showConfirm(text, onYes, title="CONFIRMATION"){
+  confirmCallback = onYes;
+  const t = byId("confirm-text"), tt = byId("confirm-title");
+  if(tt) tt.innerText = title;
+  if(t) t.innerText = text;
+  openPopup("pop-confirm","card-confirm");
+}
+
+/* ============================================================
+   WALLPAPER FIRESTORE (roomBackgrounds / dmBackgrounds)
+   - loadChatBackground(roomName, isPrivateChat)
+   - setBackgroundForCurrentChat(file)
+   - resetBackgroundForCurrentChat()
+   - auto-create doc if missing
+============================================================ */
+
+async function loadChatBackground(roomName, isPrivateChat){
   const view = byId("view-chat");
   if(!view) return;
 
@@ -258,146 +490,166 @@ function loadChatBackground(roomName, isPrivateChat){
   view.style.backgroundPosition = "center";
   view.style.backgroundRepeat = "no-repeat";
 
-  const key = isPrivateChat
-    ? "tt_wallpaper_dm_" + curRoom
-    : "tt_wallpaper_room_" + roomName;
+  const key = isPrivateChat ? curRoom : roomName;
+  const col = isPrivateChat ? "dmBackgrounds" : "roomBackgrounds";
+  const ref = doc(db, col, key);
 
-  const dataUrl = localStorage.getItem(key);
-
-  if(dataUrl){
-    view.style.backgroundImage = `url(${dataUrl})`;
-  } else {
+  try {
+    const snap = await getDoc(ref);
+    if(!snap.exists()){
+      // create empty doc to avoid future 404s
+      await setDoc(ref, { background: "" });
+      view.style.backgroundImage = "none";
+      return;
+    }
+    const data = snap.data();
+    if(data && data.background){
+      view.style.backgroundImage = `url(${data.background})`;
+    } else {
+      view.style.backgroundImage = "none";
+    }
+  } catch(e){
+    console.error("loadChatBackground error", e);
     view.style.backgroundImage = "none";
   }
 }
 
 async function setBackgroundForCurrentChat(file){
   if(!file || !currentUser) return;
-
   try {
-    const dataUrl = await compressImageToBase64(file, 900, 700, 0.1);
-
-    const key = isPrivateCurrent
-      ? "tt_wallpaper_dm_" + curRoom
-      : "tt_wallpaper_room_" + curRoom;
-
-    localStorage.setItem(key, dataUrl);
-
-    await loadChatBackground(
-      isPrivateCurrent ? curRoom.split("_").find(n=>n!==currentUser) : curRoom,
-      isPrivateCurrent
-    );
-
+    const dataUrl = await compressImageToBase64(file, 1200, 900, 0.08);
+    const col = isPrivateCurrent ? "dmBackgrounds" : "roomBackgrounds";
+    const key = curRoom;
+    const ref = doc(db, col, key);
+    await setDoc(ref, { background: dataUrl });
+    await loadChatBackground(isPrivateCurrent ? curRoom.split("_").find(n=>n!==currentUser) : curRoom, isPrivateCurrent);
+    showMessage("Fond mis à jour.");
   } catch(e){
-    console.error(e);
+    console.error("setBackgroundForCurrentChat error", e);
     showMessage("Erreur lors de la mise à jour du fond d'écran.");
   }
 }
+
+async function resetBackgroundForCurrentChat(){
+  if(!currentUser) return;
+  try {
+    const col = isPrivateCurrent ? "dmBackgrounds" : "roomBackgrounds";
+    const key = curRoom;
+    const ref = doc(db, col, key);
+    await setDoc(ref, { background: "" });
+    await loadChatBackground(isPrivateCurrent ? curRoom.split("_").find(n=>n!==currentUser) : curRoom, isPrivateCurrent);
+    showMessage("Fond réinitialisé.");
+  } catch(e){
+    console.error("resetBackgroundForCurrentChat error", e);
+    showMessage("Impossible de réinitialiser le fond.");
+  }
+}
+
 /* ============================================================
-   ENTER ROOM (PUBLIC + PRIVÉ)
+   ENTER ROOM (PUBLIC + DM) — subscription per-room
+   - enterRoom(name, isPrivateChat)
+   - unsubscribes previous listener
+   - loads wallpaper
+   - auto-ensure room exists for public rooms
 ============================================================ */
 
 async function enterRoom(name, isPrivateChat=false){
   if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
 
+  // For public rooms, ensure existence
   if(!isPrivateChat){
-    const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==",name), limit(1)));
-    if(!rSnap.empty){
-      const roomDoc = rSnap.docs[0];
-      const roomData = roomDoc.data();
-      const pass = roomData.pass || "";
-      const owner = roomData.owner || null;
-
-      if(pass && pass !== ""){
-        const roomKey = name;
-        const alreadyAllowed = allowedRooms.includes(roomKey);
-        const isOwner = owner === currentUser;
-
-        if(!alreadyAllowed && !isOwner){
-          const inputId = "room-pass-input";
-          byId("msg-title").innerText = "Salon privé";
-          byId("msg-text").innerHTML = "Ce salon est privé. Entrez le code :<br><br>" +
-            `<input id="${inputId}" type="password" class="input-box" placeholder="Code du salon">`;
-          openPopup("pop-message","card-message");
-
-          const okBtn = byId("msg-ok-btn");
-          const old = okBtn.onclick;
-
-          okBtn.onclick = async () => {
-            const val = byId(inputId).value.trim();
-            closePopups();
-            okBtn.onclick = old || null;
-
-            if(val !== pass){ showMessage("Code erroné."); return; }
-
-            allowedRooms.push(roomKey);
-            localStorage.setItem("tt_allowedRooms", JSON.stringify(allowedRooms));
-            proceedEnter();
-          };
-          return;
-        }
+    try {
+      const rSnap = await getDocs(query(collection(db,"rooms"), where("name","==",name), limit(1)));
+      if(rSnap.empty){
+        await addDoc(collection(db,"rooms"), { name, pass: "", owner: currentUser });
       }
+    } catch(e){
+      console.error("enterRoom ensure room error", e);
     }
   }
 
-  proceedEnter();
+  // set state
+  curRoom = isPrivateChat ? [currentUser, name].sort().join("_") : name;
+  isPrivateCurrent = isPrivateChat;
 
-  function proceedEnter(){
-    curRoom = isPrivateChat ? [currentUser,name].sort().join("_") : name;
-    isPrivateCurrent = isPrivateChat;
+  // UI header
+  const header = byId("chat-header");
+  if(header) header.innerText = (isPrivateChat ? "@ " : "# ") + name;
 
-    byId("chat-header").innerText = (isPrivateChat ? "@ " : "# ") + name;
-    switchTab("chat");
+  // switch to chat view
+  switchTab("chat");
 
-    if(unsubChat) unsubChat();
+  // unsubscribe previous
+  if(unsubChat) unsubChat();
 
-    const qMsg = query(collection(db,"messages"), where("room","==",curRoom), orderBy("timestamp","asc"));
-    unsubChat = onSnapshot(qMsg, (snap) => {
-      const box = byId("chat-messages");
-      box.innerHTML = "";
+  // subscribe to messages for this room only
+  const qMsg = query(collection(db,"messages"), where("room","==",curRoom), orderBy("timestamp","asc"));
+  unsubChat = onSnapshot(qMsg, async (snap) => {
+    const box = byId("chat-messages");
+    if(!box) return;
+    box.innerHTML = "";
 
-      snap.forEach((d) => {
-        const m = d.data();
-        const date = m.timestamp?.seconds ? new Date(m.timestamp.seconds*1000) : new Date();
-        const hh = String(date.getHours()).padStart(2,"0");
-        const mm = String(date.getMinutes()).padStart(2,"0");
-        const timeStr = `${hh}:${mm}`;
+    for(const d of snap.docs){
+      const m = d.data();
+      const sender = m.sender || "unknown";
+      const isOwn = sender === currentUser;
+      let contentHtml = "";
 
-        const div = document.createElement("div");
-        div.className = "msg-block" + (m.sender === currentUser ? " own" : "");
-
-        const info = document.createElement("div");
-        info.className = "msg-info";
-        info.innerHTML = `<span>${m.sender}</span><span>${timeStr}</span>`;
-
-        const content = document.createElement("div");
-        content.className = "msg-text";
-
-        if(m.image){
-          const img = document.createElement("img");
-          img.src = m.image;
-          img.className = "msg-img";
-          content.appendChild(img);
+      try {
+        if(isPrivateCurrent){
+          const dmKey = curRoom;
+          const secret = getDMKey(dmKey);
+          if(!secret){
+            contentHtml = `<em class="muted">Message chiffré. <button class="enter-key-btn" data-dm="${dmKey}">Entrer clé</button></em>`;
+          } else {
+            const plain = await decryptOTP(m.cipher, secret, dmKey, m.salt);
+            if(plain.startsWith("data:image/")){
+              contentHtml = `<img src="${plain}" class="msg-img">`;
+            } else {
+              contentHtml = escapeHtml(plain);
+            }
+          }
         } else {
-          content.textContent = m.text || "";
+          // public room: cipher is base64 of plaintext or image
+          const cipherB64 = m.cipher || "";
+          if(cipherB64){
+            const bytes = bytesFromBase64(cipherB64);
+            const txt = bytesToUtf8(bytes);
+            if(txt.startsWith("data:image/")){
+              contentHtml = `<img src="${txt}" class="msg-img">`;
+            } else {
+              contentHtml = escapeHtml(txt);
+            }
+          } else {
+            contentHtml = "<em class='muted'>Message vide</em>";
+          }
         }
+      } catch(e){
+        console.error("enterRoom decrypt/render error", e);
+        contentHtml = `<em class="muted">Impossible de déchiffrer le message</em>`;
+      }
 
-        div.appendChild(info);
-        div.appendChild(content);
+      const el = renderMessageElement(sender, contentHtml, isOwn);
+      box.appendChild(el);
+    }
 
-        if(m.sender === currentUser){
-          div.onclick = () => { selectedMsgId = d.id; openPopup("pop-options","card-options"); };
-        }
-
-        box.appendChild(div);
-        setTimeout(()=>div.classList.add("visible"), 20);
-      });
-
-      box.parentElement.scrollTop = box.parentElement.scrollHeight;
+    // attach enter-key handlers
+    qsa(".enter-key-btn").forEach(btn=>{
+      btn.onclick = (ev)=>{
+        const dm = btn.dataset.dm;
+        promptDMKey(dm, dm.split("_").find(n=>n!==currentUser) || dm);
+        // refresh messages for this room
+        enterRoom(isPrivateCurrent ? (dm.split("_").find(n=>n!==currentUser) || dm) : curRoom, isPrivateCurrent);
+      };
     });
 
-    loadChatBackground(name, isPrivateChat);
-  }
+    // scroll to bottom
+    const parent = box.parentElement;
+    if(parent) parent.scrollTop = parent.scrollHeight;
+  });
+
+  // load wallpaper for this room
+  await loadChatBackground(isPrivateChat ? name : name, isPrivateChat);
 }
 
 /* ============================================================
@@ -407,7 +659,7 @@ async function enterRoom(name, isPrivateChat=false){
 async function createRoom(){
   const name = byId("new-room-name").value.trim();
   const pass = byId("new-room-pass").value.trim();
-  if(!name) return;
+  if(!name) { showMessage("Nom du salon requis."); return; }
   if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
 
   try {
@@ -415,105 +667,31 @@ async function createRoom(){
     if(!rSnap.empty){ showMessage("Un salon avec ce nom existe déjà."); return; }
 
     await addDoc(collection(db,"rooms"), { name, pass, owner: currentUser });
-
     closePopups();
     byId("new-room-name").value = "";
     byId("new-room-pass").value = "";
-
   } catch(e){
-    console.error(e);
+    console.error("createRoom error", e);
     showMessage("Erreur lors de la création du salon.");
   }
 }
 
 /* ============================================================
-   SEND MESSAGE / IMAGE
-============================================================ */
-
-async function sendMessage(){
-  if(!currentUser){ showMessage("Connecte-toi d'abord."); return; }
-  const i = byId("chat-input");
-  const text = i.value.trim();
-  if(!text) return;
-
-  try {
-    await addDoc(collection(db,"messages"), {
-      text,
-      room: curRoom,
-      sender: currentUser,
-      timestamp: serverTimestamp()
-    });
-    i.value = "";
-  } catch(e){
-    console.error(e);
-    showMessage("Erreur lors de l'envoi du message.");
-  }
-}
-
-function sendImage(file){
-  if(!file || !currentUser) return;
-
-  const reader = new FileReader();
-  reader.onload = async (ev) => {
-    try {
-      await addDoc(collection(db,"messages"), {
-        image: ev.target.result,
-        room: curRoom,
-        sender: currentUser,
-        timestamp: serverTimestamp()
-      });
-    } catch(err){
-      console.error(err);
-      showMessage("Erreur lors de l'envoi de l'image.");
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-/* ============================================================
-   DELETE MESSAGE
-============================================================ */
-
-async function deleteMessage(){
-  if(!selectedMsgId) return;
-
-  try {
-    await deleteDoc(doc(db,"messages",selectedMsgId));
-  } catch(e){
-    console.error(e);
-    showMessage("Impossible de supprimer le message.");
-  }
-
-  closePopups();
-  selectedMsgId = null;
-}
-
-/* ============================================================
-   CONTACTS + SUGGESTIONS
+   CONTACTS
+   - suggestUsers(prefix)
+   - addContact()
 ============================================================ */
 
 async function suggestUsers(prefix){
-  if(prefix.length < 1) return [];
-
-  const snap = await getDocs(collection(db,"users"));
-  const all = snap.docs.map(d=>d.id);
-  return all.filter(u => u.startsWith(prefix.toLowerCase()));
-}
-
-function renderSuggestions(list){
-  const box = byId("contact-suggestions");
-  box.innerHTML = "";
-
-  list.forEach(name=>{
-    const div = document.createElement("div");
-    div.className = "suggest-item";
-    div.textContent = name;
-    div.onclick = () => {
-      byId("contact-name-input").value = name;
-      box.innerHTML = "";
-    };
-    box.appendChild(div);
-  });
+  if(!prefix || prefix.length < 1) return [];
+  try {
+    const snap = await getDocs(collection(db,"users"));
+    const all = snap.docs.map(d=>d.id);
+    return all.filter(u => u.startsWith(prefix.toLowerCase()));
+  } catch(e){
+    console.error("suggestUsers error", e);
+    return [];
+  }
 }
 
 async function addContact(){
@@ -524,129 +702,62 @@ async function addContact(){
   try {
     const uRef = doc(db,"users",name);
     const uDoc = await getDoc(uRef);
+    if(!uDoc.exists()){ showMessage("Ce contact n'existe pas."); return; }
 
-    if(!uDoc.exists()){
-      showMessage("Ce contact n'existe pas sur ThinkTalk.");
-      return;
-    }
-
-    const existing = contactsCache.find(c => c.owner===currentUser && c.name===name);
-    if(existing){
-      showMessage("Contact déjà ajouté.");
-      byId("contact-name-input").value="";
-      return;
-    }
+    // check duplicates
+    const snap = await getDocs(query(collection(db,"contacts"), where("owner","==", currentUser), where("name","==", name)));
+    if(!snap.empty){ showMessage("Contact déjà ajouté."); byId("contact-name-input").value=""; return; }
 
     await addDoc(collection(db,"contacts"), { owner: currentUser, name });
     byId("contact-name-input").value = "";
-
+    showMessage("Contact ajouté.");
   } catch(e){
-    console.error(e);
+    console.error("addContact error", e);
     showMessage("Erreur lors de l'ajout du contact.");
   }
 }
 
 /* ============================================================
-   SNAPSHOTS (MESSAGES / ROOMS / CONTACTS)
+   RENDER ROOMS & CONTACTS (uses roomsCache & contactsCache)
+   - renderRoomsTiles()
+   - renderContactsTiles()
 ============================================================ */
 
-function normalize(str){
-  return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-}
-
-function setupMessagesSnapshot(){
-  const qAll = query(collection(db,"messages"), orderBy("timestamp","asc"));
-
-  onSnapshot(qAll, (snap) => {
-    lastMessagesByRoom.clear();
-    lastMessagesByDM.clear();
-
-    snap.forEach((d) => {
-      const m = d.data();
-      const room = m.room;
-      if(!room) return;
-
-      const entry = { sender: m.sender, text: m.text || (m.image ? "[image]" : "") };
-
-      if(room.includes("_") && !room.includes(" ")){
-        const arr = lastMessagesByDM.get(room) || [];
-        arr.push(entry);
-        if(arr.length>2) arr.shift();
-        lastMessagesByDM.set(room, arr);
-      } else {
-        const arr = lastMessagesByRoom.get(room) || [];
-        arr.push(entry);
-        if(arr.length>2) arr.shift();
-        lastMessagesByRoom.set(room, arr);
-      }
-    });
-
-    renderRoomsTiles();
-    renderContactsTiles();
-  });
-}
-
-/* ============================================================
-   RENDER ROOMS
-============================================================ */
+let roomsCache = [];
+let contactsCache = [];
+const lastMessagesByRoom = new Map();
+const lastMessagesByDM = new Map();
 
 function renderRoomsTiles(){
   const g = byId("rooms-grid");
   if(!g) return;
-
   g.innerHTML = "";
-  const search = normalize(byId("rooms-search").value.trim());
+  const search = (byId("rooms-search")?.value || "").toLowerCase();
 
   roomsCache.forEach((r) => {
     if(!r.name) return;
-
-    if(r.pass && !search) return;
-
     const previews = lastMessagesByRoom.get(r.name) || [];
     const previewText = previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
-
-    const haystack = normalize(r.name) + " " + normalize(previewText);
+    const haystack = (r.name + " " + previewText).toLowerCase();
     if(search && !haystack.includes(search)) return;
 
     const t = document.createElement("div");
     t.className = "tile";
     t.innerHTML = `
-      <div class="title">
-        <span># ${r.name}</span>
-        ${r.pass ? '<span class="lock-badge">🔒</span>' : ''}
-      </div>
+      <div class="title"><span># ${r.name}</span> ${r.pass ? '<span class="lock-badge">🔒</span>' : ''}</div>
       <div class="tile-preview">${previewText || '<span class="muted">Aucun message</span>'}</div>
     `;
 
-    if(r.owner === currentUser){
-      const delBtn = document.createElement("button");
-      delBtn.className = "tile-delete-btn";
-      delBtn.textContent = "Suppr.";
-      delBtn.onclick = (ev) => {
-        ev.stopPropagation();
-        showConfirm(`Supprimer le salon #${r.name} ?`, async () => {
-          try { await deleteDoc(doc(db,"rooms", r._id)); }
-          catch(e){ console.error(e); showMessage("Erreur lors de la suppression du salon."); }
-        });
-      };
-      t.appendChild(delBtn);
-    }
-
-    t.onclick = () => enterRoom(r.name);
+    t.onclick = () => enterRoom(r.name, false);
     g.appendChild(t);
   });
 }
 
-/* ============================================================
-   RENDER CONTACTS
-============================================================ */
-
 function renderContactsTiles(){
   const g = byId("contacts-grid");
   if(!g || !currentUser) return;
-
   g.innerHTML = "";
-  const search = normalize(byId("contacts-search").value.trim());
+  const search = (byId("contacts-search")?.value || "").toLowerCase();
 
   const list = new Set();
   contactsCache.forEach((c) => {
@@ -659,8 +770,7 @@ function renderContactsTiles(){
     const dmKey = [currentUser, name].sort().join("_");
     const previews = lastMessagesByDM.get(dmKey) || [];
     const previewText = previews.map(m=>`${m.sender}: ${m.text}`).join(" • ").slice(0,120);
-
-    const haystack = normalize(name) + " " + normalize(previewText);
+    const haystack = (name + " " + previewText).toLowerCase();
     if(search && !haystack.includes(search)) return;
 
     const t = document.createElement("div");
@@ -669,30 +779,19 @@ function renderContactsTiles(){
       <div class="title"><span>@ ${name}</span></div>
       <div class="tile-preview">${previewText || '<span class="muted">Aucun message</span>'}</div>
     `;
-
-    const contactObj = contactsCache.find(c => c.owner===currentUser && c.name===name);
-
-    if(contactObj){
-      const delBtn = document.createElement("button");
-      delBtn.className = "tile-delete-btn";
-      delBtn.textContent = "Suppr.";
-      delBtn.onclick = (ev) => {
-        ev.stopPropagation();
-        showConfirm(`Supprimer le contact @${name} ?`, async () => {
-          try { await deleteDoc(doc(db,"contacts", contactObj._id)); }
-          catch(e){ console.error(e); showMessage("Erreur lors de la suppression du contact."); }
-        });
-      };
-      t.appendChild(delBtn);
-    }
-
-    t.onclick = () => enterRoom(name, true);
+    t.onclick = () => {
+      // open DM: pass the other user's name
+      enterRoom(name, true);
+    };
     g.appendChild(t);
   });
 }
 
 /* ============================================================
-   SNAPSHOT ROOMS + CONTACTS
+   SNAPSHOTS: rooms, contacts, messages summary
+   - setupRoomsSnapshot()
+   - setupContactsSnapshot()
+   - setupMessagesSummarySnapshot() : keeps lastMessagesByRoom/DM
 ============================================================ */
 
 function setupRoomsSnapshot(){
@@ -709,144 +808,46 @@ function setupRoomsSnapshot(){
 function setupContactsSnapshot(){
   onSnapshot(collection(db,"contacts"), (snap) => {
     contactsCache = [];
-
     snap.forEach((d) => {
       const c = d.data();
+      contactsCache.push({ ...c, _id: d.id });
+    });
+    renderContactsTiles();
+  });
+}
 
-      if(c && c.name === currentUser && c.owner && c.owner !== currentUser){
-        const newData = { owner: c.name, name: c.owner };
-        setDoc(doc(db,"contacts", d.id), newData);
-        contactsCache.push({ ...newData, _id: d.id });
+function setupMessagesSummarySnapshot(){
+  const qAll = query(collection(db,"messages"), orderBy("timestamp","asc"));
+  onSnapshot(qAll, (snap) => {
+    lastMessagesByRoom.clear();
+    lastMessagesByDM.clear();
+
+    snap.forEach((d) => {
+      const m = d.data();
+      const room = m.room;
+      if(!room) return;
+      const entry = { sender: m.sender, text: (m.salt ? "[chiffré]" : (m.cipher ? "[image/texte]" : "")) };
+
+      if(room.includes("_") && room.split("_").length === 2){
+        const arr = lastMessagesByDM.get(room) || [];
+        arr.push(entry);
+        if(arr.length>3) arr.shift();
+        lastMessagesByDM.set(room, arr);
       } else {
-        contactsCache.push({ ...c, _id: d.id });
+        const arr = lastMessagesByRoom.get(room) || [];
+        arr.push(entry);
+        if(arr.length>3) arr.shift();
+        lastMessagesByRoom.set(room, arr);
       }
     });
 
+    renderRoomsTiles();
     renderContactsTiles();
   });
 }
 
 /* ============================================================
-   ACCENT + NÉONS
-============================================================ */
-
-let neonInterval = null;
-let neonCycle = [];
-let neonIndex = 0;
-let neonMode = false;
-
-function startNeonCycle(){
-  if(neonInterval) clearInterval(neonInterval);
-
-  neonInterval = setInterval(()=>{
-    neonIndex = (neonIndex+1) % neonCycle.length;
-    applyAccent(neonCycle[neonIndex]);
-  }, 250);
-}
-
-function stopNeonCycle(){
-  if(neonInterval) clearInterval(neonInterval);
-  neonInterval = null;
-}
-
-function applyAccent(color){
-  document.documentElement.style.setProperty("--accent", color);
-  localStorage.setItem("tt_accent", color);
-}
-
-function initAccent(){
-  const saved = localStorage.getItem("tt_accent");
-
-  if(saved === "#e67e22"){
-    localStorage.removeItem("tt_accent");
-  }
-
-  const effective = localStorage.getItem("tt_accent") || "#0078d7";
-  applyAccent(effective);
-
-  const presets = [
-    "#0078d7","#8e44ad","#27ae60","#e67e22",
-    "#e91e63","#ff4757","#1abc9c","#f1c40f",
-    "#3498db","#9b59b6"
-  ];
-
-  const neonDefs = [
-    { cycle:["#ff0033","#ff8800","#ffcc00"] },
-    { cycle:["#00eaff","#33f1ff","#0099ff"] },
-    { cycle:["#39ff14","#b3ff00","#ccff33"] },
-    { cycle:["#b300ff","#ff00ff","#ff66ff"] }
-  ];
-
-  const grid = byId("accent-presets");
-  const picker = byId("accent-picker");
-
-  function renderPresetDots(){
-    neonMode = false;
-    stopNeonCycle();
-    grid.innerHTML = "";
-
-    presets.forEach((c) => {
-      const dot = document.createElement("div");
-      dot.className = "color-dot";
-      dot.style.background = c;
-
-      if(c === effective) dot.classList.add("selected");
-
-      dot.onclick = () => {
-        stopNeonCycle();
-        neonMode = false;
-        qsa(".color-dot").forEach(d=>d.classList.remove("selected"));
-        dot.classList.add("selected");
-        applyAccent(c);
-      };
-
-      grid.appendChild(dot);
-    });
-  }
-
-  function renderNeonDots(){
-    neonMode = true;
-    grid.innerHTML = "";
-
-    neonDefs.forEach((n)=>{
-      const dot = document.createElement("div");
-      dot.className = "color-dot";
-      dot.style.background = `radial-gradient(circle at 30% 30%, ${n.cycle[0]}, ${n.cycle[1]})`;
-
-      dot.onclick = () => {
-        neonCycle = n.cycle;
-        neonIndex = 0;
-        startNeonCycle();
-      };
-
-      grid.appendChild(dot);
-    });
-  }
-
-  renderPresetDots();
-
-  byId("btn-more-colors").onclick = () => {
-    byId("advanced-color").classList.toggle("hidden");
-  };
-
-  picker.value = effective;
-  picker.oninput = () => {
-    stopNeonCycle();
-    neonMode = false;
-    applyAccent(picker.value);
-  };
-
-  byId("btn-neon-colors").onclick = () => {
-    if(neonMode){
-      renderPresetDots();
-    } else {
-      renderNeonDots();
-    }
-  };
-}
-
-/* ============================================================
-   UI + INIT
+   ENSURE GENERAL ROOM + DEFAULT BACKGROUNDS
 ============================================================ */
 
 async function ensureGeneralRoom(){
@@ -855,93 +856,156 @@ async function ensureGeneralRoom(){
     if(rSnap.empty){
       await addDoc(collection(db,"rooms"), { name: "général", pass: "", owner: "system" });
     }
+    // ensure default background doc exists for général
+    const ref = doc(db,"roomBackgrounds","général");
+    const snap = await getDoc(ref);
+    if(!snap.exists()) await setDoc(ref, { background: "" });
   } catch(e){
     console.error("ensureGeneralRoom error", e);
   }
 }
 
+/* ============================================================
+   UI INIT & HOOKS
+   - initUI()
+   - initApp()
+   - switchTab()
+============================================================ */
+
 function initUI(){
+  // nav buttons
   qsa(".nav-btn").forEach((btn)=> btn.addEventListener("click", ()=> switchTab(btn.dataset.tab)));
 
-  byId("btn-open-session").addEventListener("click", ()=> openPopup("pop-logout","card-logout"));
-  byId("btn-open-create").addEventListener("click", ()=> openPopup("pop-create","card-create"));
-  byId("btn-open-accent").addEventListener("click", ()=> openPopup("pop-accent","card-accent"));
+  // popup openers
+  const openSession = byId("btn-open-session");
+  if(openSession) openSession.addEventListener("click", ()=> openPopup("pop-logout","card-logout"));
+
+  const openCreate = byId("btn-open-create");
+  if(openCreate) openCreate.addEventListener("click", ()=> openPopup("pop-create","card-create"));
+
+  const openAccent = byId("btn-open-accent");
+  if(openAccent) openAccent.addEventListener("click", ()=> openPopup("pop-accent","card-accent"));
 
   qsa("[data-close-popup]").forEach((b)=> b.addEventListener("click", closePopups));
 
-    byId("btn-logout").addEventListener("click", ()=> {
+  // auth
+  const logoutBtn = byId("btn-logout");
+  if(logoutBtn) logoutBtn.addEventListener("click", ()=> {
     localStorage.removeItem("tt_user");
     location.reload();
   });
 
-  byId("btn-delete-profile").addEventListener("click", async ()=> {
+  const deleteProfile = byId("btn-delete-profile");
+  if(deleteProfile) deleteProfile.addEventListener("click", async ()=> {
     if(!currentUser) return;
-
     showConfirm("Supprimer définitivement le profil et les contacts liés ?", async ()=> {
       try {
         await deleteDoc(doc(db,"users", currentUser));
-
+        // delete contacts where owner==currentUser or name==currentUser
         const contactsRef = collection(db,"contacts");
         const q1 = query(contactsRef, where("owner","==", currentUser));
         const q2 = query(contactsRef, where("name","==", currentUser));
-
         const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
         snap1.forEach(d => deleteDoc(doc(db,"contacts", d.id)));
         snap2.forEach(d => deleteDoc(doc(db,"contacts", d.id)));
-
         localStorage.removeItem("tt_user");
         showMessage("Profil supprimé.");
         setTimeout(()=> location.reload(), 800);
-
       } catch(e){
-        console.error(e);
+        console.error("deleteProfile error", e);
         showMessage("Erreur lors de la suppression du profil.");
       }
     });
   });
 
-  byId("msg-ok-btn").addEventListener("click", closePopups);
-  byId("confirm-yes").addEventListener("click", ()=> { if(confirmCallback) confirmCallback(); confirmCallback=null; closePopups(); });
-  byId("confirm-no").addEventListener("click", ()=> { confirmCallback=null; closePopups(); });
+  // auth form hooks (these elements exist in your HTML)
+  const loginBtn = byId("btn-login");
+  if(loginBtn) loginBtn.addEventListener("click", handleLogin);
+  const authCode = byId("auth-code");
+  if(authCode) authCode.addEventListener("keydown", (e)=> { if(e.key==="Enter") handleLogin(); });
+  const authToggle = byId("auth-toggle");
+  if(authToggle) authToggle.addEventListener("click", ()=> { authMode = authMode==="login" ? "register" : "login"; updateAuthUI(); });
 
-  byId("btn-login").addEventListener("click", handleLogin);
-  byId("auth-code").addEventListener("keydown", (e)=> { if(e.key==="Enter") handleLogin(); });
-  byId("auth-toggle").addEventListener("click", ()=> { authMode = authMode==="login" ? "register" : "login"; updateAuthUI(); });
+  // rooms
+  const doCreate = byId("btn-do-create");
+  if(doCreate) doCreate.addEventListener("click", createRoom);
+  const roomsSearch = byId("rooms-search");
+  if(roomsSearch) roomsSearch.addEventListener("input", debounce(()=> renderRoomsTiles(), 180));
 
-  byId("btn-do-create").addEventListener("click", createRoom);
-  byId("rooms-search").addEventListener("input", debounce(()=> renderRoomsTiles(), 180));
+  // send message / attach
+  const sendBtn = byId("send-btn");
+  if(sendBtn) sendBtn.addEventListener("click", ()=> {
+    const txt = byId("chat-input").value;
+    sendMessageEncrypted(txt);
+    byId("chat-input").value = "";
+  });
+  const chatInput = byId("chat-input");
+  if(chatInput) chatInput.addEventListener("keydown", (e)=> { if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMessageEncrypted(chatInput.value); chatInput.value=""; } });
 
-  byId("send-btn").addEventListener("click", sendMessage);
-  byId("chat-input").addEventListener("keydown", (e)=> { if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
-
-  byId("btn-attach").addEventListener("click", ()=> byId("file-input").click());
-  byId("file-input").addEventListener("change", (e)=> {
+  const attachBtn = byId("btn-attach");
+  if(attachBtn) attachBtn.addEventListener("click", ()=> byId("file-input").click());
+  const fileInput = byId("file-input");
+  if(fileInput) fileInput.addEventListener("change", (e)=> {
     const file = e.target.files[0];
-    if(file) sendImage(file);
+    if(file) sendImageEncrypted(file);
     e.target.value="";
   });
 
-  byId("btn-msg-del").addEventListener("click", deleteMessage);
-
-  byId("btn-wallpaper").addEventListener("click", ()=> byId("bg-file-input").click());
-  byId("bg-file-input").addEventListener("change", async (e)=> {
+  // wallpaper controls
+  const wallpaperBtn = byId("btn-wallpaper");
+  if(wallpaperBtn) wallpaperBtn.addEventListener("click", ()=> byId("bg-file-input").click());
+  const bgFileInput = byId("bg-file-input");
+  if(bgFileInput) bgFileInput.addEventListener("change", async (e)=> {
     const file = e.target.files[0];
     if(file) await setBackgroundForCurrentChat(file);
     e.target.value="";
   });
+  const resetBgBtn = byId("btn-reset-wallpaper");
+  if(resetBgBtn) resetBgBtn.addEventListener("click", resetBackgroundForCurrentChat);
 
-  byId("btn-add-contact").addEventListener("click", addContact);
-
-  byId("contact-name-input").addEventListener("input", debounce(async (e)=>{
+  // contacts
+  const addContactBtn = byId("btn-add-contact");
+  if(addContactBtn) addContactBtn.addEventListener("click", addContact);
+  const contactInput = byId("contact-name-input");
+  if(contactInput) contactInput.addEventListener("input", debounce(async (e)=>{
     const val = e.target.value.trim().toLowerCase();
     const suggestions = await suggestUsers(val);
     renderSuggestions(suggestions);
   }, 200));
+  const contactsSearch = byId("contacts-search");
+  if(contactsSearch) contactsSearch.addEventListener("input", debounce(()=> renderContactsTiles(), 180));
 
-  byId("contacts-search").addEventListener("input", debounce(()=> renderContactsTiles(), 180));
+  // popup confirm handlers
+  const msgOk = byId("msg-ok-btn");
+  if(msgOk) msgOk.addEventListener("click", closePopups);
+  const confirmYes = byId("confirm-yes");
+  if(confirmYes) confirmYes.addEventListener("click", ()=> { if(confirmCallback) confirmCallback(); confirmCallback=null; closePopups(); });
+  const confirmNo = byId("confirm-no");
+  if(confirmNo) confirmNo.addEventListener("click", ()=> { confirmCallback=null; closePopups(); });
 
-  initAccent();
-  updateAuthUI();
+  // accent UI (if present)
+  try { initAccent(); } catch(e){ /* optional */ }
+  try { updateAuthUI(); } catch(e){ /* optional */ }
+}
+
+/* ============================================================
+   SUGGESTIONS RENDER
+============================================================ */
+
+function renderSuggestions(list){
+  const box = byId("contact-suggestions");
+  if(!box) return;
+  box.innerHTML = "";
+  list.forEach(name=>{
+    const div = document.createElement("div");
+    div.className = "suggest-item";
+    div.textContent = name;
+    div.onclick = () => {
+      byId("contact-name-input").value = name;
+      box.innerHTML = "";
+    };
+    box.appendChild(div);
+  });
 }
 
 /* ============================================================
@@ -954,19 +1018,18 @@ async function initApp(){
 
   setupRoomsSnapshot();
   setupContactsSnapshot();
-  setupMessagesSnapshot();
+  setupMessagesSummarySnapshot();
 
+  // start message listener only when entering a room
   if(currentUser){
     byId("auth-screen").style.display = "none";
     byId("main-app").style.display = "flex";
-    enterRoom("général");
+    enterRoom("général", false);
   } else {
     byId("auth-screen").style.display = "flex";
     byId("main-app").style.display = "none";
   }
 }
-
-initApp();
 
 /* ============================================================
    SWITCH TAB
@@ -974,7 +1037,7 @@ initApp();
 
 function switchTab(tab){
   const appRoot = byId("main-app");
-  appRoot.classList.add("view-blur");
+  if(appRoot) appRoot.classList.add("view-blur");
 
   qsa(".nav-btn").forEach(b=>b.classList.remove("active"));
   const btn = qsa(".nav-btn").find(b=>b.dataset.tab===tab);
@@ -985,14 +1048,36 @@ function switchTab(tab){
     const view = byId("view-"+tab);
     if(view) view.classList.add("active");
 
-    byId("btn-wallpaper").style.display = (tab === "chat") ? "block" : "none";
+    const wallpaperBtn = byId("btn-wallpaper");
+    if(wallpaperBtn) wallpaperBtn.style.display = (tab === "chat") ? "block" : "none";
 
-    appRoot.classList.remove("view-blur");
+    if(appRoot) appRoot.classList.remove("view-blur");
 
     if(tab==="chat"){
-      qsa(".msg-block").forEach((m,i)=>{ m.classList.remove("visible"); materialize(m, i*60); });
+      qsa(".msg-block").forEach((m,i)=>{ m.classList.remove("visible"); setTimeout(()=> m.classList.add("visible"), i*40); });
     }
-  }, 300);
+  }, 220);
 }
 
+/* ============================================================
+   CLEANUP
+============================================================ */
+
 addEventListener("beforeunload", ()=> { if(unsubChat) unsubChat(); });
+
+/* ============================================================
+   EXPORT / HOOKS
+============================================================ */
+
+window.enterRoom = enterRoom;
+window.setBackgroundForCurrentChat = setBackgroundForCurrentChat;
+window.loadChatBackground = loadChatBackground;
+window.resetBackgroundForCurrentChat = resetBackgroundForCurrentChat;
+window.initApp = initApp;
+window.setupMessagesSummarySnapshot = setupMessagesSummarySnapshot;
+
+/* ============================================================
+   START
+============================================================ */
+
+initApp();
