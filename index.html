@@ -1,159 +1,190 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <title>ThinkTalk</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-
-  <!-- Styles -->
-  <link rel="stylesheet" href="style.css">
-</head>
-
-<body>
-
-<!-- PARTICLES -->
-<canvas id="canvas-dust"></canvas>
-
-<!-- POPUPS -->
-<div class="popup-overlay" id="pop-logout">
-  <div class="popup-card" id="card-logout">
-    <h3>SESSION</h3>
-    <p class="popup-message-text">Que faire ?</p>
-    <button class="btn-full" id="btn-logout">SE DÉCONNECTER</button>
-    <button class="btn-full danger" id="btn-delete-profile">SUPPRIMER LE PROFIL</button>
-    <button class="btn-full neutral" data-close-popup>ANNULER</button>
-  </div>
-</div>
-
-<div class="popup-overlay" id="pop-create">
-  <div class="popup-card" id="card-create">
-    <h3>NOUVEAU SALON</h3>
-    <input type="text" id="new-room-name" placeholder="Nom du salon..." class="input-box mt12">
-    <input type="password" id="new-room-pass" placeholder="Code (optionnel)..." class="input-box">
-    <button class="btn-full" id="btn-do-create">CRÉER</button>
-    <button class="btn-full neutral" data-close-popup>ANNULER</button>
-  </div>
-</div>
-
-<div class="popup-overlay" id="pop-options">
-  <div class="popup-card" id="card-options">
-    <h3>OPTIONS</h3>
-    <button class="btn-full danger" id="btn-msg-del">SUPPRIMER</button>
-    <button class="btn-full neutral" data-close-popup>ANNULER</button>
-  </div>
-</div>
-
-<div class="popup-overlay" id="pop-accent">
-  <div class="popup-card" id="card-accent">
-    <h3>COULEUR D'ACCENT</h3>
-    <div class="color-grid" id="accent-presets"></div>
-    <button class="btn-full neutral" id="btn-more-colors">PLUS DE COULEURS</button>
-    <button class="btn-full neutral" id="btn-neon-colors">COULEURS NÉON</button>
-
-    <div id="advanced-color" class="hidden mt12">
-      <input type="color" id="accent-picker" class="color-picker-input">
-    </div>
-
-    <button class="btn-full neutral" data-close-popup>FERMER</button>
-  </div>
-</div>
-
-<div class="popup-overlay" id="pop-message">
-  <div class="popup-card" id="card-message">
-    <h3 id="msg-title">INFO</h3>
-    <div class="popup-message-text" id="msg-text"></div>
-    <button class="btn-full" id="msg-ok-btn">OK</button>
-  </div>
-</div>
-
-<div class="popup-overlay" id="pop-confirm">
-  <div class="popup-card" id="card-confirm">
-    <h3 id="confirm-title">CONFIRMATION</h3>
-    <div class="popup-message-text" id="confirm-text"></div>
-    <button class="btn-full" id="confirm-yes">OUI</button>
-    <button class="btn-full neutral" id="confirm-no">ANNULER</button>
-  </div>
-</div>
-
-<!-- AUTH -->
-<div id="auth-screen" class="auth-screen">
-  <div class="auth-title">ThinkTalk</div>
-  <div id="auth-mode-title" class="auth-subtitle">Se connecter</div>
-
-  <div id="auth-card" class="auth-card auth-active">
-    <input type="text" id="auth-pseudo" class="input-box" placeholder="Pseudo">
-    <input type="password" id="auth-code" class="input-box" placeholder="Code secret">
-    <button class="btn-full" id="btn-login">SE CONNECTER</button>
-    <div class="auth-toggle-link" id="auth-toggle">Vous n'avez pas de compte ? Rejoindre ThinkTalk</div>
-  </div>
-</div>
-
-<!-- APP -->
-<div class="app-root" id="main-app">
-
-  <!-- TOP BAR -->
-  <div class="top-bar">
-    <div class="top-title" id="btn-open-session">ThinkTalk</div>
-    <div class="top-actions">
-      <button class="top-btn" id="btn-open-accent">Accent</button>
-      <button class="top-btn" id="btn-wallpaper">Wallpaper</button>
-    </div>
-  </div>
-
-  <!-- VIEWS -->
-  <div class="view-container">
-
-    <!-- HOME -->
-    <section id="view-home" class="view-section active">
-      <div class="row">
-        <input type="text" id="rooms-search" class="input-box" placeholder="Chercher un salon...">
-        <button class="btn-icon" id="btn-open-create">+</button>
-      </div>
-      <div class="tiles-grid" id="rooms-grid"></div>
-    </section>
-
-    <!-- CHAT -->
-    <section id="view-chat" class="view-section">
-
-      <!-- Wallpaper is applied HERE -->
-      <div id="chat-header" class="chat-header"># général</div>
-
-      <div id="chat-messages" class="chat-messages"></div>
-
-      <div class="chat-input-bar">
-        <button id="btn-attach" class="btn-attach">📎</button>
-        <input type="file" id="file-input" hidden accept="image/*">
-        <input type="file" id="bg-file-input" hidden accept="image/*">
-        <input type="text" id="chat-input" class="input-box" placeholder="Message...">
-        <button id="send-btn" class="btn-icon">OK</button>
-      </div>
-    </section>
-
-    <!-- CONTACTS -->
-    <section id="view-contacts" class="view-section">
-      <div class="row">
-        <input type="text" id="contact-name-input" class="input-box" placeholder="Pseudo de l'ami...">
-        <button class="btn-icon" id="btn-add-contact">+</button>
-      </div>
-
-      <div id="contact-suggestions" class="suggestions"></div>
-
-      <input type="text" id="contacts-search" class="input-box" placeholder="Chercher un contact...">
-      <div class="tiles-grid" id="contacts-grid"></div>
-    </section>
-
-  </div>
-
-  <!-- NAV -->
-  <nav class="bottom-nav">
-    <div class="nav-btn active" data-tab="home">HOME</div>
-    <div class="nav-btn" data-tab="chat">CHAT</div>
-    <div class="nav-btn" data-tab="contacts">CONTACTS</div>
-  </nav>
-</div>
-
-<!-- Script -->
-<script type="module" src="app.js"></script>
-
-</body>
-</html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0e17"><title>ThinkTalk</title>
+<style>
+/* ===== DESIGN SYSTEM ===== */
+:root{--a:#1ba1e2;--g:.08;--b:18px}
+*{box-sizing:border-box;border-radius:0!important;margin:0}
+html,body{height:100%;background:#0a0e17;color:#fff;font:15px 'Segoe UI',system-ui,sans-serif;overflow:hidden}
+canvas#bg{position:fixed;inset:0;z-index:0}
+#app{position:relative;z-index:1;display:grid;grid-template-columns:72px 1fr;height:100dvh}
+.acr{background:rgba(255,255,255,var(--g));backdrop-filter:blur(var(--b)) saturate(1.4);-webkit-backdrop-filter:blur(var(--b)) saturate(1.4);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+nav{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0}
+nav button{width:56px;height:56px;background:none;border:0;color:#fff;opacity:.6;cursor:pointer}
+nav button.on{opacity:1;background:var(--a)}
+svg.i{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+header{display:flex;align-items:center;gap:12px;padding:12px 18px}
+header h1{font-weight:200;font-size:34px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button,input,select,textarea{font:inherit;color:#fff}
+.btn{background:var(--a);border:0;padding:9px 16px;cursor:pointer}
+.ib{background:none;border:0;cursor:pointer;padding:6px;display:inline-flex}
+input[type=text],input[type=password],textarea,select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);padding:9px 12px;width:100%;outline:0}
+input:focus,textarea:focus{border-color:var(--a)}
+#view{flex:1;overflow:auto;padding:6px 18px 18px;min-height:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin:10px 0}
+.tile{position:relative;min-height:140px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:4px;background:linear-gradient(135deg,color-mix(in srgb,var(--a) 38%,transparent),rgba(255,255,255,var(--g)));backdrop-filter:blur(var(--b));border:1px solid rgba(255,255,255,.14);overflow:hidden;animation:tile .45s cubic-bezier(.1,.9,.2,1) both;animation-delay:calc(var(--i)*45ms);transform-origin:50% 0}
+.tile.w{grid-column:span 2}.tile h3{font-weight:300;font-size:22px}.tile small{opacity:.75}
+.tile .last{margin-top:auto;font-size:13px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{position:absolute;top:12px;right:12px;width:10px;height:10px;background:#555}.dot.on{background:#6f6;box-shadow:0 0 8px #6f6}
+.ts{animation:ts .35s cubic-bezier(.1,.9,.2,1) both;transform-origin:0 50%}
+.out{animation:tso .15s ease-in both;transform-origin:0 50%}
+@keyframes ts{from{opacity:0;transform:perspective(900px) rotateY(-65deg)}to{opacity:1;transform:none}}
+@keyframes tso{to{opacity:0;transform:perspective(900px) rotateY(55deg)}}
+@keyframes tile{from{opacity:0;transform:perspective(700px) rotateX(-70deg)}to{opacity:1;transform:none}}
+html.noanim *{animation:none!important;transition:none!important}
+.msgs{display:flex;flex-direction:column;gap:6px}
+.m{max-width:min(620px,88%);padding:8px 12px;position:relative;align-self:flex-start;animation:ts .25s both}
+.m.me{align-self:flex-end;background:color-mix(in srgb,var(--a) 45%,transparent)}
+.m .n{font-size:12px;opacity:.75}.m .t{white-space:pre-wrap;word-break:break-word}
+.m .dd{position:absolute;top:2px;right:6px;opacity:.6;cursor:pointer;background:none;border:0;letter-spacing:1px}
+.m img{max-width:100%;max-height:260px;display:block;margin-top:4px}
+.compose{display:flex;gap:6px;padding:8px 18px;align-items:flex-end}
+.compose textarea{resize:none;height:44px}
+.chip{display:flex;gap:8px;align-items:center;padding:6px 18px;font-size:13px}
+.menu{position:fixed;z-index:50;min-width:170px;padding:4px;background:#14202e}
+.menu div{padding:9px 12px;cursor:pointer}.menu div:hover{background:var(--a)}
+#side{position:fixed;z-index:40;top:0;right:0;bottom:0;width:min(380px,100%);padding:18px;overflow:auto;background:rgba(10,14,23,.75)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0}
+.sec{font-weight:300;font-size:20px;margin:16px 0 4px}
+#login{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(5,8,14,.6)}
+#login>div{width:min(400px,92%);padding:26px;display:flex;flex-direction:column;gap:10px}
+.hint{font-size:12px;opacity:.65}
+@media(max-width:700px){
+#app{grid-template-columns:1fr;grid-template-rows:1fr 58px}
+nav{order:2;flex-direction:row;justify-content:space-around;padding:0}nav button{height:58px;flex:1}
+.tile.w{grid-column:span 1}header h1{font-size:26px}.m{max-width:94%}}
+</style></head><body>
+<canvas id="bg"></canvas><div id="app"></div><div id="login" class="acr" style="display:none"></div>
+<script type="module">
+/* ===== UTILS & ICONS ===== */
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const IC=p=>`<svg class="i" viewBox="0 0 24 24">${p}</svg>`;
+const I={home:IC('<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>'),chat:IC('<path d="M4 4h16v12H10l-5 4v-4H4z"/>'),user:IC('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-5 3.5-7 8-7s8 2 8 7z"/>'),clip:IC('<path d="M20 11l-8 8a5 5 0 01-7-7l9-9a3.5 3.5 0 015 5l-9 9a2 2 0 01-3-3l8-8"/>'),send:IC('<path d="M3 12h17M13 5l7 7-7 7"/>'),gear:IC('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'),menu:IC('<path d="M3 6h18M3 12h18M3 18h18"/>'),back:IC('<path d="M20 12H4M11 5l-7 7 7 7"/>'),x:IC('<path d="M5 5l14 14M19 5L5 19"/>')};
+const enc=new TextEncoder(),b64=b=>{let s='';new Uint8Array(b).forEach(c=>s+=String.fromCharCode(c));return btoa(s)},ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const hx=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+const sha=async b=>hx(await crypto.subtle.digest('SHA-256',b)),hm=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+/* ===== DATABASE (IndexedDB) ===== */
+const DB=(()=>{const o=new Promise((r,j)=>{const q=indexedDB.open('thinktalk',1);q.onupgradeneeded=()=>{q.result.createObjectStore('kv');q.result.createObjectStore('ev',{keyPath:'id'}).createIndex('room','room')};q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)});
+const t=async(s,m,f)=>{const d=await o;return new Promise((r,j)=>{const q=f(d.transaction(s,m).objectStore(s));q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})};
+return{get:k=>t('kv','readonly',s=>s.get(k)),set:(k,v)=>t('kv','readwrite',s=>s.put(v,k)),put:e=>t('ev','readwrite',s=>s.put(e)),room:r=>t('ev','readonly',s=>s.index('room').getAll(r)),clear:()=>t('ev','readwrite',s=>s.clear())}})();
+/* ===== SETTINGS ===== */
+const cfg=Object.assign({a:'#1ba1e2',g:8,b:18,part:true,anim:true,notif:false},JSON.parse(localStorage.tt_cfg||'{}'));
+function applyCfg(){const r=document.documentElement;r.style.setProperty('--a',cfg.a);r.style.setProperty('--g',cfg.g/100);r.style.setProperty('--b',cfg.b+'px');r.classList.toggle('noanim',!cfg.anim||matchMedia('(prefers-reduced-motion:reduce)').matches);localStorage.tt_cfg=JSON.stringify(cfg)}
+/* ===== PARTICLES ===== */
+const cv=$('#bg'),cx=cv.getContext('2d');let P=[],W,H;
+function sizeBg(){W=cv.width=innerWidth;H=cv.height=innerHeight;const n=Math.min(130,W*H/14000|0);P=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,z:.4+Math.random()*.6,a:Math.random()*6.28,s:.15+Math.random()*.35,ph:Math.random()*6}))}
+function frame(t){cx.clearRect(0,0,W,H);const g=cx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.7);g.addColorStop(0,'#0f1a2c');g.addColorStop(1,'#05080e');cx.fillStyle=g;cx.fillRect(0,0,W,H);
+if(cfg.part){const still=matchMedia('(prefers-reduced-motion:reduce)').matches;for(const p of P){if(!still){p.a+=Math.sin(t/2500+p.ph)*.02;p.x=(p.x+Math.cos(p.a)*p.s*p.z+W)%W;p.y=(p.y+Math.sin(p.a)*p.s*p.z+H)%H}}
+cx.lineWidth=.6;for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){const d=Math.hypot(P[i].x-P[j].x,P[i].y-P[j].y);if(d<110){cx.strokeStyle=cfg.a+Math.floor((1-d/110)*40).toString(16).padStart(2,'0');cx.beginPath();cx.moveTo(P[i].x,P[i].y);cx.lineTo(P[j].x,P[j].y);cx.stroke()}}
+for(const p of P){cx.fillStyle=cfg.a;cx.globalAlpha=p.z*(.6+.4*Math.sin(t/900+p.ph));cx.beginPath();cx.arc(p.x,p.y,1+p.z*1.6,0,6.28);cx.fill()}cx.globalAlpha=1}
+requestAnimationFrame(frame)}
+/* ===== CRYPTO (Web Crypto: ECDSA P-256 + PBKDF2/AES-GCM) ===== */
+const ALG={name:'ECDSA',hash:'SHA-256'},S={me:null,rooms:{},view:'home',cur:null,find:'',net:'…',blocked:new Set(),contacts:{},seen:{},disc:{},reports:[],edit:null,att:null,last:0};
+const keyOf=async code=>{const s=await crypto.subtle.importKey('raw',enc.encode(code),'PBKDF2',false,['deriveKey']);return s};
+const wrapKey=async(code,salt)=>crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},await keyOf(code),{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+async function createAcct(nick,code){const k=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);const pub=b64(await crypto.subtle.exportKey('raw',k.publicKey)),salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+const w=await crypto.subtle.encrypt({name:'AES-GCM',iv},await wrapKey(code,salt),await crypto.subtle.exportKey('pkcs8',k.privateKey));
+return{nick,pub,id:(await sha(ub(pub))).slice(0,20),salt:b64(salt),iv:b64(iv),w:b64(w)}}
+async function unlock(a,code){const pk=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(a.iv)},await wrapKey(code,ub(a.salt)),ub(a.w));return crypto.subtle.importKey('pkcs8',pk,{name:'ECDSA',namedCurve:'P-256'},false,['sign'])}
+const canon=e=>JSON.stringify([e.id,e.room,e.ts,e.from,e.type,e.ref||'',e.text||'',e.file?e.file.n+e.file.t+e.file.d:'',e.nick]);
+const pubCache={};async function pubKey(raw){return pubCache[raw]??=await crypto.subtle.importKey('raw',ub(raw),{name:'ECDSA',namedCurve:'P-256'},false,['verify'])}
+async function verify(msg,sig,pub,from){try{if((await sha(ub(pub))).slice(0,20)!==from)return false;return await crypto.subtle.verify(ALG,await pubKey(pub),ub(sig),enc.encode(msg))}catch{return false}}
+const sign=async s=>b64(await crypto.subtle.sign(ALG,S.me.priv,enc.encode(s)));
+async function mk(r,o){const e={id:crypto.randomUUID(),room:r.id,ts:Date.now(),from:S.me.id,nick:S.me.nick,pub:S.me.pub,...o};e.sig=await sign(canon(e));return e}
+/* ===== NETWORK (Trystero / WebRTC, signalling via public BitTorrent trackers) ===== */
+const APP='thinktalk-point-v1',BAD=/\.(exe|msi|bat|cmd|com|scr|js|jse|vbs|ps1|jar|apk|dmg|app|sh|html?|svg|lnk|dll)$/i;let T=null,dirRoom=null;const rl={},PM={};
+const ok=p=>{const n=Date.now(),a=(rl[p]=(rl[p]||[]).filter(t=>n-t<10000));a.push(n);return a.length<=40};
+async function netInit(){try{T=await import('https://esm.sh/trystero');S.net='connecté aux trackers';}catch(e){S.net='réseau indisponible : mode local';return}
+dirRoom=T.joinRoom({appId:APP},'directory');const[sd,gd]=dirRoom.makeAction('d');S.sd=sd;
+dirRoom.onPeerJoin(p=>sd(pubList(),p));gd(l=>{if(!Array.isArray(l))return;for(const x of l.slice(0,30))if(x&&/^p-[\w-]{2,40}$/.test(x.id)&&typeof x.name==='string'&&Object.keys(S.disc).length<200)S.disc[x.id]={id:x.id,name:x.name.slice(0,40),desc:String(x.desc||'').slice(0,140),pub:true};ui()});
+for(const r of Object.values(S.rooms))join(r)}
+const pubList=()=>Object.values(S.rooms).filter(r=>r.pub).map(r=>({id:r.id,name:r.name,desc:r.desc}));
+async function join(r){if(r.net||!T)return;r.net=T.joinRoom(r.pw?{appId:APP,password:r.pw}:{appId:APP},r.id);const[sm,gm]=r.net.makeAction('m'),[sh,gh]=r.net.makeAction('h');
+const hello=async()=>({pub:S.me.pub,nick:S.me.nick,sig:await sign('hello:'+T.selfId)});
+r.net.onPeerJoin(async p=>{r.peers.add(p);sh(await hello(),p);sm([...r.evs.values()].sort((a,b)=>a.ts-b.ts).slice(-150),p);ui()});
+r.net.onPeerLeave(p=>{r.peers.delete(p);delete PM[p];ui()});
+gh(async(h,p)=>{if(!h||!await verify('hello:'+p,h.sig,h.pub,(await sha(ub(h.pub))).slice(0,20)))return;const id=(await sha(ub(h.pub))).slice(0,20);PM[p]={id,nick:String(h.nick).slice(0,24)};S.seen[id]=PM[p].nick;ui()});
+gm(async(a,p)=>{if(!ok(p)||!Array.isArray(a))return;for(const e of a.slice(0,150))await ingest(r,e,true);},);
+r.sm=sm}
+async function ingest(r,e,remote){if(!e||typeof e.id!=='string'||e.room!==r.id||r.evs.has(e.id)||S.blocked.has(e.from))return;if(!['msg','edit','del'].includes(e.type)||String(e.text||'').length>4000)return;
+if(e.file&&(typeof e.file.d!=='string'||e.file.d.length>1.4e6||BAD.test(e.file.n)))return;if(!await verify(canon(e),e.sig,e.pub,e.from))return;
+r.evs.set(e.id,e);await DB.put(e);S.seen[e.from]=e.nick;if(remote&&e.type==='msg'&&Date.now()-e.ts<6e4&&cfg.notif&&document.hidden&&Notification.permission==='granted')new Notification(r.name,{body:e.nick+' : '+(e.text||'fichier')});ui()}
+/* ===== ROOMS / STATE ===== */
+const saveRooms=()=>DB.set('rooms',Object.values(S.rooms).map(({id,name,desc,pub,pw})=>({id,name,desc,pub,pw})));
+async function addRoom(o){const r=S.rooms[o.id]??={...o,peers:new Set(),evs:new Map()};for(const e of await DB.room(r.id))r.evs.set(e.id,e);await saveRooms();await join(r);if(r.pub&&S.sd)S.sd(pubList());return r}
+function view(r){const out=[],ev=[...r.evs.values()].sort((a,b)=>a.ts-b.ts),dead=new Set(),ed={};
+for(const e of ev){const o=r.evs.get(e.ref);if(e.type==='del'&&o&&o.from===e.from)dead.add(e.ref);if(e.type==='edit'&&o&&o.from===e.from&&(!ed[e.ref]||ed[e.ref].ts<e.ts))ed[e.ref]=e}
+for(const e of ev)if(e.type==='msg'&&!dead.has(e.id)&&!S.blocked.has(e.from)&&!S.reports.includes(e.id))out.push({...e,text:ed[e.id]?ed[e.id].text:e.text,edited:!!ed[e.id]});return out}
+/* ===== UI ===== */
+let navLock=0;function go(v,cur){if(navLock)return;const m=$('#view');S.edit=S.att=null;if(m&&cfg.anim){navLock=1;m.classList.add('out');setTimeout(()=>{navLock=0;S.view=v;S.cur=cur||null;render(true)},150)}else{S.view=v;S.cur=cur||null;render(true)}}
+function ui(){if(S.view==='chat')renderMsgs();else if(!document.activeElement?.closest('#view input'))render(false)}
+const titles={home:'ThinkTalk',chat:'',contacts:'Contacts'};
+function render(anim){const cur=S.rooms[S.cur],ttl=S.view==='chat'&&cur?cur.name:titles[S.view];
+$('#app').innerHTML=`<nav class="acr">${['home','chat','user'].map(k=>`<button data-go="${k==='user'?'contacts':k==='chat'?'chat':'home'}" class="${(S.view===k||(k==='user'&&S.view==='contacts'))?'on':''}" aria-label="${k}">${I[k]}</button>`).join('')}</nav>
+<main><header>${S.view==='chat'?`<button class="ib" data-go="home">${I.back}</button>`:''}<h1>${esc(ttl)}</h1><button class="ib" data-act="side">${I.menu}</button></header><div id="view" class="${anim?'ts':''}"></div>${S.view==='chat'?composeHtml():''}</main>`;
+const v=$('#view');if(S.view==='home')home(v);else if(S.view==='contacts')contacts(v);else chatView(v)}
+function tile(r,i,joined){const ms=r?view(r):[],l=ms[ms.length-1],d=S.disc[r.id]&&!S.rooms[r.id];
+return`<div class="tile ${r.id==='general'?'w':''}" style="--i:${i}" data-room="${esc(r.id)}"><span class="dot ${l&&Date.now()-l.ts<3e5?'on':''}"></span><h3>${esc(r.name)}</h3><small>${esc(r.desc||'')}</small><small>${joined?(r.peers.size+1)+' participant(s) connecté(s)':'Non rejoint · participants inconnus'}</small><div class="last">${l?esc(l.nick)+' : '+esc(l.text||'fichier')+' · '+hm(l.ts):d?'Appuyez pour rejoindre':'Aucun message'}</div></div>`}
+function home(v){const q=S.find.toLowerCase(),mine=Object.values(S.rooms).filter(r=>(r.name+r.desc).toLowerCase().includes(q)).sort((a,b)=>(a.id==='general'?-1:b.id==='general'?1:0)||(lastTs(b)-lastTs(a)));
+const dis=Object.values(S.disc).filter(r=>!S.rooms[r.id]&&(r.name+r.desc).toLowerCase().includes(q));let i=0;
+v.innerHTML=`<input type="text" id="find" placeholder="Rechercher un salon découvert" value="${esc(S.find)}"><div class="hint" style="margin-top:6px">Réseau : ${esc(S.net)}</div><div class="sec">Mes salons</div><div class="grid">${mine.map(r=>tile(r,i++,true)).join('')}</div>
+${dis.length?`<div class="sec">Découverts sur le réseau</div><div class="grid">${dis.map(r=>tile(r,i++,false)).join('')}</div>`:''}
+<div class="sec">Créer / rejoindre</div><div class="acr" style="padding:14px;display:grid;gap:8px;max-width:520px"><input type="text" id="rn" placeholder="Nom du salon" maxlength="40"><input type="text" id="rd" placeholder="Description" maxlength="140"><select id="rp"><option value="pub">Public (découvrable)</option><option value="priv">Privé (invitation + mot de passe)</option></select><button class="btn" data-act="mkroom">Créer le salon</button><input type="text" id="inv" placeholder="Code d'invitation (salon privé)"><button class="btn" data-act="joinInv">Rejoindre avec invitation</button></div>`;
+const f=$('#find');f.oninput=()=>{S.find=f.value;home(v);const n=$('#find');n.focus();n.setSelectionRange(99,99)}}
+const lastTs=r=>{const m=view(r);return m.length?m[m.length-1].ts:0};
+function contacts(v){const on=new Set(Object.values(PM).map(p=>p.id)),q=(S.find||'').toLowerCase(),ids=[...new Set([...Object.keys(S.contacts),...Object.keys(S.seen)])].filter(id=>id!==S.me.id);
+v.innerHTML=`<div class="acr" style="padding:14px;display:grid;gap:8px;max-width:520px"><div>Votre identifiant : <b style="word-break:break-all">${S.me.id}</b></div><input type="text" id="cid" placeholder="Ajouter un contact par identifiant"><button class="btn" data-act="addc">Ajouter</button></div>
+<div class="sec">Personnes</div><div class="hint">Pseudo non vérifié ; seul l'identifiant (hash de clé publique) fait foi.</div>${ids.filter(id=>!q||id.includes(q)||(S.seen[id]||'').toLowerCase().includes(q)).map(id=>`<div class="row acr" style="padding:10px 14px;margin-top:6px"><div>${I.user}</div><div style="flex:1"><div>${esc(S.seen[id]||S.contacts[id]?.nick||'Inconnu')}${S.contacts[id]?' · contact':''}</div><div class="hint">${id}</div></div><span class="dot ${on.has(id)?'on':''}" style="position:static"></span>${S.contacts[id]?`<button class="ib" data-act="delc" data-id="${id}">${I.x}</button>`:`<button class="btn" data-act="savec" data-id="${id}">Ajouter</button>`}</div>`).join('')||'<p class="hint">Aucune personne observée pour l\'instant.</p>'}`}
+function chatView(v){const r=S.rooms[S.cur];if(!r){v.innerHTML=`<p>Ouvrez un salon depuis l'accueil.</p>`;return}v.innerHTML=`<div class="hint">${(r.peers.size+1)} connecté(s) · ${r.pw?'salon privé · invitation : <b data-act="copyinv" style="cursor:pointer">copier</b>':'salon public'}</div><div class="msgs" id="ms"></div>`;renderMsgs(true)}
+function renderMsgs(bottom){const r=S.rooms[S.cur],el=$('#ms');if(!el||!r)return;const v=$('#view'),atEnd=bottom||v.scrollHeight-v.scrollTop-v.clientHeight<80;
+el.innerHTML=view(r).map(m=>`<div class="m acr ${m.from===S.me.id?'me':''}" data-mid="${m.id}"><button class="dd" data-act="mm" data-mid="${m.id}">:::</button><div class="n">${esc(m.nick)} · ${hm(m.ts)}${m.edited?' · modifié':''}</div>${m.text?`<div class="t">${esc(m.text)}</div>`:''}${m.file?(m.file.t.startsWith('image/')&&/^data:image\/(png|jpe?g|gif|webp);/.test(m.file.d)?`<img src="${m.file.d}" alt="">`:`<a href="${esc(m.file.d.startsWith('data:')?m.file.d:'#')}" download="${esc(m.file.n)}" style="color:#fff">${I.clip} ${esc(m.file.n)}</a>`):''}</div>`).join('');if(atEnd)v.scrollTop=v.scrollHeight}
+const composeHtml=()=>`${S.att?`<div class="chip acr">${I.clip}<span style="flex:1">${esc(S.att.n)} (${(S.att.d.length*.75/1024|0)} Ko)</span><button class="ib" data-act="noatt">${I.x}</button></div>`:''}${S.edit?`<div class="chip acr">Modification du message<button class="ib" data-act="noedit">${I.x}</button></div>`:''}<div class="compose acr"><button class="ib" data-act="att">${I.clip}</button><input type="file" id="fi" hidden><textarea id="tx" placeholder="Message (Entrée pour envoyer, Maj+Entrée : nouvelle ligne)">${S.edit?esc(S.edit.text):''}</textarea><button class="btn" data-act="send">${I.send}</button></div>`;
+let lastSend=0;
+async function send(){const r=S.rooms[S.cur],tx=$('#tx'),text=tx.value.trim();if(!r||(!text&&!S.att))return;
+if(S.edit){const e=await mk(r,{type:'edit',ref:S.edit.id,text});S.edit=null;await ingest(r,e);if(r.sm)r.sm([e]);render(false);return}
+if(Date.now()-lastSend<1500)return;lastSend=Date.now();const e=await mk(r,{type:'msg',text,file:S.att||undefined});S.att=null;tx.value='';await ingest(r,e);if(r.sm)r.sm([e]);render(false);renderMsgs(true)}
+function menu(x,y,mid){const r=S.rooms[S.cur],m=r.evs.get(mid),mine=m.from===S.me.id;document.querySelector('.menu')?.remove();const d=document.createElement('div');d.className='menu acr';d.style.cssText=`left:${Math.min(x,innerWidth-190)}px;top:${Math.min(y,innerHeight-140)}px`;
+d.innerHTML=mine?`<div data-a="edit">Modifier</div><div data-a="del">Supprimer</div>`:`<div data-a="rep">Signaler (local)</div><div data-a="blk">Bloquer l'utilisateur</div>`;
+d.onclick=async ev=>{const a=ev.target.dataset.a;d.remove();if(a==='edit'&&!m.file||a==='edit'){S.edit={id:mid,text:view(r).find(z=>z.id===mid)?.text||''};render(false);renderMsgs(true)}
+if(a==='del'){const e=await mk(r,{type:'del',ref:mid});await ingest(r,e);r.sm&&r.sm([e])}if(a==='rep'){S.reports.push(mid);DB.set('reports',S.reports);renderMsgs()}if(a==='blk'){S.blocked.add(m.from);DB.set('blocked',[...S.blocked]);renderMsgs()}};document.body.append(d)}
+/* settings */
+function side(){if($('#side'))return $('#side').remove();const d=document.createElement('div');d.id='side';d.className='acr ts';
+d.innerHTML=`<div class="row"><h2 style="font-weight:200">Paramètres</h2><button class="ib" data-act="side">${I.x}</button></div>
+<div class="row">Couleur d'accentuation<input type="color" id="c_a" value="${cfg.a}"></div><div class="row">Transparence Acrylic<input type="range" id="c_g" min="2" max="40" value="${cfg.g}"></div><div class="row">Intensité Liquid Glass<input type="range" id="c_b" min="0" max="40" value="${cfg.b}"></div>
+<div class="row">Particules<input type="checkbox" id="c_part" ${cfg.part?'checked':''}></div><div class="row">Animations<input type="checkbox" id="c_anim" ${cfg.anim?'checked':''}></div><div class="row">Notifications<input type="checkbox" id="c_notif" ${cfg.notif?'checked':''}></div>
+<div class="sec">Confidentialité et stockage</div><div class="hint">Identifiant : ${S.me.id}<br>Pseudo : ${esc(S.me.nick)}<br>Bloqués : ${S.blocked.size} · Signalés : ${S.reports.length}</div><div class="hint" id="quota"></div>
+<div style="display:grid;gap:8px;margin-top:10px"><button class="btn" data-act="exp">Exporter la sauvegarde du compte (chiffrée)</button><button class="btn" data-act="expd">Exporter les messages (JSON)</button><button class="btn" data-act="unblk">Débloquer tout le monde</button><button class="btn" data-act="clr">Vider les messages locaux</button><button class="btn" data-act="out">Verrouiller la session</button></div>`;
+document.body.append(d);for(const k of['a','g','b','part','anim','notif'])$('#c_'+k).onchange=$('#c_'+k).oninput=async e=>{const t=e.target;cfg[k]=t.type==='checkbox'?t.checked:t.type==='range'?+t.value:t.value;if(k==='notif'&&cfg.notif&&Notification.permission==='default')await Notification.requestPermission();applyCfg()};
+navigator.storage?.estimate().then(q=>$('#quota')&&($('#quota').textContent=`Stockage : ${(q.usage/1048576).toFixed(1)} Mo / ${(q.quota/1048576|0)} Mo`))}
+const dl=(n,t)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'application/json'}));a.download=n;a.click()};
+/* events */
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-go],[data-room],[data-act],[data-mid]');document.querySelector('.menu')&&!e.target.closest('.menu')&&document.querySelector('.menu').remove();if(!t)return;const a=t.dataset.act;
+if(t.dataset.go)return go(t.dataset.go,t.dataset.go==='chat'?S.cur||'general':null);
+if(t.dataset.room){const id=t.dataset.room;if(!S.rooms[id]&&S.disc[id])await addRoom({...S.disc[id]});return go('chat',id)}
+if(a==='side')side();else if(a==='mm'){menu(e.clientX,e.clientY,t.dataset.mid)}
+else if(a==='mkroom'){const n=$('#rn').value.trim();if(!n)return;const pub=$('#rp').value==='pub',id=pub?'p-'+n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30):'x-'+hx(crypto.getRandomValues(new Uint8Array(6))),pw=pub?null:hx(crypto.getRandomValues(new Uint8Array(8)));if(pub&&id.length<4)return;await addRoom({id,name:n,desc:$('#rd').value.trim(),pub,pw});go('chat',id)}
+else if(a==='joinInv'){const[id,pw]=$('#inv').value.trim().split('.');if(!/^x-[0-9a-f]{12}$/.test(id||'')||!pw)return alert('Invitation invalide');const n=prompt('Nom local du salon ?','Salon privé');await addRoom({id,name:n||'Salon privé',desc:'Salon privé',pub:false,pw});go('chat',id)}
+else if(a==='copyinv'){const r=S.rooms[S.cur];navigator.clipboard.writeText(r.id+'.'+r.pw);t.textContent='copié'}
+else if(a==='att')$('#fi').click();else if(a==='noatt'){S.att=null;render(false);renderMsgs(true)}else if(a==='noedit'){S.edit=null;render(false);renderMsgs(true)}else if(a==='send')send();
+else if(a==='addc'||a==='savec'){const id=a==='addc'?$('#cid').value.trim():t.dataset.id;if(!/^[0-9a-f]{20}$/.test(id))return alert('Identifiant invalide');S.contacts[id]={nick:S.seen[id]||'Inconnu'};DB.set('contacts',S.contacts);render(false)}
+else if(a==='delc'){delete S.contacts[t.dataset.id];DB.set('contacts',S.contacts);render(false)}
+else if(a==='exp')dl('thinktalk-compte.json',JSON.stringify(await DB.get('acct')));else if(a==='expd'){const o=[];for(const r of Object.values(S.rooms))o.push(...r.evs.values());dl('thinktalk-messages.json',JSON.stringify(o))}
+else if(a==='unblk'){S.blocked.clear();DB.set('blocked',[]);render(false)}else if(a==='clr'&&confirm('Vider tous les messages locaux ?')){await DB.clear();for(const r of Object.values(S.rooms))r.evs.clear();render(false)}else if(a==='out')location.reload()});
+document.addEventListener('change',async e=>{if(e.target.id==='fi'){const f=e.target.files[0];if(!f)return;if(f.size>1e6||BAD.test(f.name))return alert('Fichier refusé (max 1 Mo, types dangereux bloqués)');const d=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});S.att={n:f.name.slice(0,100),t:f.type||'application/octet-stream',d};render(false);renderMsgs(true)}});
+document.addEventListener('keydown',e=>{if(e.target.id==='tx'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+let lp;document.addEventListener('touchstart',e=>{const m=e.target.closest('.m');if(m){const t=e.touches[0];lp=setTimeout(()=>{navigator.vibrate?.(20);menu(t.clientX,t.clientY,m.dataset.mid)},500)}},{passive:true});['touchend','touchmove','touchcancel'].forEach(n=>document.addEventListener(n,()=>clearTimeout(lp),{passive:true}));
+/* ===== LOGIN & BOOT ===== */
+async function login(){const L=$('#login'),a=await DB.get('acct');L.style.display='grid';
+L.innerHTML=`<div class="acr ts"><h1 style="font-weight:200;font-size:38px">ThinkTalk</h1>${a?`<div>Compte : <b>${esc(a.nick)}</b></div>`:`<input type="text" id="ln" placeholder="Pseudo" maxlength="24">`}<input type="password" id="lc" placeholder="Code (8 caractères min.)"><button class="btn" id="lb">${a?'Déverrouiller':'Créer mon identité'}</button><label class="hint">Restaurer une sauvegarde : <input type="file" id="lf" accept=".json"></label><div class="hint">Le code chiffre votre clé privée localement. Sans lui ni sauvegarde, le compte est irrécupérable.</div><div id="le" style="color:#f88"></div></div>`;
+$('#lf').onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(!j.pub||!j.w||!j.salt)throw 0;await DB.set('acct',j);login()}catch{$('#le').textContent='Sauvegarde invalide'}};
+$('#lb').onclick=async()=>{const c=$('#lc').value;if(c.length<8)return $('#le').textContent='Code trop court';try{let acc=a;if(!acc){const n=$('#ln').value.trim();if(!n)return $('#le').textContent='Pseudo requis';acc=await createAcct(n,c);await DB.set('acct',acc)}
+S.me={id:acc.id,nick:acc.nick,pub:acc.pub,priv:await unlock(acc,c)};L.style.display='none';boot()}catch{$('#le').textContent='Code incorrect'}}}
+async function boot(){S.blocked=new Set(await DB.get('blocked')||[]);S.contacts=await DB.get('contacts')||{};S.reports=await DB.get('reports')||[];
+const saved=await DB.get('rooms')||[];if(!saved.find(r=>r.id==='general'))saved.unshift({id:'general',name:'Général',desc:'Salon public mondial de ThinkTalk',pub:true});
+for(const r of saved)S.rooms[r.id]={...r,peers:new Set(),evs:new Map()};for(const r of Object.values(S.rooms))for(const e of await DB.room(r.id))r.evs.set(e.id,e);
+render(true);await netInit();render(false)}
+applyCfg();sizeBg();addEventListener('resize',sizeBg);requestAnimationFrame(frame);login();
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register(URL.createObjectURL(new Blob(["self.addEventListener('fetch',()=>{})"],{type:'text/javascript'}))).catch(()=>{});
+</script></body></html>
