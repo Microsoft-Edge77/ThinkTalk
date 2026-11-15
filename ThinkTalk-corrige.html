@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000"><title>ThinkTalk</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%230078d7' d='M32 8C18.7 8 8 17.4 8 29c0 6.6 3.6 12.5 9.2 16.3-.6 3.4-2.2 6.4-4.6 8.7 5-.7 9.5-2.7 13-5.7 2 .5 4.2.7 6.4.7 13.3 0 24-9.4 24-21S45.3 8 32 8z'/%3E%3C/svg%3E" type="image/svg+xml"><link rel="icon" href="icon-192.png" sizes="192x192" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+--a:#0078d7;
+--b:18px;
+--s:rgba(22,26,34,.58);
+--s2:rgba(28,32,42,.46);
+--line:transparent;
+--text:#f3f5f8;
+--muted:rgba(243,245,248,.66);
+--radius:0px;
+}
+*{box-sizing:border-box;margin:0;border-radius:0!important}
+html,body{height:100%;background:#000;color:var(--text);font:16px/1.55 'Segoe UI','Segoe UI Variable Text',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+canvas#bg{position:fixed;inset:0;z-index:0}
+#app{position:relative;z-index:1;display:grid;grid-template-columns:72px 1fr;height:100dvh}
+.acr{background:var(--s);backdrop-filter:blur(var(--b)) saturate(150%);-webkit-backdrop-filter:blur(var(--b)) saturate(150%);border:0;box-shadow:0 18px 50px rgba(0,0,0,.38)}
+nav{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 0;border:0}
+nav button{position:relative;width:56px;height:52px;background:transparent;border:0;color:var(--text);opacity:.58;cursor:pointer;transition:opacity .22s ease,background .22s ease,transform .22s ease}
+nav button:hover{opacity:1;background:rgba(255,255,255,.08);transform:translateY(-1px)}
+nav button:active{transform:scale(.96)}
+nav button.on{opacity:1;background:rgba(255,255,255,.10)}
+nav button.on::before{content:'';position:absolute;left:8px;top:12px;bottom:12px;width:3px;background:var(--a);box-shadow:0 0 12px color-mix(in srgb,var(--a) 65%,transparent)}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+header{display:flex;align-items:center;gap:12px;padding:20px 28px 10px}
+header h1{font-weight:600;font-size:30px;letter-spacing:-.4px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button,input,select,textarea{font:inherit;color:var(--text)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.tile:focus-visible{outline:2px solid color-mix(in srgb,var(--a) 85%,#fff);outline-offset:2px}
+.btn{background:color-mix(in srgb,var(--a) 88%,#fff);border:0;padding:11px 20px;cursor:pointer;font-weight:600;font-size:15px;color:#fff;transition:transform .18s ease,filter .18s ease,box-shadow .18s ease;box-shadow:0 8px 22px color-mix(in srgb,var(--a) 28%,transparent)}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:scale(.97);filter:brightness(.9)}
+.ib{background:transparent;border:0;cursor:pointer;padding:9px;display:inline-flex;opacity:.72;transition:opacity .18s ease,background .18s ease,transform .18s ease}
+.ib:hover{opacity:1;background:rgba(255,255,255,.09);transform:translateY(-1px)}
+.nex{opacity:.55;color:var(--text);text-decoration:none}
+.nex:hover{opacity:1;background:rgba(255,255,255,.09);transform:translateY(-1px)}
+input[type=text],input[type=password],textarea,select{background:rgba(255,255,255,.07);border:0;padding:12px 14px;width:100%;font-size:15px;transition:background .2s ease,box-shadow .2s ease}
+select option{background:#111318}
+input:focus,textarea:focus,select:focus{background:rgba(255,255,255,.11);box-shadow:inset 0 -2px 0 var(--a)}
+input[type=range]{width:130px;accent-color:var(--a)}
+input[type=checkbox]{accent-color:var(--a);width:18px;height:18px}
+#view{flex:1;overflow:auto;padding:8px 28px 28px;min-height:0;container-type:inline-size;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.22) transparent}
+#find{font-size:17px;padding:14px 16px;margin-top:10px;background:rgba(255,255,255,.06)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:10px 0 6px}
+.tile{position:relative;min-height:150px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:3px;background:var(--s2);border:0;overflow:hidden;transition:background .22s ease,transform .22s ease,box-shadow .22s ease;animation:tile .5s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i)*45ms);min-width:0;backdrop-filter:blur(var(--b)) saturate(140%);-webkit-backdrop-filter:blur(var(--b)) saturate(140%)}
+.tile:hover{background:rgba(255,255,255,.12);transform:translateY(-3px);box-shadow:0 20px 44px rgba(0,0,0,.42)}
+.tile:active{transform:scale(.98)}
+.tile.w{background:linear-gradient(135deg,color-mix(in srgb,var(--a) 72%,#000) 0%,color-mix(in srgb,var(--a) 42%,#000) 100%)}
+.tile.w:hover{filter:brightness(1.1)}
+.tile h3{font-weight:600;font-size:23px;line-height:1.2;padding-right:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .d{font-size:14px;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tile .p{font-size:13px;color:var(--muted);margin-top:4px}
+.tile .last{margin-top:auto;padding-top:10px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.dot{position:absolute;top:16px;right:16px;width:9px;height:9px;background:rgba(255,255,255,.24)}
+.dot.on{background:#57d364;box-shadow:0 0 10px rgba(87,211,100,.65)}
+@container (min-width:540px){.tile.w{grid-column:span 2}}
+.ts{animation:ts .45s cubic-bezier(.16,1,.3,1) both;transform-origin:0 50%}
+.out{animation:tso .16s ease-in both;transform-origin:0 50%}
+@keyframes ts{0%{opacity:0;transform:perspective(1100px) rotateY(-68deg) translateX(-16px)}60%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes tso{to{opacity:0;transform:perspective(1100px) rotateY(58deg) translateX(14px)}}
+@keyframes tile{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+html.noanim *{animation:none!important;transition:none!important}
+.msgs{display:flex;flex-direction:column;gap:10px}
+.m{max-width:min(640px,90%);padding:11px 15px 12px;position:relative;align-self:flex-start;background:var(--s2);backdrop-filter:blur(var(--b)) saturate(140%);-webkit-backdrop-filter:blur(var(--b)) saturate(140%);animation:ts .35s cubic-bezier(.16,1,.3,1) both;box-shadow:0 10px 28px rgba(0,0,0,.26)}
+.m.me{align-self:flex-end;background:linear-gradient(135deg,color-mix(in srgb,var(--a) 62%,rgba(0,0,0,.55)) 0%,color-mix(in srgb,var(--a) 34%,rgba(0,0,0,.6)) 100%)}
+.m .n{font-size:12px;color:var(--muted);margin-bottom:3px}
+.m .t{white-space:pre-wrap;word-break:break-word;font-size:15px}
+.m .dd{position:absolute;top:6px;right:8px;opacity:.45;cursor:pointer;background:none;border:0;letter-spacing:1px}
+.m .dd:hover{opacity:1}
+.m img{max-width:100%;max-height:280px;display:block;margin-top:8px;box-shadow:0 10px 28px rgba(0,0,0,.34)}
+.m a{display:inline-flex;align-items:center;gap:7px;margin-top:8px;padding:9px 12px;background:rgba(255,255,255,.08);color:#fff;text-decoration:none;transition:background .18s ease,transform .18s ease}
+.m a:hover{background:rgba(255,255,255,.15);transform:translateY(-1px)}
+.compose{display:flex;gap:8px;padding:10px 28px 14px;align-items:flex-end;border:0}
+.compose textarea{resize:none;height:48px;background:rgba(255,255,255,.07)}
+.chip{display:flex;gap:9px;align-items:center;padding:8px 28px;font-size:13px;color:var(--muted)}
+.file-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 15px;background:rgba(255,255,255,.08);border:0;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;transition:background .2s ease,transform .2s ease,box-shadow .2s ease}
+.file-btn:hover{background:rgba(255,255,255,.14);transform:translateY(-1px);box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.file-btn:active{transform:scale(.97)}
+.menu{position:fixed;z-index:50;min-width:190px;padding:6px;background:rgba(18,22,30,.82);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);animation:rise .18s ease both;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+.menu div{padding:11px 13px;cursor:pointer;transition:background .15s ease}
+.menu div:hover{background:color-mix(in srgb,var(--a) 72%,transparent)}
+#side{position:fixed;z-index:40;top:0;right:0;bottom:0;width:min(400px,100%);padding:24px;overflow:auto;background:rgba(15,18,24,.68);backdrop-filter:blur(26px) saturate(150%);-webkit-backdrop-filter:blur(26px) saturate(150%);box-shadow:-24px 0 70px rgba(0,0,0,.45)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0}
+.sec{font-weight:600;font-size:20px;margin:24px 0 8px;padding-top:16px}
+.sec:first-child{margin-top:0;padding-top:0}
+.forms{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0 34px;max-width:940px}
+.forms>div{display:grid;gap:10px;align-content:start}
+.forms h3{font-weight:600;font-size:18px}
+.sw{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0}
+.sw button{width:40px;height:40px;border:2px solid transparent;cursor:pointer;background-clip:padding-box;transition:transform .18s ease,box-shadow .18s ease}
+.sw button:hover{transform:scale(1.09)}
+.sw button.sel{border-color:#fff;box-shadow:0 0 0 3px rgba(0,0,0,.65),0 0 18px color-mix(in srgb,var(--a) 55%,transparent)}
+#login{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(0,0,0,.72)}
+#login>div{width:min(430px,94%);padding:32px;display:flex;flex-direction:column;gap:12px;animation:rise .45s cubic-bezier(.16,1,.3,1) both}
+.hint{font-size:13px;color:var(--muted)}
+@media(max-width:700px){
+#app{grid-template-columns:1fr;grid-template-rows:1fr 62px}
+nav{order:2;flex-direction:row;justify-content:space-around;padding:0}
+nav button{height:62px;flex:1}
+nav button.on::before{left:16px;right:16px;top:0;bottom:auto;width:auto;height:3px}
+header{padding:16px 18px 6px}
+header h1{font-size:26px}
+#view{padding:6px 18px 22px}
+.compose,.chip{padding-left:14px;padding-right:14px}
+.m{max-width:96%}
+.forms{grid-template-columns:1fr}
+}
+</style></head><body>
+<canvas id="bg"></canvas><div id="app"></div><div id="login" class="acr" style="display:none"></div>
+<script type="module">
+/* ===== UTILS & ICONS ===== */
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const IC=p=>`<svg class="i" viewBox="0 0 24 24">${p}</svg>`;
+const I={home:IC('<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>'),chat:IC('<path d="M4 4h16v12H10l-5 4v-4H4z"/>'),user:IC('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-5 3.5-7 8-7s8 2 8 7z"/>'),clip:IC('<path d="M20 11l-8 8a5 5 0 01-7-7l9-9a3.5 3.5 0 015 5l-9 9a2 2 0 01-3-3l8-8"/>'),send:IC('<path d="M3 12h17M13 5l7 7-7 7"/>'),gear:IC('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'),menu:IC('<circle cx="8" cy="8" r="2.4"/><circle cx="16" cy="8" r="2.4"/><path d="M4 14h16M4 19h16"/>'),back:IC('<path d="M20 12H4M11 5l-7 7 7 7"/>'),x:IC('<path d="M5 5l14 14M19 5L5 19"/>')};
+const enc=new TextEncoder(),b64=b=>{let s='';new Uint8Array(b).forEach(c=>s+=String.fromCharCode(c));return btoa(s)},ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const hx=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+const sha=async b=>hx(await crypto.subtle.digest('SHA-256',b)),hm=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+/* ===== DATABASE (IndexedDB) ===== */
+const DB=(()=>{const o=new Promise((r,j)=>{
+ if(!('indexedDB' in window)){j(new Error('IndexedDB est indisponible dans ce navigateur.'));return}
+ let q;try{q=indexedDB.open('thinktalk',1)}catch(e){j(e);return}
+ q.onupgradeneeded=()=>{const d=q.result;
+  if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv');
+  let ev;if(!d.objectStoreNames.contains('ev'))ev=d.createObjectStore('ev',{keyPath:'id'});else ev=q.transaction.objectStore('ev');
+  if(!ev.indexNames.contains('room'))ev.createIndex('room','room');
+ };
+ q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error||new Error('Impossible d’ouvrir la base locale.'));
+ q.onblocked=()=>j(new Error('La base ThinkTalk est bloquée par un autre onglet. Fermez les autres onglets ThinkTalk puis rechargez.'));
+ });
+ const t=async(s,m,f)=>{const d=await o;return new Promise((r,j)=>{let q;try{q=f(d.transaction(s,m).objectStore(s))}catch(e){j(e);return}q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error||new Error('Erreur de stockage local'))})};
+ return{get:k=>t('kv','readonly',s=>s.get(k)),set:(k,v)=>t('kv','readwrite',s=>s.put(v,k)),put:e=>t('ev','readwrite',s=>s.put(e)),room:r=>t('ev','readonly',s=>s.index('room').getAll(r)),clear:()=>t('ev','readwrite',s=>s.clear())}})();
+/* ===== SETTINGS ===== */
+const PAL=[['#0078d7','Bleu'],['#00b7eb','Cyan'],['#00a693','Turquoise'],['#60a917','Vert'],['#fa6800','Orange'],['#e51400','Rouge'],['#d80073','Rose'],['#7e3ff2','Violet']];
+let savedCfg={};try{savedCfg=JSON.parse(localStorage.getItem('tt_cfg')||'{}');if(!savedCfg||typeof savedCfg!=='object'||Array.isArray(savedCfg))savedCfg={}}catch{savedCfg={}}
+const cfg=Object.assign({a:PAL[0][0],b:6,part:true,anim:true,notif:false},savedCfg);delete cfg.g;cfg.b=Math.max(0,Math.min(Number(cfg.b)||0,16));if(!PAL.some(p=>p[0]===cfg.a))cfg.a=PAL[0][0];
+function applyCfg(){const r=document.documentElement;r.style.setProperty('--a',cfg.a);r.style.setProperty('--s','rgba(22,26,34,'+(.92-cfg.b*.012).toFixed(2)+')');r.style.setProperty('--s2','rgba(28,32,42,'+(.78-cfg.b*.012).toFixed(2)+')');r.style.setProperty('--b',Math.max(10,cfg.b+8)+'px');r.classList.toggle('noanim',!cfg.anim||matchMedia('(prefers-reduced-motion:reduce)').matches);try{localStorage.setItem('tt_cfg',JSON.stringify(cfg))}catch{}}
+/* ===== PARTICLES ===== */
+const cv=$('#bg'),cx=cv.getContext('2d');let P=[],W,H;
+function sizeBg(){W=cv.width=innerWidth;H=cv.height=innerHeight;const n=Math.min(W<700?90:180,W*H/6500|0);P=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,z:.4+Math.random()*.6,a:Math.random()*6.28,s:.15+Math.random()*.38,ph:Math.random()*6}))}
+function frame(t){cx.clearRect(0,0,W,H);cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+if(cfg.part){const still=matchMedia('(prefers-reduced-motion:reduce)').matches;for(const p of P){if(!still){p.a+=Math.sin(t/2500+p.ph)*.02;p.x=(p.x+Math.cos(p.a)*p.s*p.z+W)%W;p.y=(p.y+Math.sin(p.a)*p.s*p.z+H)%H}}
+cx.lineWidth=.6;for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){const d=Math.hypot(P[i].x-P[j].x,P[i].y-P[j].y);if(d<95){cx.strokeStyle=cfg.a+Math.floor((1-d/95)*26).toString(16).padStart(2,'0');cx.beginPath();cx.moveTo(P[i].x,P[i].y);cx.lineTo(P[j].x,P[j].y);cx.stroke()}}
+for(const p of P){cx.fillStyle=cfg.a;cx.globalAlpha=.7*p.z*(.6+.4*Math.sin(t/900+p.ph));cx.beginPath();cx.arc(p.x,p.y,1+p.z*1.6,0,6.28);cx.fill()}cx.globalAlpha=1}
+requestAnimationFrame(frame)}
+/* ===== CRYPTO (Web Crypto: ECDSA P-256 + PBKDF2/AES-GCM) ===== */
+const ALG={name:'ECDSA',hash:'SHA-256'},S={me:null,rooms:{},view:'home',cur:null,find:'',net:'…',blocked:new Set(),contacts:{},seen:{},disc:{},reports:[],edit:null,att:null,last:0};
+const keyOf=async code=>{const s=await crypto.subtle.importKey('raw',enc.encode(code),'PBKDF2',false,['deriveKey']);return s};
+const wrapKey=async(code,salt)=>crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},await keyOf(code),{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+async function createAcct(nick,code){const k=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);const pub=b64(await crypto.subtle.exportKey('raw',k.publicKey)),salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+const w=await crypto.subtle.encrypt({name:'AES-GCM',iv},await wrapKey(code,salt),await crypto.subtle.exportKey('pkcs8',k.privateKey));
+return{nick,pub,id:(await sha(ub(pub))).slice(0,20),salt:b64(salt),iv:b64(iv),w:b64(w)}}
+async function unlock(a,code){const pk=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(a.iv)},await wrapKey(code,ub(a.salt)),ub(a.w));return crypto.subtle.importKey('pkcs8',pk,{name:'ECDSA',namedCurve:'P-256'},false,['sign'])}
+const canon=e=>JSON.stringify([e.id,e.room,e.ts,e.from,e.type,e.ref||'',e.text||'',e.file?e.file.n+e.file.t+e.file.d:'',e.nick]);
+const pubCache={};async function pubKey(raw){return pubCache[raw]??=await crypto.subtle.importKey('raw',ub(raw),{name:'ECDSA',namedCurve:'P-256'},false,['verify'])}
+async function verify(msg,sig,pub,from){try{if((await sha(ub(pub))).slice(0,20)!==from)return false;return await crypto.subtle.verify(ALG,await pubKey(pub),ub(sig),enc.encode(msg))}catch{return false}}
+const sign=async s=>b64(await crypto.subtle.sign(ALG,S.me.priv,enc.encode(s)));
+async function mk(r,o){const e={id:crypto.randomUUID(),room:r.id,ts:Date.now(),from:S.me.id,nick:S.me.nick,pub:S.me.pub,...o};e.sig=await sign(canon(e));return e}
+/* ===== NETWORK (Trystero / WebRTC, signalling via public BitTorrent trackers) ===== */
+const APP='thinktalk-point-v1',BAD=/\.(exe|msi|bat|cmd|com|scr|js|jse|vbs|ps1|jar|apk|dmg|app|sh|html?|svg|lnk|dll)$/i;let T=null,dirRoom=null;const netText=()=>{if(S.net==='off')return'Hors connexion : vos messages restent sur cet appareil';if(!T)return'Connexion en cours…';const n=Object.values(S.rooms).reduce((a,r)=>a+r.peers.size,0);return n?'En ligne · '+n+' participant(s) connecté(s)':'Recherche d\'autres participants…'};const rl={},PM={};
+const ok=p=>{const n=Date.now(),a=(rl[p]=(rl[p]||[]).filter(t=>n-t<10000));a.push(n);return a.length<=40};
+async function netInit(){try{T=await import('https://esm.sh/trystero');S.net='ok';}catch(e){S.net='off';return}
+dirRoom=T.joinRoom({appId:APP},'directory');const[sd,gd]=dirRoom.makeAction('d');S.sd=sd;
+dirRoom.onPeerJoin(p=>sd(pubList(),p));gd(l=>{if(!Array.isArray(l))return;for(const x of l.slice(0,30))if(x&&/^p-[\w-]{2,40}$/.test(x.id)&&typeof x.name==='string'&&Object.keys(S.disc).length<200)S.disc[x.id]={id:x.id,name:x.name.slice(0,40),desc:String(x.desc||'').slice(0,140),pub:true};ui()});
+for(const r of Object.values(S.rooms))join(r)}
+const pubList=()=>Object.values(S.rooms).filter(r=>r.pub).map(r=>({id:r.id,name:r.name,desc:r.desc}));
+async function join(r){if(r.net||!T)return;r.net=T.joinRoom(r.pw?{appId:APP,password:r.pw}:{appId:APP},r.id);const[sm,gm]=r.net.makeAction('m'),[sh,gh]=r.net.makeAction('h');
+const hello=async()=>({pub:S.me.pub,nick:S.me.nick,sig:await sign('hello:'+T.selfId)});
+r.net.onPeerJoin(async p=>{r.peers.add(p);sh(await hello(),p);sm([...r.evs.values()].sort((a,b)=>a.ts-b.ts).slice(-150),p);ui()});
+r.net.onPeerLeave(p=>{r.peers.delete(p);delete PM[p];ui()});
+gh(async(h,p)=>{if(!h||!await verify('hello:'+p,h.sig,h.pub,(await sha(ub(h.pub))).slice(0,20)))return;const id=(await sha(ub(h.pub))).slice(0,20);PM[p]={id,nick:String(h.nick).slice(0,24)};S.seen[id]=PM[p].nick;ui()});
+gm(async(a,p)=>{if(!ok(p)||!Array.isArray(a))return;for(const e of a.slice(0,150))await ingest(r,e,true);},);
+r.sm=sm}
+async function ingest(r,e,remote){if(!e||typeof e.id!=='string'||e.room!==r.id||r.evs.has(e.id)||S.blocked.has(e.from))return;if(!['msg','edit','del'].includes(e.type)||String(e.text||'').length>4000)return;
+if(e.file&&(typeof e.file.d!=='string'||e.file.d.length>1.4e6||BAD.test(e.file.n)))return;if(!await verify(canon(e),e.sig,e.pub,e.from))return;
+r.evs.set(e.id,e);await DB.put(e);S.seen[e.from]=e.nick;if(remote&&e.type==='msg'&&Date.now()-e.ts<6e4&&cfg.notif&&document.hidden&&Notification.permission==='granted')new Notification(r.name,{body:e.nick+' : '+(e.text||'fichier')});ui()}
+/* ===== ROOMS / STATE ===== */
+const saveRooms=()=>DB.set('rooms',Object.values(S.rooms).map(({id,name,desc,pub,pw})=>({id,name,desc,pub,pw})));
+async function addRoom(o){const r=S.rooms[o.id]??={...o,peers:new Set(),evs:new Map()};for(const e of await DB.room(r.id))r.evs.set(e.id,e);await saveRooms();await join(r);if(r.pub&&S.sd)S.sd(pubList());return r}
+function view(r){const out=[],ev=[...r.evs.values()].sort((a,b)=>a.ts-b.ts),dead=new Set(),ed={};
+for(const e of ev){const o=r.evs.get(e.ref);if(e.type==='del'&&o&&o.from===e.from)dead.add(e.ref);if(e.type==='edit'&&o&&o.from===e.from&&(!ed[e.ref]||ed[e.ref].ts<e.ts))ed[e.ref]=e}
+for(const e of ev)if(e.type==='msg'&&!dead.has(e.id)&&!S.blocked.has(e.from)&&!S.reports.includes(e.id))out.push({...e,text:ed[e.id]?ed[e.id].text:e.text,edited:!!ed[e.id]});return out}
+/* ===== UI ===== */
+let navLock=0;function go(v,cur){if(navLock)return;const m=$('#view');S.edit=S.att=null;if(m&&cfg.anim){navLock=1;m.classList.add('out');setTimeout(()=>{navLock=0;S.view=v;S.cur=cur||null;render(true)},150)}else{S.view=v;S.cur=cur||null;render(true)}}
+function ui(){if(S.view==='chat')renderMsgs();else if(!document.activeElement?.closest('#view input'))render(false)}
+const titles={home:'ThinkTalk',chat:'',contacts:'Contacts'};
+function render(anim){const cur=S.rooms[S.cur],ttl=S.view==='chat'&&cur?cur.name:titles[S.view];
+$('#app').innerHTML=`<nav class="acr">${['home','chat','user'].map(k=>`<button data-go="${k==='user'?'contacts':k==='chat'?'chat':'home'}" class="${(S.view===k||(k==='user'&&S.view==='contacts'))?'on':''}" aria-label="${{home:'Accueil',chat:'Conversation',user:'Contacts'}[k]}">${I[k]}</button>`).join('')}</nav>
+<main><header>${S.view==='chat'?`<button class="ib" data-go="home">${I.back}</button>`:''}<h1>${esc(ttl)}</h1><a class="ib nex" href="https://Microsoft-Edge77.github.io/NexSearch-Modern" target="_blank" rel="noopener" aria-label="Ouvrir NexSearch" title="NexSearch">${IC('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2"/>')}</a><button class="ib" data-act="side">${I.menu}</button></header><div id="view" class="${anim?'ts':''}"></div>${S.view==='chat'?composeHtml():''}</main>`;
+const v=$('#view');if(S.view==='home')home(v);else if(S.view==='contacts')contacts(v);else chatView(v)}
+function tile(r,i,joined){const ms=r?view(r):[],l=ms[ms.length-1],d=S.disc[r.id]&&!S.rooms[r.id];
+return`<div class="tile ${r.id==='general'?'w':''}" tabindex="0" style="--i:${i}" data-room="${esc(r.id)}"><span class="dot ${l&&Date.now()-l.ts<3e5?'on':''}"></span><h3>${esc(r.name)}</h3><div class="d">${esc(r.desc||'')}</div><div class="p">${joined?'Participants connectés : '+(r.peers.size+1):'Salon à rejoindre'}</div><div class="last">${l?esc(l.nick)+' : '+esc(l.text||'fichier')+' · '+hm(l.ts):d?'Touchez pour rejoindre':'Aucun message pour l\'instant'}</div></div>`}
+function home(v){const q=S.find.toLowerCase(),mine=Object.values(S.rooms).filter(r=>(r.name+r.desc).toLowerCase().includes(q)).sort((a,b)=>(a.id==='general'?-1:b.id==='general'?1:0)||(lastTs(b)-lastTs(a)));
+const dis=Object.values(S.disc).filter(r=>!S.rooms[r.id]&&(r.name+r.desc).toLowerCase().includes(q));let i=0;
+v.innerHTML=`<input type="text" id="find" placeholder="Rechercher un salon" aria-label="Rechercher un salon" value="${esc(S.find)}"><div class="hint" style="margin-top:10px">${netText()}</div><div class="sec">Mes salons</div><div class="grid">${mine.map(r=>tile(r,i++,true)).join('')||'<p class="hint">Aucun salon ne correspond à votre recherche.</p>'}</div>
+${dis.length?`<div class="sec">Salons à découvrir</div><div class="grid">${dis.map(r=>tile(r,i++,false)).join('')}</div>`:''}
+<div class="sec">Ajouter un salon</div><div class="forms"><div><h3>Créer un salon</h3><input type="text" id="rn" placeholder="Nom du salon" maxlength="40"><input type="text" id="rd" placeholder="Description (facultatif)" maxlength="140"><select id="rp"><option value="pub">Salon public : tout le monde peut le trouver</option><option value="priv">Salon privé : sur invitation</option></select><button class="btn" data-act="mkroom">Créer le salon</button></div><div><h3>Rejoindre un salon privé</h3><input type="text" id="inv" placeholder="Code d'invitation"><button class="btn" data-act="joinInv">Rejoindre</button></div></div>`;
+const f=$('#find');f.oninput=()=>{S.find=f.value;home(v);const n=$('#find');n.focus();n.setSelectionRange(99,99)}}
+const lastTs=r=>{const m=view(r);return m.length?m[m.length-1].ts:0};
+function contacts(v){const on=new Set(Object.values(PM).map(p=>p.id)),q=(S.find||'').toLowerCase(),ids=[...new Set([...Object.keys(S.contacts),...Object.keys(S.seen)])].filter(id=>id!==S.me.id);
+v.innerHTML=`<div class="acr" style="padding:16px;display:grid;gap:10px;max-width:540px"><div>Votre identifiant : <b style="word-break:break-all">${S.me.id}</b></div><input type="text" id="cid" placeholder="Identifiant du contact à ajouter"><button class="btn" data-act="addc">Ajouter</button></div>
+<div class="sec">Personnes</div><div class="hint">Chacun choisit son pseudo librement : fiez-vous à l'identifiant pour reconnaître une personne.</div>${ids.filter(id=>!q||id.includes(q)||(S.seen[id]||'').toLowerCase().includes(q)).map(id=>`<div class="row acr" style="padding:12px 16px;margin-top:10px"><div>${I.user}</div><div style="flex:1"><div>${esc(S.seen[id]||S.contacts[id]?.nick||'Inconnu')}${S.contacts[id]?' · contact':''}</div><div class="hint">${id}</div></div><span class="dot ${on.has(id)?'on':''}" style="position:static"></span>${S.contacts[id]?`<button class="ib" data-act="delc" data-id="${id}">${I.x}</button>`:`<button class="btn" data-act="savec" data-id="${id}">Ajouter</button>`}</div>`).join('')||'<p class="hint">Vous n\'avez encore croisé personne.</p>'}`}
+function chatView(v){const r=S.rooms[S.cur];if(!r){v.innerHTML=`<p>Ouvrez un salon depuis l'accueil.</p>`;return}v.innerHTML=`<div class="hint">Participants connectés : ${r.peers.size+1} · ${r.pw?'Salon privé · <b data-act="copyinv" style="cursor:pointer;text-decoration:underline">Copier l\'invitation</b>':'Salon public'}</div><div class="msgs" id="ms"></div>`;renderMsgs(true)}
+function renderMsgs(bottom){const r=S.rooms[S.cur],el=$('#ms');if(!el||!r)return;const v=$('#view'),atEnd=bottom||v.scrollHeight-v.scrollTop-v.clientHeight<80;
+el.innerHTML=view(r).map(m=>`<div class="m acr ${m.from===S.me.id?'me':''}" data-mid="${m.id}"><button class="dd" data-act="mm" data-mid="${m.id}">:::</button><div class="n">${esc(m.nick)} · ${hm(m.ts)}${m.edited?' · modifié':''}</div>${m.text?`<div class="t">${esc(m.text)}</div>`:''}${m.file?(m.file.t.startsWith('image/')&&/^data:image\/(png|jpe?g|gif|webp);/.test(m.file.d)?`<img src="${m.file.d}" alt="">`:`<a href="${esc(m.file.d.startsWith('data:')?m.file.d:'#')}" download="${esc(m.file.n)}">${I.clip} ${esc(m.file.n)}</a>`):''}</div>`).join('');if(atEnd)v.scrollTop=v.scrollHeight}
+const composeHtml=()=>`${S.att?`<div class="chip acr">${I.clip}<span style="flex:1">${esc(S.att.n)} (${(S.att.d.length*.75/1024|0)} Ko)</span><button class="ib" data-act="noatt">${I.x}</button></div>`:''}${S.edit?`<div class="chip acr">Vous modifiez un message<button class="ib" data-act="noedit">${I.x}</button></div>`:''}<div class="compose acr"><button class="file-btn" data-act="att">${I.clip}<span>Choisir un fichier</span></button><input type="file" id="fi" hidden><textarea id="tx" placeholder="Écrire un message…">${S.edit?esc(S.edit.text):''}</textarea><button class="btn" data-act="send">${I.send}</button></div>`;
+let lastSend=0;
+async function send(){const r=S.rooms[S.cur],tx=$('#tx'),text=tx.value.trim();if(!r||(!text&&!S.att))return;
+if(S.edit){const e=await mk(r,{type:'edit',ref:S.edit.id,text});S.edit=null;await ingest(r,e);if(r.sm)r.sm([e]);render(false);return}
+if(Date.now()-lastSend<1500)return;lastSend=Date.now();const e=await mk(r,{type:'msg',text,file:S.att||undefined});S.att=null;tx.value='';await ingest(r,e);if(r.sm)r.sm([e]);render(false);renderMsgs(true)}
+function menu(x,y,mid){const r=S.rooms[S.cur],m=r.evs.get(mid),mine=m.from===S.me.id;document.querySelector('.menu')?.remove();const d=document.createElement('div');d.className='menu acr';d.style.cssText=`left:${Math.min(x,innerWidth-200)}px;top:${Math.min(y,innerHeight-150)}px`;
+d.innerHTML=mine?`<div data-a="edit">Modifier</div><div data-a="del">Supprimer</div>`:`<div data-a="rep">Signaler ce message</div><div data-a="blk">Bloquer cette personne</div>`;
+d.onclick=async ev=>{const a=ev.target.dataset.a;d.remove();if(a==='edit'&&!m.file||a==='edit'){S.edit={id:mid,text:view(r).find(z=>z.id===mid)?.text||''};render(false);renderMsgs(true)}
+if(a==='del'){const e=await mk(r,{type:'del',ref:mid});await ingest(r,e);r.sm&&r.sm([e])}if(a==='rep'){S.reports.push(mid);DB.set('reports',S.reports);renderMsgs()}if(a==='blk'){S.blocked.add(m.from);DB.set('blocked',[...S.blocked]);renderMsgs()}};document.body.append(d)}
+/* settings */
+function side(){if($('#side'))return $('#side').remove();const d=document.createElement('div');d.id='side';d.className='acr ts';
+d.innerHTML=`<div class="row"><h2 style="font-weight:600">Paramètres</h2><button class="ib" data-act="side" aria-label="Fermer">${I.x}</button></div>
+<div class="sec">Couleur</div><div class="sw" role="group" aria-label="Couleur de l'interface">${PAL.map(p=>`<button data-accent="${p[0]}" title="${p[1]}" aria-label="${p[1]}" class="${p[0]===cfg.a?'sel':''}" style="background:${p[0]}"></button>`).join('')}</div>
+<div class="sec">Apparence</div><div class="row">Transparence légère (Liquid Glass)<input type="range" id="c_b" min="0" max="16" value="${cfg.b}"></div><div class="row">Particules en fond<input type="checkbox" id="c_part" ${cfg.part?'checked':''}></div><div class="row">Animations<input type="checkbox" id="c_anim" ${cfg.anim?'checked':''}></div><div class="row">Notifications de nouveaux messages<input type="checkbox" id="c_notif" ${cfg.notif?'checked':''}></div>
+<div class="sec">Confidentialité et stockage</div><div class="hint">Votre identifiant : ${S.me.id}<br>Pseudo : ${esc(S.me.nick)}<br>Personnes bloquées : ${S.blocked.size} · Messages signalés : ${S.reports.length}</div><div class="hint" id="quota"></div>
+<div style="display:grid;gap:10px;margin-top:14px"><button class="btn" data-act="exp">Enregistrer une sauvegarde de mon compte</button><button class="btn" data-act="expd">Enregistrer mes messages</button><button class="btn" data-act="unblk">Débloquer tout le monde</button><button class="btn" data-act="clr">Supprimer les messages de cet appareil</button><button class="btn" data-act="out">Verrouiller ThinkTalk</button></div>`;
+document.body.append(d);for(const k of['b','part','anim','notif'])$('#c_'+k).onchange=$('#c_'+k).oninput=async e=>{const t=e.target;cfg[k]=t.type==='checkbox'?t.checked:t.type==='range'?+t.value:t.value;if(k==='notif'&&cfg.notif&&Notification.permission==='default')await Notification.requestPermission();applyCfg()};
+navigator.storage?.estimate().then(q=>$('#quota')&&($('#quota').textContent=`Stockage : ${(q.usage/1048576).toFixed(1)} Mo / ${(q.quota/1048576|0)} Mo`))}
+const dl=(n,t)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'application/json'}));a.download=n;a.click()};
+/* events */
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-go],[data-room],[data-act],[data-mid],[data-accent]');document.querySelector('.menu')&&!e.target.closest('.menu')&&document.querySelector('.menu').remove();if(!t)return;if(t.dataset.accent){cfg.a=t.dataset.accent;applyCfg();document.querySelectorAll('.sw button').forEach(b=>b.classList.toggle('sel',b===t));return}const a=t.dataset.act;
+if(t.dataset.go)return go(t.dataset.go,t.dataset.go==='chat'?S.cur||'general':null);
+if(t.dataset.room){const id=t.dataset.room;if(!S.rooms[id]&&S.disc[id])await addRoom({...S.disc[id]});return go('chat',id)}
+if(a==='side')side();else if(a==='mm'){menu(e.clientX,e.clientY,t.dataset.mid)}
+else if(a==='mkroom'){const n=$('#rn').value.trim();if(!n)return;const pub=$('#rp').value==='pub',id=pub?'p-'+n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30):'x-'+hx(crypto.getRandomValues(new Uint8Array(6))),pw=pub?null:hx(crypto.getRandomValues(new Uint8Array(8)));if(pub&&id.length<4)return;await addRoom({id,name:n,desc:$('#rd').value.trim(),pub,pw});go('chat',id)}
+else if(a==='joinInv'){const[id,pw]=$('#inv').value.trim().split('.');if(!/^x-[0-9a-f]{12}$/.test(id||'')||!pw)return alert("Cette invitation n'est pas valide");const n=prompt('Quel nom donner à ce salon ?','Salon privé');await addRoom({id,name:n||'Salon privé',desc:'Salon privé',pub:false,pw});go('chat',id)}
+else if(a==='copyinv'){const r=S.rooms[S.cur];navigator.clipboard.writeText(r.id+'.'+r.pw);t.textContent='copié'}
+else if(a==='att')$('#fi').click();else if(a==='noatt'){S.att=null;render(false);renderMsgs(true)}else if(a==='noedit'){S.edit=null;render(false);renderMsgs(true)}else if(a==='send')send();
+else if(a==='addc'||a==='savec'){const id=a==='addc'?$('#cid').value.trim():t.dataset.id;if(!/^[0-9a-f]{20}$/.test(id))return alert('Identifiant non valide');S.contacts[id]={nick:S.seen[id]||'Inconnu'};DB.set('contacts',S.contacts);render(false)}
+else if(a==='delc'){delete S.contacts[t.dataset.id];DB.set('contacts',S.contacts);render(false)}
+else if(a==='exp')dl('thinktalk-compte.json',JSON.stringify(await DB.get('acct')));else if(a==='expd'){const o=[];for(const r of Object.values(S.rooms))o.push(...r.evs.values());dl('thinktalk-messages.json',JSON.stringify(o))}
+else if(a==='unblk'){S.blocked.clear();DB.set('blocked',[]);render(false)}else if(a==='clr'&&confirm('Supprimer tous les messages enregistrés sur cet appareil ?')){await DB.clear();for(const r of Object.values(S.rooms))r.evs.clear();render(false)}else if(a==='out')location.reload()});
+document.addEventListener('change',async e=>{if(e.target.id==='fi'){const f=e.target.files[0];if(!f)return;if(f.size>1e6||BAD.test(f.name))return alert('Ce fichier ne peut pas être envoyé (1 Mo maximum ; certains types de fichiers sont interdits).');const d=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});S.att={n:f.name.slice(0,100),t:f.type||'application/octet-stream',d};render(false);renderMsgs(true)}});
+document.addEventListener('keydown',e=>{if(e.target.id==='tx'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+let lp;document.addEventListener('touchstart',e=>{const m=e.target.closest('.m');if(m){const t=e.touches[0];lp=setTimeout(()=>{navigator.vibrate?.(20);menu(t.clientX,t.clientY,m.dataset.mid)},500)}},{passive:true});['touchend','touchmove','touchcancel'].forEach(n=>document.addEventListener(n,()=>clearTimeout(lp),{passive:true}));
+/* ===== LOGIN & BOOT ===== */
+async function login(){const L=$('#login');L.style.display='grid';L.innerHTML='<div class="acr ts"><h1 style="font-weight:600;font-size:38px">ThinkTalk</h1><div class="hint">Initialisation du stockage local…</div></div>';
+ let a;try{a=await DB.get('acct')}catch(err){L.innerHTML=`<div class="acr ts"><h1 style="font-weight:600;font-size:38px">ThinkTalk</h1><h2>Impossible de démarrer</h2><p class="hint">ThinkTalk ne peut pas accéder à sa base de données locale (IndexedDB). Le site ne peut pas fonctionner sans ce stockage.</p><p class="hint">${esc(err?.message||err||'Erreur de stockage inconnue')}</p><p class="hint">Ouvre le site dans un navigateur à jour via son adresse HTTPS, vérifie que le stockage des sites est autorisé, puis ferme les autres onglets ThinkTalk et recharge.</p><button class="btn" onclick="location.reload()">Réessayer</button></div>`;return}
+L.innerHTML=`<div class="acr ts"><h1 style="font-weight:600;font-size:38px">ThinkTalk</h1>${a?`<div>Compte : <b>${esc(a.nick)}</b></div>`:`<input type="text" id="ln" placeholder="Pseudo" maxlength="24">`}<input type="password" id="lc" placeholder="Code secret (8 caractères minimum)"><button class="btn" id="lb">${a?'Déverrouiller':'Créer mon compte'}</button><label class="hint">Retrouver mon compte depuis une sauvegarde : <input type="file" id="lf" accept=".json"></label><div class="hint">Votre code protège votre compte sur cet appareil. En cas d'oubli, sans sauvegarde, le compte ne pourra pas être récupéré.</div><div id="le" style="color:#f88"></div></div>`;
+$('#lf').onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(!j.pub||!j.w||!j.salt)throw 0;await DB.set('acct',j);login()}catch{$('#le').textContent="Ce fichier de sauvegarde n'est pas valide"}};
+$('#lb').onclick=async()=>{const c=$('#lc').value;if(c.length<8)return $('#le').textContent='Le code doit contenir au moins 8 caractères';try{let acc=a;if(!acc){const n=$('#ln').value.trim();if(!n)return $('#le').textContent='Choisissez un pseudo';acc=await createAcct(n,c);await DB.set('acct',acc)}
+S.me={id:acc.id,nick:acc.nick,pub:acc.pub,priv:await unlock(acc,c)};L.style.display='none';try{await boot()}catch(err){L.style.display='grid';L.innerHTML=`<div class="acr ts"><h1>ThinkTalk</h1><h2>Erreur au démarrage</h2><p class="hint">${esc(err?.message||err||'Erreur inconnue')}</p><button class="btn" onclick="location.reload()">Recharger</button></div>`}}catch{$('#le').textContent='Code incorrect ou compte de sauvegarde invalide'}}}
+async function boot(){S.blocked=new Set(await DB.get('blocked')||[]);S.contacts=await DB.get('contacts')||{};S.reports=await DB.get('reports')||[];
+const saved=await DB.get('rooms')||[];if(!saved.find(r=>r.id==='general'))saved.unshift({id:'general',name:'Général',desc:'Salon public ouvert à tous',pub:true});const gz=saved.find(r=>r.id==='general');gz.name='Général';gz.desc='Salon public ouvert à tous';
+for(const r of saved)S.rooms[r.id]={...r,peers:new Set(),evs:new Map()};for(const r of Object.values(S.rooms))for(const e of await DB.room(r.id))r.evs.set(e.id,e);
+render(true);try{await netInit()}catch(err){console.warn('ThinkTalk : réseau indisponible',err);S.net='off'}render(false)}
+applyCfg();sizeBg();addEventListener('resize',sizeBg);requestAnimationFrame(frame);login();
+</script>
+</body></html>
